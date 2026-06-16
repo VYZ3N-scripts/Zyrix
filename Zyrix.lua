@@ -151,12 +151,13 @@ local C = {
 
 -- ══════════════════════════════════════════════════════════════════════════════
 --  GUI LIBRARY  (ZyrixUI)
+--  Layout: title bar → horizontal pill tab bar → two-column element grid
 -- ══════════════════════════════════════════════════════════════════════════════
 local ZyrixUI = {}
 
 local _guiRoot    = nil
 local _win        = nil
-local _sideScroll = nil
+local _tabBar     = nil   -- horizontal scrolling tab bar
 local _contentArea= nil
 local _tabBtns    = {}
 local _tabPanels  = {}
@@ -164,10 +165,11 @@ local _activeTab  = nil
 local _tabLO      = 0
 local _notifHolder= nil
 
-local WIN_W    = 680
-local WIN_H    = 440
-local SIDE_W   = 155
-local TAB_H    = 34
+local WIN_W  = 563
+local WIN_H  = 395   -- title(38) + tabbar(41) + content(316)
+local TBAR_H = 38
+local PILL_H = 41
+local CONT_H = WIN_H - TBAR_H - PILL_H   -- 316
 
 -- ── switch active tab ─────────────────────────────────────────────────────────
 local function switchTab(name)
@@ -175,9 +177,10 @@ local function switchTab(name)
     _activeTab = name
     for n, t in pairs(_tabBtns) do
         local on = n == name
-        tw(t.bg,  0.15, {BackgroundColor3 = on and C.BG3 or C.BG2})
-        tw(t.bar, 0.15, {BackgroundTransparency = on and 0 or 1})
-        tw(t.lbl, 0.15, {TextColor3 = on and C.Text or C.TextDim})
+        tw(t.btn, 0.15, {BackgroundColor3 = on and C.BG3 or C.BG2,
+                          TextColor3       = on and C.Text or C.TextDim})
+        local str = t.btn:FindFirstChildOfClass("UIStroke")
+        if str then tw(str, 0.15, {Transparency = on and 0.55 or 1}) end
     end
     for n, p in pairs(_tabPanels) do
         p.Visible = n == name
@@ -193,130 +196,146 @@ local function buildShell()
     _tabLO     = 0
 
     local sg = Instance.new("ScreenGui")
-    sg.Name           = "ZyrixMainUI"
-    sg.ResetOnSpawn   = false
-    sg.IgnoreGuiInset = true
-    sg.DisplayOrder   = 50
-    sg.Parent         = hui
+    sg.Name="ZyrixMainUI" sg.ResetOnSpawn=false
+    sg.IgnoreGuiInset=true sg.DisplayOrder=50 sg.Parent=hui
     _guiRoot = sg
 
-    -- window
+    -- ── root window ───────────────────────────────────────────────────────────
     local win = mkFrame({
-        Name             = "Window",
-        Size             = UDim2.new(0, WIN_W, 0, WIN_H),
-        Position         = UDim2.new(0.5, 0, 0.5, 0),
-        AnchorPoint      = Vector2.new(0.5, 0.5),
-        BackgroundColor3 = C.BG,
-        Parent           = sg,
+        Name="Window",
+        Size=UDim2.new(0,WIN_W,0,WIN_H),
+        Position=UDim2.new(0.5,0,0.5,0),
+        AnchorPoint=Vector2.new(0.5,0.5),
+        BackgroundColor3=Color3.fromRGB(0,0,0),
+        BackgroundTransparency=0.1,
+        Parent=sg,
     })
     applyCorner(win, UDim.new(0,8))
-    applyStroke(win, C.Stroke, 1.5, 0)
+    applyStroke(win, C.Stroke, 1, 0)
     _win = win
 
-    -- title bar
-    local bar = mkFrame({
-        Size             = UDim2.new(1, 0, 0, 42),
-        BackgroundColor3 = C.BG2,
-        Parent           = win,
+    -- ── title bar ─────────────────────────────────────────────────────────────
+    local titleBar = mkFrame({
+        Size=UDim2.new(1,0,0,TBAR_H),
+        BackgroundColor3=Color3.fromRGB(11,11,11),
+        Parent=win,
     })
-    applyCorner(bar, UDim.new(0,8))
-    mkFrame({Size=UDim2.new(1,0,0,8),Position=UDim2.new(0,0,1,-8),BackgroundColor3=C.BG2,Parent=bar})
-    mkFrame({Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,0),BackgroundColor3=C.Stroke,Parent=bar})
+    applyCorner(titleBar, UDim.new(0,8))
+    -- square off bottom corners
+    mkFrame({Size=UDim2.new(1,0,0,8),Position=UDim2.new(0,0,1,-8),BackgroundColor3=Color3.fromRGB(11,11,11),Parent=titleBar})
+    -- subtle bottom line
+    mkFrame({Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,-1),BackgroundColor3=C.Stroke,Parent=titleBar})
 
+    -- logo icon
     mkImage({
-        Size=UDim2.new(0,20,0,20),
-        Position=UDim2.new(0,12,0.5,0), AnchorPoint=Vector2.new(0,0.5),
+        Size=UDim2.new(0,24,0,26),
+        Position=UDim2.new(0,6,0.5,0), AnchorPoint=Vector2.new(0,0.5),
         Image="rbxassetid://105436073524298",
-        ImageColor3=C.Text, Parent=bar,
+        ImageColor3=Color3.fromRGB(141,141,141),
+        Parent=titleBar,
     })
+    -- title text
     mkLabel({
-        Size=UDim2.new(1,-130,1,0),
-        Position=UDim2.new(0,38,0,0),
-        Text="Zyrix", TextColor3=C.Text,
-        TextSize=15, TextXAlignment=Enum.TextXAlignment.Left,
-        Parent=bar,
+        Size=UDim2.new(1,-120,1,0),
+        Position=UDim2.new(0,34,0,0),
+        Text="zyrix", TextColor3=C.Text,
+        TextSize=14, Font=Enum.Font.GothamBold,
+        TextXAlignment=Enum.TextXAlignment.Left,
+        Parent=titleBar,
     })
 
-    -- close / minimise buttons
-    local function ctrlBtn(xOff, symbol, col)
+    -- window controls (close / minimise)
+    local function ctrlBtn(xOff, symbol, hoverCol)
         local b = mkButton({
-            Size=UDim2.new(0,24,0,24),
+            Size=UDim2.new(0,22,0,22),
             Position=UDim2.new(1,xOff,0.5,0), AnchorPoint=Vector2.new(1,0.5),
-            BackgroundColor3=C.BG3, Parent=bar,
+            BackgroundColor3=C.BG3,
+            Parent=titleBar,
         })
         applyCorner(b, UDim.new(1,0))
-        mkLabel({Size=UDim2.new(1,0,1,0),Text=symbol,TextColor3=col,TextSize=12,Parent=b})
-        b.MouseEnter:Connect(function() tw(b,0.1,{BackgroundColor3=C.BG4}) end)
+        mkLabel({Size=UDim2.new(1,0,1,0),Text=symbol,TextColor3=C.TextDim,TextSize=11,Parent=b})
+        b.MouseEnter:Connect(function() tw(b,0.1,{BackgroundColor3=hoverCol}) end)
         b.MouseLeave:Connect(function() tw(b,0.1,{BackgroundColor3=C.BG3}) end)
         return b
     end
-
-    local btnClose = ctrlBtn(-10, "✕", C.Error)
-    local btnMin   = ctrlBtn(-40, "−", C.TextDim)
+    local btnClose = ctrlBtn(-8,  "✕", Color3.fromRGB(60,15,15))
+    local btnMin   = ctrlBtn(-36, "−", C.BG4)
 
     btnClose.MouseButton1Click:Connect(function()
-        tw(win, 0.2, {Size=UDim2.new(0,WIN_W,0,0), BackgroundTransparency=1})
+        tw(win,0.2,{Size=UDim2.new(0,WIN_W,0,0),BackgroundTransparency=1})
         task.wait(0.22) sg:Destroy() _guiRoot=nil
     end)
     local minimised = false
     btnMin.MouseButton1Click:Connect(function()
         minimised = not minimised
-        tw(win, 0.25, {Size = minimised and UDim2.new(0,WIN_W,0,42) or UDim2.new(0,WIN_W,0,WIN_H)})
+        tw(win,0.22,{Size=minimised and UDim2.new(0,WIN_W,0,TBAR_H+PILL_H) or UDim2.new(0,WIN_W,0,WIN_H)})
     end)
+    draggable(titleBar, win)
 
-    draggable(bar, win)
-
-    -- body
-    local body = mkFrame({
-        Size=UDim2.new(1,0,1,-42),
-        Position=UDim2.new(0,0,0,42),
-        BackgroundTransparency=1,
+    -- ── horizontal pill tab bar ───────────────────────────────────────────────
+    local pillRow = mkFrame({
+        Size=UDim2.new(1,0,0,PILL_H),
+        Position=UDim2.new(0,0,0,TBAR_H),
+        BackgroundColor3=Color3.fromRGB(11,11,11),
         Parent=win,
     })
+    mkFrame({Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,-1),BackgroundColor3=C.Stroke,Parent=pillRow})
 
-    -- sidebar
-    local side = mkFrame({
-        Size=UDim2.new(0,SIDE_W,1,0),
-        BackgroundColor3=C.BG2,
-        Parent=body,
-    })
-    mkFrame({Size=UDim2.new(0,1,1,0),Position=UDim2.new(1,-1,0,0),BackgroundColor3=C.Stroke,Parent=side})
+    local pillScroll = Instance.new("ScrollingFrame")
+    pillScroll.Size=UDim2.new(1,0,1,0)
+    pillScroll.Position=UDim2.new(0,0,0,0)
+    pillScroll.BackgroundTransparency=1
+    pillScroll.BorderSizePixel=0
+    pillScroll.ScrollingDirection=Enum.ScrollingDirection.X
+    pillScroll.ScrollBarThickness=2
+    pillScroll.ScrollBarImageColor3=C.AccentDim
+    pillScroll.ScrollBarImageTransparency=0.5
+    pillScroll.CanvasSize=UDim2.new(0,0,0,0)
+    pillScroll.AutomaticCanvasSize=Enum.AutomaticSize.X
+    pillScroll.ElasticBehavior=Enum.ElasticBehavior.Always
+    pillScroll.VerticalScrollBarInset=Enum.ScrollBarInset.Always
+    pillScroll.Parent=pillRow
+    applyCorner(pillScroll, UDim.new(0,100))
+    local pillLayout = Instance.new("UIListLayout",pillScroll)
+    pillLayout.FillDirection=Enum.FillDirection.Horizontal
+    pillLayout.Padding=UDim.new(0,4)
+    pillLayout.SortOrder=Enum.SortOrder.LayoutOrder
+    pillLayout.VerticalAlignment=Enum.VerticalAlignment.Center
+    mkPad(pillScroll,3,3,6,6)
+    _tabBar = pillScroll
 
-    _sideScroll = mkScroll(side, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
-    _sideScroll.ScrollBarThickness = 0
-    mkList(_sideScroll, 2)
-    mkPad(_sideScroll, 6, 6, 6, 6)
-
-    -- content
+    -- ── content area ──────────────────────────────────────────────────────────
     _contentArea = mkFrame({
-        Size=UDim2.new(1,-SIDE_W,1,0),
-        Position=UDim2.new(0,SIDE_W,0,0),
-        BackgroundColor3=C.BG,
-        Parent=body,
+        Size=UDim2.new(1,0,0,CONT_H),
+        Position=UDim2.new(0,0,0,TBAR_H+PILL_H),
+        BackgroundColor3=Color3.fromRGB(11,11,11),
+        Parent=win,
     })
+    applyCorner(_contentArea, UDim.new(0,8))
+    mkFrame({Size=UDim2.new(1,0,0,8),BackgroundColor3=Color3.fromRGB(11,11,11),Parent=_contentArea})
 
-    -- notification holder (top right inside content)
+    -- notification pane
     _notifHolder = mkFrame({
-        Size=UDim2.new(0,190,0,0),
-        Position=UDim2.new(1,-196,0,6),
+        Size=UDim2.new(0,180,0,0),
+        Position=UDim2.new(1,-186,0,6),
         AutomaticSize=Enum.AutomaticSize.Y,
         BackgroundTransparency=1,
         ZIndex=30,
         Parent=_contentArea,
     })
-    mkList(_notifHolder, 4)
+    mkList(_notifHolder,4)
 
     -- entrance anim
-    win.Size = UDim2.new(0,WIN_W,0,0)
-    win.BackgroundTransparency = 1
-    tw(win, 0.3, {Size=UDim2.new(0,WIN_W,0,WIN_H), BackgroundTransparency=0}, Enum.EasingStyle.Back)
+    win.Size=UDim2.new(0,WIN_W,0,0)
+    win.BackgroundTransparency=1
+    tw(win,0.3,{Size=UDim2.new(0,WIN_W,0,WIN_H),BackgroundTransparency=0.1},Enum.EasingStyle.Back)
 
-    -- global keybind toggle
+    -- global keybind
     getgenv().__ZyrixToggleKey = getgenv().__ZyrixToggleKey or Enum.KeyCode.RightShift
-    UIS.InputBegan:Connect(function(i, gp)
+    UIS.InputBegan:Connect(function(i,gp)
         if gp then return end
-        if i.KeyCode == getgenv().__ZyrixToggleKey and _win then
-            _win.Visible = not _win.Visible
+        if i.KeyCode==getgenv().__ZyrixToggleKey and _win then
+            _win.Visible=not _win.Visible
         end
     end)
 end
@@ -330,54 +349,115 @@ function ZyrixUI:AddTab(name, icon)
 
     _tabLO = _tabLO + 1
 
-    -- sidebar button
-    local tbBG = mkFrame({
-        Size=UDim2.new(1,0,0,TAB_H),
-        BackgroundColor3=C.BG2,
-        LayoutOrder=_tabLO,
-        Parent=_sideScroll,
-    })
-    applyCorner(tbBG, UDim.new(0,4))
+    -- pill button in the tab bar
+    local pill = Instance.new("TextButton")
+    pill.AutoButtonColor  = false
+    pill.BorderSizePixel  = 0
+    pill.Size             = UDim2.new(0, 84, 0, 35)
+    pill.BackgroundColor3 = C.BG2
+    pill.TextColor3       = C.TextDim
+    pill.Text             = (icon and icon.." " or "")..name
+    pill.TextSize         = 12
+    pill.Font             = Enum.Font.GothamBold
+    pill.LayoutOrder      = _tabLO
+    pill.Parent           = _tabBar
+    applyCorner(pill, UDim.new(0,100))
+    local pillStr = applyStroke(pill, C.Accent, 0.5, 1)
+    mkPad(pill,4,4,8,8)
 
-    local bar = mkFrame({
-        Size=UDim2.new(0,3,0.6,0),
-        Position=UDim2.new(0,0,0.5,0), AnchorPoint=Vector2.new(0,0.5),
-        BackgroundColor3=C.Accent,
-        BackgroundTransparency=1,
-        Parent=tbBG,
-    })
-    applyCorner(bar, UDim.new(1,0))
-
-    local lbl = mkLabel({
-        Size=UDim2.new(1,-12,1,0),
-        Position=UDim2.new(0,12,0,0),
-        Text=(icon and icon.." " or "")..name,
-        TextColor3=C.TextDim, TextSize=13,
-        TextXAlignment=Enum.TextXAlignment.Left,
-        Parent=tbBG,
-    })
-
-    local clickZone = mkButton({Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Parent=tbBG})
-    clickZone.MouseButton1Click:Connect(function() switchTab(name) end)
-    tbBG.MouseEnter:Connect(function()
-        if _activeTab ~= name then tw(tbBG,0.12,{BackgroundColor3=C.BG3}) end
+    pill.MouseButton1Click:Connect(function() switchTab(name) end)
+    pill.MouseEnter:Connect(function()
+        if _activeTab~=name then tw(pill,0.12,{BackgroundColor3=C.BG3}) end
     end)
-    tbBG.MouseLeave:Connect(function()
-        if _activeTab ~= name then tw(tbBG,0.12,{BackgroundColor3=C.BG2}) end
+    pill.MouseLeave:Connect(function()
+        if _activeTab~=name then tw(pill,0.12,{BackgroundColor3=C.BG2}) end
     end)
+    _tabBtns[name] = {btn=pill}
 
-    _tabBtns[name] = {bg=tbBG, bar=bar, lbl=lbl}
-
-    -- content panel
+    -- content panel — two-column grid
     local panel = mkFrame({
         Size=UDim2.new(1,0,1,0),
         BackgroundTransparency=1,
         Visible=false,
         Parent=_contentArea,
     })
-    local scroll = mkScroll(panel, UDim2.new(1,-8,1,-8), UDim2.new(0,4,0,4))
-    mkList(scroll, 5)
-    mkPad(scroll, 4, 8, 4, 4)
+
+    -- two columns side by side
+    local LEFT_W  = 0.595   -- ~60%
+    local RIGHT_W = 0.395   -- ~40%
+    local PAD     = 8
+
+    local leftScroll = Instance.new("ScrollingFrame")
+    leftScroll.Size=UDim2.new(LEFT_W,-PAD,1,-PAD)
+    leftScroll.Position=UDim2.new(0,PAD,0,PAD)
+    leftScroll.BackgroundTransparency=1
+    leftScroll.BorderSizePixel=0
+    leftScroll.ScrollBarThickness=2
+    leftScroll.ScrollBarImageColor3=C.AccentDim
+    leftScroll.ScrollBarImageTransparency=0.4
+    leftScroll.CanvasSize=UDim2.new(0,0,0,0)
+    leftScroll.AutomaticCanvasSize=Enum.AutomaticSize.Y
+    leftScroll.Parent=panel
+    mkList(leftScroll,5)
+
+    local rightScroll = Instance.new("ScrollingFrame")
+    rightScroll.Size=UDim2.new(RIGHT_W,-PAD,1,-PAD)
+    rightScroll.Position=UDim2.new(LEFT_W,PAD,0,PAD)
+    rightScroll.BackgroundTransparency=1
+    rightScroll.BorderSizePixel=0
+    rightScroll.ScrollBarThickness=2
+    rightScroll.ScrollBarImageColor3=C.AccentDim
+    rightScroll.ScrollBarImageTransparency=0.4
+    rightScroll.CanvasSize=UDim2.new(0,0,0,0)
+    rightScroll.AutomaticCanvasSize=Enum.AutomaticSize.Y
+    rightScroll.Parent=panel
+    mkList(rightScroll,5)
+
+    _tabPanels[name] = panel
+    if _tabLO == 1 then switchTab(name) end
+
+    -- elements go left by default, right if :Right() is called
+    local lo = 0
+    local function nlo() lo=lo+1 return lo end
+
+    -- shared element style: dark bg, subtle stroke, rounded
+    local function mkEl(h, col)
+        local f = mkFrame({
+            Size=UDim2.new(1,0,0,h),
+            BackgroundColor3=col or Color3.fromRGB(19,19,19),
+            LayoutOrder=nlo(),
+            Parent=leftScroll,
+        })
+        applyCorner(f, UDim.new(0,4))
+        local s = Instance.new("UIStroke",f)
+        s.Thickness=0.5 s.Color=Color3.fromRGB(41,41,41)
+        s.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
+        mkPad(f,6,6,10,10)
+        return f
+    end
+    local function mkElR(h, col)  -- right column
+        local f = mkFrame({
+            Size=UDim2.new(1,0,0,h),
+            BackgroundColor3=col or Color3.fromRGB(19,19,19),
+            LayoutOrder=nlo(),
+            Parent=rightScroll,
+        })
+        applyCorner(f, UDim.new(0,4))
+        local s = Instance.new("UIStroke",f)
+        s.Thickness=0.5 s.Color=Color3.fromRGB(41,41,41)
+        s.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
+        mkPad(f,6,6,10,10)
+        return f
+    end
+
+    local tab = {}
+    tab._col = leftScroll   -- default column
+
+    -- column selector
+    function tab:Left()  tab._col = leftScroll  return tab end
+    function tab:Right() tab._col = rightScroll return tab end
+
+    local function currentScroll() return tab._col end
     _tabPanels[name] = panel
 
     if _tabLO == 1 then switchTab(name) end
