@@ -1433,13 +1433,13 @@ function Zyrix:GetSavedKey()   return loadKey() end
 function Zyrix:ClearSavedKey() return clearKey() end
 
 getgenv().Zyrix = Zyrix
-return Zyrix
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 --  ZYRIX UI  —  full featured GUI (opens after key accepted)
 -- ═══════════════════════════════════════════════════════════════════════════════
 local ZyrixUI = {}
 ZyrixUI.__index = ZyrixUI
+getgenv().ZyrixUI = ZyrixUI
 
 do
     local UIS  = cloneref(game:GetService("UserInputService"))
@@ -2351,6 +2351,16 @@ do
             pad(lbl2, 0, 0, 8, 0)
         end
 
+        -- ── expose AddTab/AddSideLabel as public methods ────────────────────
+        ZyrixUI.AddTab       = addTab
+        ZyrixUI.AddSideLabel = addSideLabel
+
+        -- ── run user setup if queued via ZyrixUI:Setup(fn) ───────────────────
+        if ZyrixUI._pendingSetup then
+            ZyrixUI._pendingSetup()
+            ZyrixUI._pendingSetup = nil
+        end
+
         -- ── build default tabs ──────────────────────────────────────────────
 
         -- PLAYER
@@ -2526,9 +2536,15 @@ do
 
     function ZyrixUI:Toggle()
         if guiRef then
-            local win = guiRef:FindFirstChild("Window")
-            if win then win.Visible = not win.Visible end
+            local win2 = guiRef:FindFirstChild("Window")
+            if win2 then win2.Visible = not win2.Visible end
         end
+    end
+
+    -- Queue a setup function to run inside Open() after the window is built
+    -- This lets users call ZyrixUI:AddTab() from their own OnSuccess callback
+    function ZyrixUI:Setup(fn)
+        self._pendingSetup = fn
     end
 end
 
@@ -2560,6 +2576,7 @@ Zyrix.Callbacks.OnVerify = function(key)
 end
 
 -- Called when key is accepted — opens the main GUI
+-- Override this in your own script with ZyrixUI:Setup(...) then ZyrixUI:Open()
 Zyrix.Callbacks.OnSuccess = function()
     ZyrixUI:Open()
 end
@@ -2585,3 +2602,5 @@ Zyrix.Shop.Enabled = false
 -- Zyrix.Shop.Link     = "https://your-shop.com"
 
 Zyrix:Launch()
+
+return Zyrix
