@@ -1,2483 +1,1351 @@
 --[[
- ________   ___    ___ ________   ___     ___    ___     
-|\_____  \ |\  \  /  /|\   __  \ |\  \   |\  \  /  /|    
- \|___/  /|\ \  \/  / | \  \|\  \\ \  \  \ \  \/  / /    
-     /  / / \ \    / / \ \   _  _\\ \  \  \ \    / /     
-    /  /_/__ /     \/ \  \ \  \\  \|\ \  \__/     \/      
-   |\________\\  /\   \  \ \__\\ _\ \ \________/\__\     
-    \|_______| \__\\ \__\  \|__|\|__| \|_______|\|__|     
-                \|__| \|__|                                
-                                                           
-
-     Github - https://github.com/Cobruhehe/expert-octo-doodle
-     Author: Cobru (Cobruhehe, .cobru)
-     License: MIT
-                                                                           
+    Zyrix — Key System + GUI Library
+    License: MIT
 ]]
 
 repeat task.wait() until game:IsLoaded()
 
-local cloneref = cloneref or function(obj) return obj end
-local gethui = gethui or function() return cloneref(game:GetService("CoreGui")) end
+local cloneref = cloneref or function(o) return o end
+local gethui   = gethui   or function() return cloneref(game:GetService("CoreGui")) end
 
---services
-local TweenService = cloneref(game:GetService("TweenService"))
-local UserInputService = cloneref(game:GetService("UserInputService"))
-local HttpService = cloneref(game:GetService("HttpService"))
-local Workspace = cloneref(game:GetService("Workspace"))
-local RunService = cloneref(game:GetService("RunService"))
-local Lighting = cloneref(game:GetService("Lighting"))
-local Players = cloneref(game:GetService("Players"))
+local TS  = cloneref(game:GetService("TweenService"))
+local UIS = cloneref(game:GetService("UserInputService"))
+local RS  = cloneref(game:GetService("RunService"))
+local LP  = cloneref(game:GetService("Lighting"))
+local PLR = cloneref(game:GetService("Players"))
+local HS  = cloneref(game:GetService("HttpService"))
+local WS  = cloneref(game:GetService("Workspace"))
 
 local hui = gethui()
 
-if getgenv().ZyrixLoaded and hui:FindFirstChild("ZyrixKeySystem") then return getgenv().Zyrix end
-if getgenv().ZyrixLoaded and hui:FindFirstChild("ZyrixKeylessSystem") then return getgenv().Zyrix end
-getgenv().ZyrixLoaded = true
-getgenv().ZyrixClosed = false
+-- prevent duplicate loads
+if getgenv().__ZyrixActive then
+    warn("[Zyrix] Already loaded, returning existing instance")
+    return getgenv().__ZyrixLib
+end
+getgenv().__ZyrixActive = true
 
-local Zyrix = {}
-
---appearance
-Zyrix.Appearance = {
-    Title = "Zyrix",
-    Subtitle = "Enter your key to continue",
-    Icon = "rbxassetid://105436073524298",
-    IconSize = UDim2.new(0, 30, 0, 30)
-}
-
---links
-Zyrix.Links = {
-    GetKey = "",
-    Discord = ""
-}
-
---storage
-Zyrix.Storage = {
-    FileName = "Zyrix_Key",
-    Remember = true,
-    AutoLoad = true
-}
-
---options
-Zyrix.Options = {
-    Keyless = nil,
-    KeylessUI = false,
-    Blur = true,
-    Draggable = true,
-    NoGetKey = false
-}
-
---theme (black & white)
-Zyrix.Theme = {
-    Accent = Color3.fromRGB(220, 220, 220),
-    AccentHover = Color3.fromRGB(255, 255, 255),
-    Background = Color3.fromRGB(10, 10, 10),
-    Header = Color3.fromRGB(20, 20, 20),
-    Input = Color3.fromRGB(28, 28, 28),
-    Text = Color3.fromRGB(255, 255, 255),
-    TextDim = Color3.fromRGB(130, 130, 130),
-    Success = Color3.fromRGB(200, 200, 200),
-    Error = Color3.fromRGB(80, 80, 80),
-    Warning = Color3.fromRGB(170, 170, 170),
-    StatusIdle = Color3.fromRGB(100, 100, 100),
-    Discord = Color3.fromRGB(180, 180, 180),
-    DiscordHover = Color3.fromRGB(220, 220, 220),
-    Divider = Color3.fromRGB(45, 45, 45),
-    Pending = Color3.fromRGB(60, 60, 60)
-}
-
---callbacks
-Zyrix.Callbacks = {
-    OnVerify = nil,
-    OnSuccess = nil,
-    OnFail = nil,
-    OnClose = nil
-}
-
-Zyrix.Changelog = {}
-
---shop
-Zyrix.Shop = {
-    Enabled = false,
-    Icon = "",
-    Title = "Get Premium Access",
-    Subtitle = "Instant delivery • 24/7 support",
-    ButtonText = "Buy",
-    Link = ""
-}
-
---internal
-local Internal = {
-    Junkie = nil,
-    BlurEffect = nil,
-    NotificationList = {},
-    ValidateFunction = nil,
-    IsJunkieMode = false,
-    IconsLoaded = false
-}
-
-local IconBaseURL = "https://raw.githubusercontent.com/Cobruhehe/expert-octo-doodle/main/Icons/"
-local IconFiles = {
-    key = "lucide--key.png",
-    shield = "lucide--shield-minus.png",
-    check = "prime--check-square.png",
-    copy = "flowbite--clipboard-outline.png",
-    discord = "qlementine-icons--discord-16.png",
-    alert = "mdi--alert-octagon-outline.png",
-    lock = "lucide--user-lock.png",
-    loading = "nonicons--loading-16.png",
-    close = "material-symbols--dangerous-outline.png",
-    changelog = "ant-design--sync-outlined.png",
-    logo = "rrjlGmac.png",
-    user = "U.png",
-    clock = "Clock.png",
-    cart = "Cart.png",
-    nogetkey = "lucide--lock.png"
-}
-
-local FallbackIcons = {
-    key = "rbxassetid://96510194465420",
-    shield = "rbxassetid://89965059528921",
-    check = "rbxassetid://76078495178149",
-    copy = "rbxassetid://125851897718493",
-    discord = "rbxassetid://83278450537116",
-    alert = "rbxassetid://140438367956051",
-    lock = "rbxassetid://114355063515473",
-    loading = "rbxassetid://116535712789945",
-    close = "rbxassetid://6022668916",
-    changelog = "rbxassetid://138133190015277",
-    logo = "rbxassetid://105436073524298",
-    user = "rbxassetid://77400125196692",
-    clock = "rbxassetid://87505349362628",
-    cart = "rbxassetid://114754518183872",
-    nogetkey = "rbxassetid://119765975153029"
-}
-
-local CachedIcons = {}
-local FolderName = "Zyrix"
-local IconsFolder = "Icons"
-local DefaultLogoAsset = "rbxassetid://105436073524298"
-
-local function isMobile()
-    return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+-- ══════════════════════════════════════════════════════════════════════════════
+--  SHARED UTILITIES
+-- ══════════════════════════════════════════════════════════════════════════════
+local function tw(obj, t, props, style)
+    TS:Create(obj, TweenInfo.new(t, style or Enum.EasingStyle.Quart), props):Play()
 end
 
-local function getScale()
-    local viewport = Workspace.CurrentCamera.ViewportSize
-    return math.clamp(math.min(viewport.X, viewport.Y) / 900, 0.65, 1.3)
+local function mkFrame(props)
+    local f = Instance.new("Frame")
+    f.BorderSizePixel = 0
+    for k,v in pairs(props) do f[k] = v end
+    return f
 end
 
-local function hasFileSystem()
-    local ok1 = pcall(function() return type(writefile) == "function" end)
-    local ok2 = pcall(function() return type(readfile) == "function" end)
-    local ok3 = pcall(function() return type(isfile) == "function" end)
-    local ok4 = pcall(function() return type(makefolder) == "function" end)
-    local ok5 = pcall(function() return type(isfolder) == "function" end)
-    return ok1 and ok2 and ok3 and ok4 and ok5
+local function mkLabel(props)
+    local l = Instance.new("TextLabel")
+    l.BackgroundTransparency = 1
+    l.Font = Enum.Font.GothamBold
+    l.TextScaled = false
+    for k,v in pairs(props) do l[k] = v end
+    return l
 end
 
-local fileSystemSupported = hasFileSystem()
-
-local function getFileName()
-    return FolderName .. "/" .. Zyrix.Storage.FileName .. ".txt"
+local function mkButton(props)
+    local b = Instance.new("TextButton")
+    b.AutoButtonColor = false
+    b.Text = ""
+    b.BorderSizePixel = 0
+    for k,v in pairs(props) do b[k] = v end
+    return b
 end
 
-local function saveKey(key)
-    if not fileSystemSupported or not Zyrix.Storage.Remember then return false end
-    return pcall(function() writefile(getFileName(), key) end)
+local function mkImage(props)
+    local i = Instance.new("ImageLabel")
+    i.BackgroundTransparency = 1
+    i.ScaleType = Enum.ScaleType.Fit
+    for k,v in pairs(props) do i[k] = v end
+    return i
 end
 
-local function loadKey()
-    if not fileSystemSupported then return nil end
-    local ok, content = pcall(function()
-        if isfile(getFileName()) then return readfile(getFileName()) end
-        return nil
-    end)
-    if ok and content and content ~= "" then return content end
-    return nil
+local function applyCorner(p, r)
+    local c = Instance.new("UICorner", p)
+    c.CornerRadius = r or UDim.new(0, 6)
+    return c
 end
 
-local function clearKey()
-    if not fileSystemSupported then return false end
-    return pcall(function() delfile(getFileName()) end)
+local function applyStroke(p, col, thick, trans)
+    local s = Instance.new("UIStroke", p)
+    s.Color = col or Color3.fromRGB(45,45,45)
+    s.Thickness = thick or 1
+    s.Transparency = trans or 0
+    return s
 end
 
-local function ensureFolders()
-    if not fileSystemSupported then return false end
-    pcall(function()
-        if not isfolder(FolderName) then makefolder(FolderName) end
-        if not isfolder(FolderName .. "/" .. IconsFolder) then makefolder(FolderName .. "/" .. IconsFolder) end
-    end)
-    return true
+local function mkScroll(parent, size, pos)
+    local sf = Instance.new("ScrollingFrame")
+    sf.Size = size or UDim2.new(1,0,1,0)
+    sf.Position = pos or UDim2.new(0,0,0,0)
+    sf.BackgroundTransparency = 1
+    sf.BorderSizePixel = 0
+    sf.ScrollBarThickness = 3
+    sf.ScrollBarImageColor3 = Color3.fromRGB(60,60,60)
+    sf.CanvasSize = UDim2.new(0,0,0,0)
+    sf.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    sf.Parent = parent
+    return sf
 end
 
-local function getIconPath(iconName)
-    return FolderName .. "/" .. IconsFolder .. "/" .. IconFiles[iconName]
+local function mkList(parent, pad, dir)
+    local l = Instance.new("UIListLayout", parent)
+    l.Padding = UDim.new(0, pad or 6)
+    l.SortOrder = Enum.SortOrder.LayoutOrder
+    l.FillDirection = dir or Enum.FillDirection.Vertical
+    return l
 end
 
-local function isIconCached(iconName)
-    if not fileSystemSupported then return false end
-    local success, result = pcall(function() return isfile(getIconPath(iconName)) end)
-    return success and result
+local function mkPad(p, t, b, l, r)
+    local pad = Instance.new("UIPadding", p)
+    pad.PaddingTop    = UDim.new(0, t or 0)
+    pad.PaddingBottom = UDim.new(0, b or 0)
+    pad.PaddingLeft   = UDim.new(0, l or 0)
+    pad.PaddingRight  = UDim.new(0, r or 0)
 end
 
-local function downloadIcon(iconName)
-    if not fileSystemSupported then
-        CachedIcons[iconName] = FallbackIcons[iconName]
-        return false
-    end
-    local path = getIconPath(iconName)
-    if isIconCached(iconName) then
-        local success = pcall(function() CachedIcons[iconName] = getcustomasset(path) end)
-        if success then return true end
-    end
-    local success = pcall(function()
-        local response = game:HttpGet(IconBaseURL .. IconFiles[iconName])
-        if #response < 100 then error("Invalid") end
-        writefile(path, response)
-        CachedIcons[iconName] = getcustomasset(path)
-    end)
-    if not success then CachedIcons[iconName] = FallbackIcons[iconName] end
-    return success
-end
-
-local function getIcon(iconName)
-    return CachedIcons[iconName] or FallbackIcons[iconName]
-end
-
-local function getLogoIcon()
-    if Zyrix.Appearance.Icon == DefaultLogoAsset then return getIcon("logo") end
-    return Zyrix.Appearance.Icon
-end
-
-local function shouldDownloadLogo()
-    return Zyrix.Appearance.Icon == DefaultLogoAsset
-end
-
-local function getShopIcon()
-    if Zyrix.Shop.Icon == "" then return getLogoIcon() end
-    return Zyrix.Shop.Icon
-end
-
-local function isShopEnabled()
-    return Zyrix.Shop.Enabled
-end
-
-local function allIconsCached()
-    if not fileSystemSupported then return false end
-    local iconNames = {"key", "shield", "check", "copy", "discord", "alert", "lock", "loading", "close", "changelog", "user", "clock", "cart", "nogetkey"}
-    if shouldDownloadLogo() then table.insert(iconNames, "logo") end
-    for _, name in ipairs(iconNames) do
-        if not isIconCached(name) then return false end
-    end
-    return true
-end
-
-local function loadAllIconsFromCache()
-    ensureFolders()
-    local iconNames = {"key", "shield", "check", "copy", "discord", "alert", "lock", "loading", "close", "changelog", "user", "clock", "cart", "nogetkey"}
-    if shouldDownloadLogo() then table.insert(iconNames, "logo") end
-    for _, name in ipairs(iconNames) do downloadIcon(name) end
-    Internal.IconsLoaded = true
-end
-
-local function getExecutorName()
-    local success, name = pcall(identifyexecutor)
-    if success and name then return tostring(name) end
-    return "Unknown"
-end
-
-local function getDeviceType()
-    local touch = UserInputService.TouchEnabled
-    local keyboard = UserInputService.KeyboardEnabled
-    local gamepad = UserInputService.GamepadEnabled
-    if gamepad and not keyboard and not touch then return "Console"
-    elseif touch and not keyboard then return "Mobile"
-    elseif keyboard and touch then return "PC & Touch"
-    elseif keyboard then return "PC"
-    else return "Unknown" end
-end
-
-local function getHWID()
-    local hwid = nil
-    pcall(function() if gethwid then hwid = gethwid() end end)
-    if not hwid then pcall(function() if getgenv().HWID then hwid = getgenv().HWID end end) end
-    if not hwid then pcall(function() if game.RobloxHWID then hwid = tostring(game.RobloxHWID) end end) end
-    if not hwid then
-        local player = cloneref(Players.LocalPlayer)
-        hwid = HttpService:GenerateGUID(false):gsub("-", ""):sub(1, 32)
-        if player then hwid = tostring(player.UserId) .. hwid:sub(1, 20) end
-    end
-    return hwid or "N/A"
-end
-
-local function generateHiddenDots(availableWidth, charWidth)
-    charWidth = charWidth or 5
-    local count = math.floor(availableWidth / charWidth)
-    count = math.max(count, 8)
-    return string.rep("•", count)
-end
-
-local function formatTime12()
-    local hour = tonumber(os.date("%H"))
-    local min = os.date("%M")
-    local sec = os.date("%S")
-    local period = "AM"
-    if hour >= 12 then period = "PM" end
-    if hour > 12 then hour = hour - 12 end
-    if hour == 0 then hour = 12 end
-    return string.format("%d:%s:%s %s", hour, min, sec, period)
-end
-
-local function formatDate()
-    return os.date("%b %d, %Y")
-end
-
-local function enableBlur()
-    if not Zyrix.Options.Blur then return end
-    local existing = Lighting:FindFirstChild("ZyrixKeySystemBlur")
-    if existing then existing:Destroy() end
-    Internal.BlurEffect = Instance.new("BlurEffect")
-    Internal.BlurEffect.Name = "ZyrixKeySystemBlur"
-    Internal.BlurEffect.Size = 0
-    Internal.BlurEffect.Parent = Lighting
-    TweenService:Create(Internal.BlurEffect, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Size = 24}):Play()
-end
-
-local function disableBlur()
-    if Internal.BlurEffect and Internal.BlurEffect.Parent then
-        TweenService:Create(Internal.BlurEffect, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = 0}):Play()
-        task.delay(0.3, function()
-            if Internal.BlurEffect and Internal.BlurEffect.Parent then
-                Internal.BlurEffect:Destroy()
-                Internal.BlurEffect = nil
-            end
-        end)
-    else
-        local existing = Lighting:FindFirstChild("ZyrixKeySystemBlur")
-        if existing then existing:Destroy() end
-        Internal.BlurEffect = nil
-    end
-end
-
-local function fullCleanup()
-    getgenv().ZyrixLoaded = false
-    getgenv().ZyrixClosed = true
-    disableBlur()
-    local gui1 = hui:FindFirstChild("ZyrixKeySystem")
-    local gui2 = hui:FindFirstChild("ZyrixKeylessSystem")
-    local gui3 = hui:FindFirstChild("ZyrixLoadingScreen")
-    if gui1 then gui1:Destroy() end
-    if gui2 then gui2:Destroy() end
-    if gui3 then gui3:Destroy() end
-end
-
-local function setupDragging(header, main)
-    if not Zyrix.Options.Draggable then return end
-    local dragging, dragStart, startPos, dragInput
-    header.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = main.Position
-            dragInput = input
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    if dragInput == input then dragging = false dragInput = nil end
-                end
+local function draggable(handle, root)
+    local drag, ds, dp = false, nil, nil
+    handle.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or
+           i.UserInputType == Enum.UserInputType.Touch then
+            drag = true; ds = i.Position; dp = root.Position
+            i.Changed:Connect(function()
+                if i.UserInputState == Enum.UserInputState.End then drag = false end
             end)
         end
     end)
-    UserInputService.InputChanged:Connect(function(input)
-        if not dragging or not dragInput then return end
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStart
-            main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        elseif input.UserInputType == Enum.UserInputType.Touch then
-            if input == dragInput then
-                local delta = input.Position - dragStart
-                main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-            end
+    UIS.InputChanged:Connect(function(i)
+        if not drag then return end
+        if i.UserInputType == Enum.UserInputType.MouseMovement or
+           i.UserInputType == Enum.UserInputType.Touch then
+            local d = i.Position - ds
+            root.Position = UDim2.new(dp.X.Scale, dp.X.Offset+d.X, dp.Y.Scale, dp.Y.Offset+d.Y)
         end
     end)
 end
 
-local function validateKey(key, validateFunc)
-    if not validateFunc or not key or key == "" then return false end
-    local success, result = pcall(validateFunc, key)
-    if not success then return false end
-    if type(result) == "table" then return result.valid == true end
-    if type(result) == "boolean" then return result end
+-- ══════════════════════════════════════════════════════════════════════════════
+--  THEME
+-- ══════════════════════════════════════════════════════════════════════════════
+local C = {
+    BG         = Color3.fromRGB(8,   8,   8),
+    BG2        = Color3.fromRGB(13,  13,  13),
+    BG3        = Color3.fromRGB(20,  20,  20),
+    BG4        = Color3.fromRGB(28,  28,  28),
+    Stroke     = Color3.fromRGB(40,  40,  40),
+    Accent     = Color3.fromRGB(255, 255, 255),
+    AccentDim  = Color3.fromRGB(150, 150, 150),
+    Text       = Color3.fromRGB(255, 255, 255),
+    TextDim    = Color3.fromRGB(100, 100, 100),
+    TextOff    = Color3.fromRGB(50,  50,  50),
+    Success    = Color3.fromRGB(120, 255, 120),
+    Error      = Color3.fromRGB(255, 80,  80),
+    Warning    = Color3.fromRGB(255, 200, 80),
+}
+
+-- ══════════════════════════════════════════════════════════════════════════════
+--  GUI LIBRARY  (ZyrixUI)
+--  Layout: title bar → horizontal pill tab bar → two-column element grid
+-- ══════════════════════════════════════════════════════════════════════════════
+-- ══════════════════════════════════════════════════════════════════════════════
+--  ZyrixUI  —  exact G2L design, wired to a clean Lua API
+-- ══════════════════════════════════════════════════════════════════════════════
+local ZyrixUI = {}
+
+-- internal state
+local _sg         = nil   -- ScreenGui
+local _tablist    = nil   -- main window frame (G2L["2"])
+local _pillScroll = nil   -- horizontal tab scroll (G2L["42"])
+local _elements   = nil   -- content scrolling frame (G2L["6"])
+local _tabBtns    = {}
+local _tabPanels  = {}
+local _activeTab  = nil
+local _tabLO      = 0
+
+-- ── switch tab ────────────────────────────────────────────────────────────────
+local function switchTab(name)
+    if _activeTab == name then return end
+    _activeTab = name
+    for n, b in pairs(_tabBtns) do
+        local on = n == name
+        b.TextColor3       = on and Color3.fromRGB(255,255,255) or Color3.fromRGB(141,141,141)
+        b.BackgroundColor3 = on and Color3.fromRGB(30,30,30)    or Color3.fromRGB(19,19,19)
+        local s = b:FindFirstChildOfClass("UIStroke")
+        if s then s.Color = on and Color3.fromRGB(80,80,80) or Color3.fromRGB(41,41,41) end
+    end
+    for n, p in pairs(_tabPanels) do
+        p.Visible = n == name
+    end
+end
+
+-- ── build the shell (exact G2L layout) ───────────────────────────────────────
+local function buildShell()
+    if _sg then _sg:Destroy() end
+    _tabBtns = {} _tabPanels = {} _activeTab = nil _tabLO = 0
+
+    -- ScreenGui
+    _sg = Instance.new("ScreenGui")
+    _sg.Name           = "Zyrix"
+    _sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    _sg.ResetOnSpawn   = false
+    _sg.IgnoreGuiInset = true
+    _sg.DisplayOrder   = 50
+    _sg.Parent         = hui
+
+    -- ── G2L["2"]  Tablist (main window) ──────────────────────────────────────
+    local tablist = Instance.new("Frame", _sg)
+    tablist.BorderSizePixel      = 0
+    tablist.BackgroundColor3     = Color3.fromRGB(0,0,0)
+    tablist.Size                 = UDim2.new(0,563,0,354)
+    tablist.Position             = UDim2.new(0.5,-281,0.5,-177)
+    tablist.BackgroundTransparency = 0.1
+    tablist.Name                 = "Tablist"
+    Instance.new("UICorner", tablist)
+    local tStroke = Instance.new("UIStroke", tablist)
+    tStroke.Color = Color3.fromRGB(41,41,41)
+    tStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    _tablist = tablist
+
+    -- ── title text  (G2L["3"]) ────────────────────────────────────────────────
+    local titleLbl = Instance.new("TextLabel", tablist)
+    titleLbl.BorderSizePixel      = 0
+    titleLbl.TextSize             = 14
+    titleLbl.TextXAlignment       = Enum.TextXAlignment.Left
+    titleLbl.BackgroundTransparency = 1
+    titleLbl.FontFace             = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+    titleLbl.TextColor3           = Color3.fromRGB(255,255,255)
+    titleLbl.Size                 = UDim2.new(0,480,0,23)
+    titleLbl.Text                 = "zyrix"
+    titleLbl.Position             = UDim2.new(0,32,0,6)
+
+    -- ── logo icon  (G2L["4"]) ────────────────────────────────────────────────
+    local logoBtn = Instance.new("ImageButton", tablist)
+    logoBtn.BorderSizePixel      = 0
+    logoBtn.BackgroundTransparency = 1
+    logoBtn.ImageColor3          = Color3.fromRGB(141,141,141)
+    logoBtn.Image                = "rbxassetid://105436073524298"
+    logoBtn.Size                 = UDim2.new(0,26,0,29)
+    logoBtn.Name                 = "openTab"
+    logoBtn.Position             = UDim2.new(0,5,0,6)
+
+    -- ── separator line  (G2L["5"]) ────────────────────────────────────────────
+    local sepLine = Instance.new("TextLabel", tablist)
+    sepLine.BorderSizePixel      = 0
+    sepLine.TextSize             = 14
+    sepLine.BackgroundColor3     = Color3.fromRGB(31,31,31)
+    sepLine.TextColor3           = Color3.fromRGB(0,0,0)
+    sepLine.Size                 = UDim2.new(0,563,0,1)
+    sepLine.Text                 = ""
+    sepLine.Position             = UDim2.new(0,0,0,37)
+
+    -- ── content scroll  (G2L["6"]  elements) ─────────────────────────────────
+    local elements = Instance.new("ScrollingFrame", tablist)
+    elements.Active              = true
+    elements.BorderSizePixel     = 0
+    elements.Name                = "elements"
+    elements.ScrollBarImageTransparency = 0.3
+    elements.BackgroundColor3    = Color3.fromRGB(11,11,11)
+    elements.Size                = UDim2.new(0,546,0,272)
+    elements.ScrollBarImageColor3 = Color3.fromRGB(141,141,141)
+    elements.Position            = UDim2.new(0.00979,0,0.10452,41)
+    elements.ScrollBarThickness  = 2
+    elements.BackgroundTransparency = 1
+    elements.CanvasSize          = UDim2.new(0,0,0,0)
+    elements.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    _elements = elements
+
+    local elPad = Instance.new("UIPadding", elements)
+    elPad.PaddingTop    = UDim.new(0,6)
+    elPad.PaddingRight  = UDim.new(0,8)
+    elPad.PaddingLeft   = UDim.new(0,8)
+    elPad.PaddingBottom = UDim.new(0,6)
+
+    local elLayout = Instance.new("UIListLayout", elements)
+    elLayout.Padding    = UDim.new(0,5)
+    elLayout.SortOrder  = Enum.SortOrder.LayoutOrder
+    elLayout.FillDirection = Enum.FillDirection.Vertical
+
+    -- ── tab bar frame  (G2L["41"]) ────────────────────────────────────────────
+    local pillFrame = Instance.new("Frame", tablist)
+    pillFrame.BorderSizePixel    = 0
+    pillFrame.BackgroundColor3   = Color3.fromRGB(11,11,11)
+    pillFrame.Size               = UDim2.new(0,563,0,41)
+    pillFrame.Position           = UDim2.new(0,0,0,37)
+    local pfStroke = Instance.new("UIStroke", pillFrame)
+    pfStroke.Color = Color3.fromRGB(41,41,41)
+    pfStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    local pfCorner = Instance.new("UICorner", pillFrame)
+    pfCorner.CornerRadius = UDim.new(0,100)
+
+    -- ── pill scrolling frame  (G2L["42"]) ────────────────────────────────────
+    local pillScroll = Instance.new("ScrollingFrame", pillFrame)
+    pillScroll.Active               = true
+    pillScroll.ScrollingDirection   = Enum.ScrollingDirection.X
+    pillScroll.BorderSizePixel      = 0
+    pillScroll.VerticalScrollBarInset = Enum.ScrollBarInset.Always
+    pillScroll.ElasticBehavior      = Enum.ElasticBehavior.Always
+    pillScroll.BackgroundColor3     = Color3.fromRGB(11,11,11)
+    pillScroll.Size                 = UDim2.new(0,563,0,41)
+    pillScroll.ScrollBarImageColor3 = Color3.fromRGB(141,141,141)
+    pillScroll.Position             = UDim2.new(0,0,-0.01118,0)
+    pillScroll.ScrollBarThickness   = 2
+    pillScroll.BackgroundTransparency = 0.1
+    pillScroll.CanvasSize           = UDim2.new(0,0,0,0)
+    pillScroll.AutomaticCanvasSize  = Enum.AutomaticSize.X
+    local psCorner = Instance.new("UICorner", pillScroll)
+    psCorner.CornerRadius = UDim.new(0,100)
+    _pillScroll = pillScroll
+
+    local pillLayout = Instance.new("UIListLayout", pillScroll)
+    pillLayout.FillDirection        = Enum.FillDirection.Horizontal
+    pillLayout.Padding              = UDim.new(0,4)
+    pillLayout.SortOrder            = Enum.SortOrder.LayoutOrder
+    pillLayout.VerticalAlignment    = Enum.VerticalAlignment.Center
+    local pillPad = Instance.new("UIPadding", pillScroll)
+    pillPad.PaddingLeft  = UDim.new(0,6)
+    pillPad.PaddingRight = UDim.new(0,6)
+
+    -- draggable by title bar area
+    draggable(pillFrame, tablist)
+
+    -- close button (small X top-right)
+    local closeBtn = Instance.new("TextButton", tablist)
+    closeBtn.Size                = UDim2.new(0,18,0,18)
+    closeBtn.Position            = UDim2.new(1,-22,0,9)
+    closeBtn.BackgroundColor3    = Color3.fromRGB(30,30,30)
+    closeBtn.BorderSizePixel     = 0
+    closeBtn.Text                = "✕"
+    closeBtn.TextColor3          = Color3.fromRGB(141,141,141)
+    closeBtn.TextSize            = 10
+    closeBtn.Font                = Enum.Font.GothamBold
+    closeBtn.AutoButtonColor     = false
+    closeBtn.ZIndex              = 10
+    local cbCorner = Instance.new("UICorner", closeBtn)
+    cbCorner.CornerRadius = UDim.new(1,0)
+    closeBtn.MouseEnter:Connect(function() closeBtn.TextColor3=Color3.fromRGB(255,80,80) end)
+    closeBtn.MouseLeave:Connect(function() closeBtn.TextColor3=Color3.fromRGB(141,141,141) end)
+    closeBtn.MouseButton1Click:Connect(function()
+        if _sg then _sg:Destroy(); _sg=nil end
+    end)
+
+    -- entrance animation
+    tablist.Size = UDim2.new(0,563,0,0)
+    tablist.BackgroundTransparency = 1
+    TS:Create(tablist, TweenInfo.new(0.3,Enum.EasingStyle.Back), {
+        Size=UDim2.new(0,563,0,354), BackgroundTransparency=0.1
+    }):Play()
+
+    -- global toggle keybind
+    getgenv().__ZyrixToggleKey = getgenv().__ZyrixToggleKey or Enum.KeyCode.RightShift
+    UIS.InputBegan:Connect(function(i,gp)
+        if gp then return end
+        if i.KeyCode == getgenv().__ZyrixToggleKey and tablist then
+            tablist.Visible = not tablist.Visible
+        end
+    end)
+end
+
+-- ── AddTab ─────────────────────────────────────────────────────────────────────
+function ZyrixUI:AddTab(name, icon)
+    if not _sg then warn("[ZyrixUI] Call ZyrixUI:Open() first") return {} end
+
+    _tabLO = _tabLO + 1
+
+    -- pill button  (G2L["43"] style)
+    local pill = Instance.new("TextButton", _pillScroll)
+    pill.BorderSizePixel     = 0
+    pill.TextSize            = 12
+    pill.TextColor3          = Color3.fromRGB(141,141,141)
+    pill.BackgroundColor3    = Color3.fromRGB(19,19,19)
+    pill.FontFace            = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium, Enum.FontStyle.Normal)
+    pill.Size                = UDim2.new(0, math.max(60, #name*8+20), 0, 35)
+    pill.Text                = (icon and icon.." " or "")..name
+    pill.AutoButtonColor     = false
+    pill.LayoutOrder         = _tabLO
+    local pillCorner = Instance.new("UICorner", pill)
+    pillCorner.CornerRadius = UDim.new(0,100)
+    local pillStroke = Instance.new("UIStroke", pill)
+    pillStroke.Thickness        = 0.5
+    pillStroke.Color            = Color3.fromRGB(41,41,41)
+    pillStroke.ApplyStrokeMode  = Enum.ApplyStrokeMode.Border
+    local pillPad2 = Instance.new("UIPadding", pill)
+    pillPad2.PaddingTop    = UDim.new(0,4)
+    pillPad2.PaddingBottom = UDim.new(0,4)
+    pillPad2.PaddingLeft   = UDim.new(0,8)
+    pillPad2.PaddingRight  = UDim.new(0,8)
+
+    pill.MouseButton1Click:Connect(function() switchTab(name) end)
+    _tabBtns[name] = pill
+
+    -- each tab gets its own UIListLayout inside _elements
+    -- we swap visibility of a "panel" frame that contains a layout
+    local panel = Instance.new("Frame", _elements)
+    panel.Size               = UDim2.new(1,0,0,0)
+    panel.AutomaticSize      = Enum.AutomaticSize.Y
+    panel.BackgroundTransparency = 1
+    panel.BorderSizePixel    = 0
+    panel.Visible            = false
+    panel.LayoutOrder        = _tabLO
+    local panelLayout = Instance.new("UIListLayout", panel)
+    panelLayout.Padding      = UDim.new(0,5)
+    panelLayout.SortOrder    = Enum.SortOrder.LayoutOrder
+    panelLayout.FillDirection = Enum.FillDirection.Vertical
+    _tabPanels[name] = panel
+
+    if _tabLO == 1 then switchTab(name) end
+
+    -- ── element helpers ───────────────────────────────────────────────────────
+    local lo = 0
+    local function nlo() lo=lo+1 return lo end
+
+    local DARK   = Color3.fromRGB(19,19,19)
+    local DARKER = Color3.fromRGB(9,9,9)
+    local STROKE = Color3.fromRGB(41,41,41)
+    local WHITE  = Color3.fromRGB(255,255,255)
+    local GREY   = Color3.fromRGB(141,141,141)
+
+    local function baseEl(h)
+        local f = Instance.new("Frame", panel)
+        f.BorderSizePixel     = 0
+        f.BackgroundColor3    = DARK
+        f.Size                = UDim2.new(1,0,0,h)
+        f.LayoutOrder         = nlo()
+        local s = Instance.new("UIStroke", f)
+        s.Thickness           = 0.5
+        s.Color               = STROKE
+        s.ApplyStrokeMode     = Enum.ApplyStrokeMode.Border
+        local g = Instance.new("UIGradient", s)
+        g.Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(0,0,0)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(0,0,0)),
+        }
+        local p = Instance.new("UIPadding", f)
+        p.PaddingTop    = UDim.new(0,6)
+        p.PaddingBottom = UDim.new(0,6)
+        p.PaddingLeft   = UDim.new(0,10)
+        p.PaddingRight  = UDim.new(0,10)
+        return f, s
+    end
+
+    local tab = {}
+
+    -- Section header
+    function tab:Section(title)
+        lo = lo + 1
+        local s = Instance.new("Frame", panel)
+        s.Size = UDim2.new(1,0,0,22)
+        s.BackgroundTransparency = 1
+        s.BorderSizePixel = 0
+        s.LayoutOrder = lo
+        local lbl = Instance.new("TextLabel", s)
+        lbl.Size = UDim2.new(1,0,1,0)
+        lbl.BackgroundTransparency = 1
+        lbl.BorderSizePixel = 0
+        lbl.Text = title:upper()
+        lbl.TextColor3 = Color3.fromRGB(100,100,100)
+        lbl.TextSize = 9
+        lbl.Font = Enum.Font.Gotham
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+        local line = Instance.new("Frame", s)
+        line.Size = UDim2.new(1,0,0,1)
+        line.Position = UDim2.new(0,0,1,-1)
+        line.BackgroundColor3 = STROKE
+        line.BorderSizePixel = 0
+    end
+
+    -- Toggle  (G2L["2c"] style)
+    function tab:Toggle(title, desc, default, callback)
+        local state = default or false
+        local el, elStr = baseEl(desc and 50 or 37)
+
+        -- title label
+        local titleLbl2 = Instance.new("TextLabel", el)
+        titleLbl2.TextWrapped        = true
+        titleLbl2.BorderSizePixel    = 0
+        titleLbl2.TextSize           = 12
+        titleLbl2.TextXAlignment     = Enum.TextXAlignment.Left
+        titleLbl2.BackgroundColor3   = WHITE
+        titleLbl2.FontFace           = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium, Enum.FontStyle.Normal)
+        titleLbl2.TextColor3         = WHITE
+        titleLbl2.BackgroundTransparency = 1
+        titleLbl2.AnchorPoint        = Vector2.new(1,0.5)
+        titleLbl2.Size               = UDim2.new(0,250,0,14)
+        titleLbl2.Text               = title
+        titleLbl2.Position           = UDim2.new(0.65,0,0.5,desc and -8 or 0)
+
+        if desc then
+            local d = Instance.new("TextLabel", el)
+            d.Size=UDim2.new(0.65,0,0,12) d.Position=UDim2.new(0,0,1,-18)
+            d.BackgroundTransparency=1 d.BorderSizePixel=0
+            d.Text=desc d.TextColor3=Color3.fromRGB(100,100,100)
+            d.TextSize=10 d.Font=Enum.Font.Gotham
+            d.TextXAlignment=Enum.TextXAlignment.Left
+        end
+
+        -- switch  (G2L["2f"] style)
+        local sw = Instance.new("Frame", el)
+        sw.BorderSizePixel     = 0
+        sw.BackgroundColor3    = DARKER
+        sw.AnchorPoint         = Vector2.new(1,0.5)
+        sw.Size                = UDim2.new(0,43,0,21)
+        sw.Position            = UDim2.new(1,0,0.5,0)
+        local swStr = Instance.new("UIStroke", sw)
+        swStr.Thickness=0.5 swStr.Color=STROKE swStr.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
+        local swCorner = Instance.new("UICorner", sw)
+        swCorner.CornerRadius = UDim.new(1,0)
+
+        -- indicator dot  (G2L["30"])
+        local dot = Instance.new("Frame", sw)
+        dot.BorderSizePixel  = 0
+        dot.BackgroundColor3 = state and WHITE or GREY
+        dot.AnchorPoint      = Vector2.new(0,0.5)
+        dot.Size             = UDim2.new(0,17,0,17)
+        dot.Position         = UDim2.new(state and 1 or 0, state and -19 or 2, 0.5, 0)
+        local dotStr = Instance.new("UIStroke", dot) dotStr.Thickness=1.2
+        local dotCorner = Instance.new("UICorner", dot) dotCorner.CornerRadius=UDim.new(1,0)
+
+        -- active stroke gradient (green when on, invisible when off — exact G2L["34"])
+        local activeGrad = Instance.new("UIGradient", elStr)
+        activeGrad.Color = state
+            and ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(0,171,0)),ColorSequenceKeypoint.new(1,Color3.fromRGB(0,121,0))}
+            or  ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(0,0,0)),   ColorSequenceKeypoint.new(1,Color3.fromRGB(0,0,0))}
+
+        -- interact button
+        local hit = Instance.new("TextButton", el)
+        hit.BorderSizePixel=0 hit.TextTransparency=1 hit.TextSize=12
+        hit.TextColor3=WHITE hit.BackgroundColor3=WHITE
+        hit.ZIndex=5 hit.AnchorPoint=Vector2.new(0.5,0.5)
+        hit.BackgroundTransparency=1 hit.Size=UDim2.new(1,0,1,0)
+        hit.Text="" hit.Position=UDim2.new(0.5,0,0.5,0)
+
+        hit.MouseButton1Click:Connect(function()
+            state = not state
+            TS:Create(dot,TweenInfo.new(0.18),{
+                Position=UDim2.new(state and 1 or 0, state and -19 or 2, 0.5, 0),
+                BackgroundColor3 = state and WHITE or GREY,
+            }):Play()
+            activeGrad.Color = state
+                and ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(0,171,0)),ColorSequenceKeypoint.new(1,Color3.fromRGB(0,121,0))}
+                or  ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(0,0,0)),   ColorSequenceKeypoint.new(1,Color3.fromRGB(0,0,0))}
+            if callback then pcall(callback, state) end
+        end)
+
+        return {
+            GetValue = function() return state end,
+            SetValue = function(v)
+                state = v
+                dot.Position = UDim2.new(v and 1 or 0, v and -19 or 2, 0.5, 0)
+                dot.BackgroundColor3 = v and WHITE or GREY
+                activeGrad.Color = v
+                    and ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(0,171,0)),ColorSequenceKeypoint.new(1,Color3.fromRGB(0,121,0))}
+                    or  ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(0,0,0)),   ColorSequenceKeypoint.new(1,Color3.fromRGB(0,0,0))}
+            end,
+        }
+    end
+
+    -- Slider  (G2L["1f"] style)
+    function tab:Slider(title, min, max, default, suffix, callback)
+        if type(suffix) == "function" then callback=suffix; suffix="units" end
+        suffix = suffix or "units"
+        min=min or 0; max=max or 100; default=math.clamp(default or min,min,max)
+        local value = default
+        local el, _ = baseEl(47)
+
+        -- left title
+        local tl = Instance.new("TextLabel", el)
+        tl.TextWrapped=true tl.BorderSizePixel=0 tl.TextSize=12
+        tl.TextXAlignment=Enum.TextXAlignment.Left tl.TextScaled=false
+        tl.BackgroundTransparency=1
+        tl.FontFace=Font.new("rbxasset://fonts/families/GothamSSm.json",Enum.FontWeight.Medium,Enum.FontStyle.Normal)
+        tl.TextColor3=WHITE tl.AnchorPoint=Vector2.new(0.5,0.5)
+        tl.Size=UDim2.new(0,200,0,14) tl.Text=title
+        tl.Position=UDim2.new(0.32525,0,0.5,0)
+
+        -- main slider box  (G2L["21"])
+        local main = Instance.new("Frame", el)
+        main.BorderSizePixel=0 main.BackgroundColor3=DARKER
+        main.AnchorPoint=Vector2.new(0.5,0.5)
+        main.Size=UDim2.new(0,222,0,30)
+        main.Position=UDim2.new(0.61986,0,0.5,0)
+        local mStr=Instance.new("UIStroke",main) mStr.Transparency=0.2 mStr.Thickness=0.5 mStr.Color=STROKE mStr.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
+        local mCorner=Instance.new("UICorner",main)
+
+        -- progress fill  (G2L["23"])
+        local pct0=(value-min)/(max-min)
+        local prog=Instance.new("Frame",main)
+        prog.BorderSizePixel=0 prog.BackgroundColor3=WHITE
+        prog.Size=UDim2.new(pct0,0,1,0)
+        local pStr=Instance.new("UIStroke",prog) pStr.Transparency=0.2 pStr.Thickness=1.2
+        local pCorner=Instance.new("UICorner",prog)
+
+        -- info label  (G2L["26"])
+        local info=Instance.new("TextLabel",main)
+        info.TextWrapped=true info.ZIndex=5 info.BorderSizePixel=0
+        info.TextSize=10 info.TextXAlignment=Enum.TextXAlignment.Left
+        info.TextTransparency=0.3
+        info.BackgroundTransparency=1
+        info.FontFace=Font.new("rbxasset://fonts/families/GothamSSm.json",Enum.FontWeight.Medium,Enum.FontStyle.Normal)
+        info.TextColor3=GREY info.AnchorPoint=Vector2.new(0.5,0.5)
+        info.Size=UDim2.new(0,168,0,15)
+        info.Text=tostring(value).." "..suffix
+        info.Position=UDim2.new(0.4536,0,0.5,0)
+
+        -- interact  (G2L["27"])
+        local hit=Instance.new("TextButton",main)
+        hit.BorderSizePixel=0 hit.TextSize=14 hit.TextColor3=Color3.fromRGB(0,0,0)
+        hit.BackgroundColor3=WHITE hit.ZIndex=10 hit.BackgroundTransparency=1
+        hit.Size=UDim2.new(1,0,1,0) hit.Text=""
+
+        local dragging=false
+        local function update(x)
+            local rel=math.clamp((x-main.AbsolutePosition.X)/main.AbsoluteSize.X,0,1)
+            value=math.floor(min+(max-min)*rel+0.5)
+            prog.Size=UDim2.new((value-min)/(max-min),0,1,0)
+            info.Text=tostring(value).." "..suffix
+            if callback then pcall(callback,value) end
+        end
+        hit.InputBegan:Connect(function(i)
+            if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
+                dragging=true; update(i.Position.X)
+            end
+        end)
+        UIS.InputEnded:Connect(function(i)
+            if i.UserInputType==Enum.UserInputType.MouseButton1 then dragging=false end
+        end)
+        UIS.InputChanged:Connect(function(i)
+            if not dragging then return end
+            if i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch then update(i.Position.X) end
+        end)
+
+        return {
+            GetValue=function() return value end,
+            SetValue=function(v)
+                value=math.clamp(v,min,max)
+                prog.Size=UDim2.new((value-min)/(max-min),0,1,0)
+                info.Text=tostring(value).." "..suffix
+            end,
+        }
+    end
+
+    -- Button  (G2L["18"] style)
+    function tab:Button(title, callback)
+        local el, _ = baseEl(35)
+
+        local tl=Instance.new("TextLabel",el)
+        tl.TextWrapped=true tl.BorderSizePixel=0 tl.TextSize=12
+        tl.TextXAlignment=Enum.TextXAlignment.Left tl.TextScaled=false
+        tl.BackgroundTransparency=1
+        tl.FontFace=Font.new("rbxasset://fonts/families/GothamSSm.json",Enum.FontWeight.Medium,Enum.FontStyle.Normal)
+        tl.TextColor3=WHITE tl.AnchorPoint=Vector2.new(0.5,0.5)
+        tl.Size=UDim2.new(0,307,0,14) tl.Text=title
+        tl.Position=UDim2.new(0.50604,0,0.47561,0) tl.Name="Title"
+
+        local ind=Instance.new("TextLabel",el)
+        ind.TextWrapped=true ind.BorderSizePixel=0 ind.TextSize=10
+        ind.TextXAlignment=Enum.TextXAlignment.Right ind.TextTransparency=0.5
+        ind.BackgroundTransparency=1
+        ind.FontFace=Font.new("rbxasset://fonts/families/GothamSSm.json",Enum.FontWeight.Medium,Enum.FontStyle.Normal)
+        ind.TextColor3=GREY ind.AnchorPoint=Vector2.new(0.5,0.5)
+        ind.Size=UDim2.new(0,108,0,13) ind.Text="Button"
+        ind.Position=UDim2.new(0.77168,0,0.47561,0) ind.Name="ElementIndicator"
+
+        local hit=Instance.new("TextButton",el)
+        hit.BorderSizePixel=0 hit.TextTransparency=1 hit.TextSize=12
+        hit.TextColor3=WHITE hit.BackgroundColor3=WHITE
+        hit.ZIndex=5 hit.AnchorPoint=Vector2.new(0.5,0.5)
+        hit.BackgroundTransparency=1 hit.Size=UDim2.new(1,0,1,0)
+        hit.Text="" hit.Position=UDim2.new(0.5,0,0.5,0)
+
+        hit.MouseButton1Click:Connect(function()
+            TS:Create(el,TweenInfo.new(0.06),{BackgroundColor3=Color3.fromRGB(30,30,30)}):Play()
+            task.delay(0.1,function() TS:Create(el,TweenInfo.new(0.1),{BackgroundColor3=DARK}):Play() end)
+            if callback then pcall(callback) end
+        end)
+    end
+
+    -- Keybind  (G2L["36"] style)
+    function tab:Keybind(title, default, callback)
+        local key = default or Enum.KeyCode.Unknown
+        local listening = false
+        local el, _ = baseEl(37)
+
+        local tl=Instance.new("TextLabel",el)
+        tl.TextWrapped=true tl.BorderSizePixel=0 tl.TextSize=12
+        tl.TextXAlignment=Enum.TextXAlignment.Left tl.TextScaled=false
+        tl.BackgroundTransparency=1
+        tl.FontFace=Font.new("rbxasset://fonts/families/GothamSSm.json",Enum.FontWeight.Medium,Enum.FontStyle.Normal)
+        tl.TextColor3=WHITE tl.AnchorPoint=Vector2.new(0.5,0.5)
+        tl.Size=UDim2.new(0,200,0,14) tl.Text=title
+        tl.Position=UDim2.new(0.32525,0,0.5,0) tl.Name="Title"
+
+        -- keybind box  (G2L["38"])
+        local kbFrame=Instance.new("Frame",el)
+        kbFrame.BorderSizePixel=0 kbFrame.BackgroundColor3=DARKER
+        kbFrame.AnchorPoint=Vector2.new(1,0.5)
+        kbFrame.Size=UDim2.new(0,36,0,21)
+        kbFrame.Position=UDim2.new(1,0,0.5,0)
+        kbFrame.Name="KeybindFrame"
+        local kbStr=Instance.new("UIStroke",kbFrame) kbStr.Thickness=0.5 kbStr.Color=STROKE kbStr.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
+        local kbCorner=Instance.new("UICorner",kbFrame) kbCorner.CornerRadius=UDim.new(0,4)
+
+        local kbBox=Instance.new("TextBox",kbFrame)
+        kbBox.Name="KeybindBox"
+        kbBox.PlaceholderColor3=Color3.fromRGB(179,179,179)
+        kbBox.BorderSizePixel=0 kbBox.TextSize=11 kbBox.TextColor3=WHITE
+        kbBox.BackgroundColor3=DARKER kbBox.BackgroundTransparency=1
+        kbBox.FontFace=Font.new("rbxasset://fonts/families/GothamSSm.json",Enum.FontWeight.Medium,Enum.FontStyle.Normal)
+        kbBox.AnchorPoint=Vector2.new(0.5,0.5)
+        kbBox.ClearTextOnFocus=false
+        kbBox.PlaceholderText="Key"
+        kbBox.Size=UDim2.new(1,-4,0,14)
+        kbBox.Position=UDim2.new(0.5,0,0.5,0)
+        kbBox.Text=tostring(key):gsub("Enum.KeyCode.","")
+
+        local conn2
+        kbBox.Focused:Connect(function()
+            kbBox.Text="..."
+            listening=true
+            conn2=UIS.InputBegan:Connect(function(i,gp)
+                if gp then return end
+                if i.UserInputType==Enum.UserInputType.Keyboard then
+                    key=i.KeyCode
+                    kbBox.Text=tostring(key):gsub("Enum.KeyCode.","")
+                    listening=false kbBox:ReleaseFocus()
+                    if conn2 then conn2:Disconnect() end
+                    if callback then pcall(callback,key) end
+                end
+            end)
+        end)
+
+        return {GetValue=function() return key end}
+    end
+
+    -- Dropdown  (G2L["7"] style)
+    function tab:Dropdown(title, options, default, callback)
+        local selected = default or (options and options[1]) or ""
+        local isOpen   = false
+        local ITEM_H   = 35
+
+        local el, _ = baseEl(37)
+        el.ClipsDescendants = false
+        el.ZIndex = 5
+
+        -- title  (G2L["8"])
+        local tl=Instance.new("TextLabel",el)
+        tl.TextWrapped=true tl.ZIndex=3 tl.BorderSizePixel=0
+        tl.TextSize=12 tl.TextXAlignment=Enum.TextXAlignment.Left
+        tl.BackgroundTransparency=1
+        tl.FontFace=Font.new("rbxasset://fonts/families/GothamSSm.json",Enum.FontWeight.Medium,Enum.FontStyle.Normal)
+        tl.TextColor3=WHITE tl.AnchorPoint=Vector2.new(0.5,0.5)
+        tl.Size=UDim2.new(0,201,0,14) tl.Text=title
+        tl.Position=UDim2.new(0,99,0,12) tl.Name="Title"
+
+        -- selected label  (G2L["11"])
+        local selLbl=Instance.new("TextLabel",el)
+        selLbl.TextWrapped=true selLbl.BorderSizePixel=0
+        selLbl.TextSize=11 selLbl.TextXAlignment=Enum.TextXAlignment.Right
+        selLbl.BackgroundTransparency=1
+        selLbl.FontFace=Font.new("rbxasset://fonts/families/GothamSSm.json",Enum.FontWeight.Medium,Enum.FontStyle.Normal)
+        selLbl.TextColor3=WHITE selLbl.AnchorPoint=Vector2.new(0.5,0.5)
+        selLbl.Size=UDim2.new(0,168,0,14) selLbl.Text=selected
+        selLbl.Position=UDim2.new(0,74,0,12) selLbl.Name="Selected"
+
+        -- arrow toggle  (uses arrow char instead of image)
+        local arrow=Instance.new("TextLabel",el)
+        arrow.Size=UDim2.new(0,20,0,14) arrow.Position=UDim2.new(1,-20,0,10)
+        arrow.BackgroundTransparency=1 arrow.BorderSizePixel=0
+        arrow.Text="▾" arrow.TextColor3=GREY arrow.TextSize=11
+        arrow.Font=Enum.Font.GothamBold
+
+        -- list frame  (G2L["9"])
+        local listFrame=Instance.new("Frame",el)
+        listFrame.BorderSizePixel=0 listFrame.BackgroundColor3=DARK
+        listFrame.Size=UDim2.new(1,0,0,0)
+        listFrame.Position=UDim2.new(0,0,1,3)
+        listFrame.ClipsDescendants=true listFrame.ZIndex=10
+        local lfStr=Instance.new("UIStroke",listFrame)
+        lfStr.Thickness=0.5 lfStr.Color=STROKE lfStr.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
+        local lfCorner=Instance.new("UICorner",listFrame) lfCorner.CornerRadius=UDim.new(0,4)
+
+        local listScroll=Instance.new("ScrollingFrame",listFrame)
+        listScroll.Size=UDim2.new(1,0,1,0) listScroll.BackgroundTransparency=1
+        listScroll.BorderSizePixel=0 listScroll.ScrollBarThickness=2
+        listScroll.ScrollBarImageColor3=GREY listScroll.ScrollBarImageTransparency=0.7
+        listScroll.CanvasSize=UDim2.new(0,0,0,0) listScroll.AutomaticCanvasSize=Enum.AutomaticSize.Y
+        listScroll.ZIndex=11
+        local lLayout=Instance.new("UIListLayout",listScroll) lLayout.Padding=UDim.new(0,2) lLayout.SortOrder=Enum.SortOrder.LayoutOrder
+
+        for _,opt in ipairs(options or {}) do
+            -- template row  (G2L["b"] style)
+            local row=Instance.new("Frame",listScroll)
+            row.BorderSizePixel=0 row.BackgroundColor3=DARKER
+            row.Size=UDim2.new(0.97745,0,0,ITEM_H-2)
+            row.LayoutOrder=0
+            local rStr=Instance.new("UIStroke",row) rStr.Thickness=0.8 rStr.Color=WHITE rStr.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
+            local rCorner=Instance.new("UICorner",row)
+
+            local rowLbl=Instance.new("TextLabel",row)
+            rowLbl.TextWrapped=true rowLbl.BorderSizePixel=0 rowLbl.TextSize=11
+            rowLbl.TextXAlignment=Enum.TextXAlignment.Left rowLbl.BackgroundTransparency=1
+            rowLbl.FontFace=Font.new("rbxasset://fonts/families/GothamSSm.json",Enum.FontWeight.Medium,Enum.FontStyle.Normal)
+            rowLbl.TextColor3=WHITE rowLbl.AnchorPoint=Vector2.new(0.5,0.5)
+            rowLbl.Size=UDim2.new(0,168,0,15) rowLbl.Text=opt
+            rowLbl.Position=UDim2.new(0.49503,0,0.42125,0) rowLbl.Name="Title"
+
+            local rowHit=Instance.new("TextButton",row)
+            rowHit.BorderSizePixel=0 rowHit.TextSize=1 rowHit.TextColor3=Color3.fromRGB(0,0,0)
+            rowHit.BackgroundColor3=WHITE rowHit.ZIndex=5 rowHit.BackgroundTransparency=1
+            rowHit.Size=UDim2.new(1,0,1,0) rowHit.Text="" rowHit.Name="Interact"
+
+            rowHit.MouseEnter:Connect(function() TS:Create(row,TweenInfo.new(0.08),{BackgroundColor3=Color3.fromRGB(19,19,19)}):Play() end)
+            rowHit.MouseLeave:Connect(function() TS:Create(row,TweenInfo.new(0.08),{BackgroundColor3=DARKER}):Play() end)
+            rowHit.MouseButton1Click:Connect(function()
+                selected=opt selLbl.Text=opt isOpen=false
+                TS:Create(arrow,TweenInfo.new(0.12),{Rotation=0}):Play()
+                TS:Create(listFrame,TweenInfo.new(0.15),{Size=UDim2.new(1,0,0,0)}):Play()
+                el.Size=UDim2.new(1,0,0,37)
+                if callback then pcall(callback,opt) end
+            end)
+        end
+
+        local maxH=ITEM_H*math.min(#(options or {}),5)+6
+
+        -- interact  (G2L["13"])
+        local hit=Instance.new("TextButton",el)
+        hit.BorderSizePixel=0 hit.TextTransparency=1 hit.TextSize=12
+        hit.TextColor3=WHITE hit.BackgroundColor3=WHITE
+        hit.ZIndex=5 hit.AnchorPoint=Vector2.new(0.5,0.5)
+        hit.BackgroundTransparency=1 hit.Size=UDim2.new(1,0,1,0)
+        hit.Text="" hit.Position=UDim2.new(0.5,0,0.5,0) hit.Name="Interact"
+
+        hit.MouseButton1Click:Connect(function()
+            isOpen=not isOpen
+            if isOpen then
+                TS:Create(arrow,TweenInfo.new(0.12),{Rotation=180}):Play()
+                TS:Create(listFrame,TweenInfo.new(0.15),{Size=UDim2.new(1,0,0,maxH)}):Play()
+                el.Size=UDim2.new(1,0,0,37+maxH+4)
+            else
+                TS:Create(arrow,TweenInfo.new(0.12),{Rotation=0}):Play()
+                TS:Create(listFrame,TweenInfo.new(0.15),{Size=UDim2.new(1,0,0,0)}):Play()
+                el.Size=UDim2.new(1,0,0,37)
+            end
+        end)
+
+        return {
+            GetValue=function() return selected end,
+            SetValue=function(v) selected=v; selLbl.Text=v end,
+        }
+    end
+
+    -- TextBox
+    function tab:TextBox(title, placeholder, default, callback)
+        local el, _ = baseEl(58)
+
+        local tl=Instance.new("TextLabel",el)
+        tl.Size=UDim2.new(1,0,0,14) tl.Position=UDim2.new(0,0,0,0)
+        tl.BackgroundTransparency=1 tl.BorderSizePixel=0
+        tl.Text=title tl.TextColor3=WHITE tl.TextSize=12
+        tl.Font=Enum.Font.GothamBold tl.TextXAlignment=Enum.TextXAlignment.Left
+
+        local inputBG=Instance.new("Frame",el)
+        inputBG.Size=UDim2.new(1,0,0,26) inputBG.Position=UDim2.new(0,0,0,18)
+        inputBG.BackgroundColor3=DARKER inputBG.BorderSizePixel=0
+        local iBGCorner=Instance.new("UICorner",inputBG) iBGCorner.CornerRadius=UDim.new(0,4)
+        local iBGStr=Instance.new("UIStroke",inputBG) iBGStr.Thickness=0.5 iBGStr.Color=STROKE
+
+        local tb=Instance.new("TextBox",inputBG)
+        tb.Size=UDim2.new(1,-8,1,0) tb.Position=UDim2.new(0,4,0,0)
+        tb.BackgroundTransparency=1 tb.Text=default or ""
+        tb.PlaceholderText=placeholder or "" tb.PlaceholderColor3=Color3.fromRGB(100,100,100)
+        tb.TextColor3=WHITE tb.TextSize=11 tb.Font=Enum.Font.Gotham
+        tb.ClearTextOnFocus=false tb.TextXAlignment=Enum.TextXAlignment.Left
+        tb.Focused:Connect(function()   iBGStr.Color=WHITE end)
+        tb.FocusLost:Connect(function(enter) iBGStr.Color=STROKE
+            if enter and callback then pcall(callback,tb.Text) end
+        end)
+        return {GetValue=function() return tb.Text end, SetValue=function(v) tb.Text=v end}
+    end
+
+    -- Notify (in-panel toast)
+    function tab:Notify(msg, dur)
+        dur = dur or 3
+        lo = lo + 1
+        local n=Instance.new("Frame",panel)
+        n.Size=UDim2.new(1,0,0,30) n.BackgroundColor3=DARKER
+        n.BorderSizePixel=0 n.LayoutOrder=lo
+        local nCorner=Instance.new("UICorner",n) nCorner.CornerRadius=UDim.new(0,4)
+        local nStr=Instance.new("UIStroke",n) nStr.Thickness=0.5 nStr.Color=STROKE
+        local nLbl=Instance.new("TextLabel",n)
+        nLbl.Size=UDim2.new(1,-12,1,0) nLbl.Position=UDim2.new(0,6,0,0)
+        nLbl.BackgroundTransparency=1 nLbl.BorderSizePixel=0
+        nLbl.Text=msg nLbl.TextColor3=WHITE nLbl.TextSize=11
+        nLbl.Font=Enum.Font.Gotham nLbl.TextXAlignment=Enum.TextXAlignment.Left
+        task.delay(dur,function()
+            if n and n.Parent then
+                TS:Create(n,TweenInfo.new(0.2),{BackgroundTransparency=1}):Play()
+                task.wait(0.22) n:Destroy()
+            end
+        end)
+    end
+
+    return tab
+end
+
+-- ── public ─────────────────────────────────────────────────────────────────────
+function ZyrixUI:Open()
+    buildShell()
+end
+
+function ZyrixUI:Close()
+    if _sg then _sg:Destroy(); _sg=nil end
+end
+
+function ZyrixUI:Toggle()
+    if _tablist then _tablist.Visible = not _tablist.Visible end
+end
+
+-- expose globally
+getgenv().ZyrixUI = ZyrixUI
+
+
+-- ══════════════════════════════════════════════════════════════════════════════
+--  KEY SYSTEM FILES / HELPERS
+-- ══════════════════════════════════════════════════════════════════════════════
+local function hasFS()
+    return type(writefile)=="function" and type(readfile)=="function"
+        and type(isfile)=="function"   and type(makefolder)=="function"
+        and type(isfolder)=="function"
+end
+local FS = hasFS()
+local FOLDER = "Zyrix"
+local function getKeyFile(name) return FOLDER.."/"..name..".txt" end
+local function saveKey(name,key)
+    if not FS then return end
+    pcall(function() if not isfolder(FOLDER) then makefolder(FOLDER) end end)
+    pcall(writefile, getKeyFile(name), key)
+end
+local function loadKey(name)
+    if not FS then return nil end
+    local ok,v=pcall(function() return isfile(getKeyFile(name)) and readfile(getKeyFile(name)) or nil end)
+    return (ok and v and v~="") and v or nil
+end
+local function clearKey(name)
+    if not FS then return end
+    pcall(delfile, getKeyFile(name))
+end
+
+-- fallback icon downloads
+local IconFallback = {
+    key      = "rbxassetid://96510194465420",
+    shield   = "rbxassetid://89965059528921",
+    check    = "rbxassetid://76078495178149",
+    copy     = "rbxassetid://125851897718493",
+    discord  = "rbxassetid://83278450537116",
+    alert    = "rbxassetid://140438367956051",
+    lock     = "rbxassetid://114355063515473",
+    loading  = "rbxassetid://116535712789945",
+    close    = "rbxassetid://6022668916",
+    user     = "rbxassetid://77400125196692",
+    logo     = "rbxassetid://105436073524298",
+}
+local function icon(name) return IconFallback[name] or "" end
+
+local function isMobile()
+    return UIS.TouchEnabled and not UIS.KeyboardEnabled
+end
+
+local function formatTime()
+    local h=tonumber(os.date("%H"))
+    local p=h>=12 and "PM" or "AM"
+    h=h>12 and h-12 or (h==0 and 12 or h)
+    return string.format("%d:%s:%s %s",h,os.date("%M"),os.date("%S"),p)
+end
+
+-- ══════════════════════════════════════════════════════════════════════════════
+--  ZYRIX (KEY SYSTEM MODULE)
+-- ══════════════════════════════════════════════════════════════════════════════
+local Zyrix = {}
+
+Zyrix.Appearance = {
+    Title    = "Zyrix",
+    Subtitle = "Enter your key to continue",
+    Icon     = "rbxassetid://105436073524298",
+    IconSize = UDim2.new(0,28,0,28),
+}
+Zyrix.Links     = {GetKey="", Discord=""}
+Zyrix.Storage   = {FileName="Zyrix_Key", Remember=true, AutoLoad=true}
+Zyrix.Options   = {Blur=true, Draggable=true}
+Zyrix.Theme     = {
+    Accent=Color3.fromRGB(255,255,255), AccentHover=Color3.fromRGB(200,200,200),
+    Background=Color3.fromRGB(8,8,8),  Header=Color3.fromRGB(14,14,14),
+    Input=Color3.fromRGB(20,20,20),    Text=Color3.fromRGB(255,255,255),
+    TextDim=Color3.fromRGB(100,100,100), Success=Color3.fromRGB(180,255,180),
+    Error=Color3.fromRGB(255,100,100), StatusIdle=Color3.fromRGB(70,70,70),
+    Divider=Color3.fromRGB(28,28,28),  Discord=Color3.fromRGB(180,180,255),
+}
+Zyrix.Callbacks = {OnVerify=nil, OnSuccess=nil, OnFail=nil, OnClose=nil}
+Zyrix.Changelog = {}
+
+local T = Zyrix.Theme
+
+-- blur
+local function enableBlur()
+    if not Zyrix.Options.Blur then return end
+    local b=Instance.new("BlurEffect")
+    b.Name="ZyrixBlur" b.Size=0 b.Parent=LP
+    tw(b,0.4,{Size=20})
+end
+local function disableBlur()
+    local b=LP:FindFirstChild("ZyrixBlur")
+    if not b then return end
+    tw(b,0.3,{Size=0})
+    task.delay(0.3,function() if b and b.Parent then b:Destroy() end end)
+end
+
+-- notifications
+local _notifs = {}
+function Zyrix:Notify(title,msg,dur,itype)
+    dur=dur or 4
+    local W,H=290,70
+    local ng=Instance.new("ScreenGui")
+    ng.ResetOnSpawn=false ng.DisplayOrder=999 ng.Parent=hui
+
+    local f=mkFrame({Size=UDim2.new(0,W,0,H),Position=UDim2.new(1,W+10,1,-12),AnchorPoint=Vector2.new(1,1),BackgroundColor3=T.Header,Parent=ng})
+    applyCorner(f,UDim.new(0,6)) applyStroke(f,T.Accent,1,0.85)
+
+    local iconMap={success={icon("check"),T.Success},error={icon("alert"),T.Error},warning={icon("alert"),T.TextDim},info={icon("shield"),T.Accent},copy={icon("copy"),T.Success},discord={icon("discord"),T.Discord},close={icon("close"),T.Error}}
+    local im=iconMap[itype or "info"] or iconMap["info"]
+    mkImage({Size=UDim2.new(0,22,0,22),Position=UDim2.new(0,12,0.5,-1),AnchorPoint=Vector2.new(0,0.5),Image=im[1],ImageColor3=im[2],Parent=f})
+    mkLabel({Size=UDim2.new(1,-56,0,20),Position=UDim2.new(0,44,0,10),Text=title,TextColor3=T.Text,TextSize=13,TextXAlignment=Enum.TextXAlignment.Left,Parent=f})
+    mkLabel({Size=UDim2.new(1,-56,0,16),Position=UDim2.new(0,44,0,32),Text=msg,TextColor3=T.TextDim,TextSize=11,Font=Enum.Font.Gotham,TextXAlignment=Enum.TextXAlignment.Left,Parent=f})
+
+    local pb=mkFrame({Size=UDim2.new(1,0,0,2),Position=UDim2.new(0,0,1,-2),BackgroundColor3=C.BG4,Parent=f})
+    applyCorner(pb,UDim.new(1,0))
+    local pf=mkFrame({Size=UDim2.new(1,0,1,0),BackgroundColor3=T.Accent,Parent=pb})
+    applyCorner(pf,UDim.new(1,0))
+
+    local id=tostring(tick())
+    table.insert(_notifs,{id=id,f=f,gui=ng,h=H})
+
+    local function restack()
+        local y=0
+        for i=#_notifs,1,-1 do
+            local n=_notifs[i]
+            if n and n.f and n.f.Parent then
+                tw(n.f,0.25,{Position=UDim2.new(1,-12,1,-12-y)})
+                y=y+n.h+8
+            end
+        end
+    end
+    local function dismiss()
+        for i,n in ipairs(_notifs) do if n.id==id then table.remove(_notifs,i) break end end
+        tw(f,0.25,{Position=UDim2.new(1,W+10,f.Position.Y.Scale,f.Position.Y.Offset)})
+        task.wait(0.28) ng:Destroy() restack()
+    end
+
+    tw(f,0.3,{Position=UDim2.new(1,-12,1,-12)})
+    task.wait(0.05) restack()
+    TS:Create(pf,TweenInfo.new(dur,Enum.EasingStyle.Linear),{Size=UDim2.new(0,0,1,0)}):Play()
+    task.delay(dur,dismiss)
+    local cb2=mkButton({Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Parent=f})
+    cb2.MouseButton1Click:Connect(dismiss)
+end
+
+-- key validation
+local function validateKey(key,fn)
+    if not fn or not key or key=="" then return false end
+    local ok,r=pcall(fn,key)
+    if not ok then return false end
+    if type(r)=="table" then return r.valid==true end
+    if type(r)=="boolean" then return r end
     return false
 end
 
-local function CreateDoorOverlay(parentFrame, width, height)
-    local overlay = Instance.new("Frame")
-    overlay.Name = "DoorOverlay"
-    overlay.Size = UDim2.new(1, 0, 1, 0)
-    overlay.BackgroundTransparency = 1
-    overlay.ClipsDescendants = true
-    overlay.ZIndex = 50
-    overlay.Parent = parentFrame
+-- background
+local function buildBackground()
+    local ex=hui:FindFirstChild("ZyrixBackground")
+    if ex then ex:Destroy() end
 
-    local leftDoor = Instance.new("Frame")
-    leftDoor.Name = "LeftDoor"
-    leftDoor.Size = UDim2.new(0.5, 0, 1, 0)
-    leftDoor.Position = UDim2.new(0, 0, 0, 0)
-    leftDoor.BackgroundColor3 = Zyrix.Theme.Header
-    leftDoor.BorderSizePixel = 0
-    leftDoor.ZIndex = 51
-    leftDoor.Parent = overlay
+    local bg=Instance.new("ScreenGui")
+    bg.Name="ZyrixBackground" bg.ResetOnSpawn=false
+    bg.IgnoreGuiInset=true bg.DisplayOrder=-10 bg.Parent=hui
 
-    local rightDoor = Instance.new("Frame")
-    rightDoor.Name = "RightDoor"
-    rightDoor.Size = UDim2.new(0.5, 0, 1, 0)
-    rightDoor.Position = UDim2.new(0.5, 0, 0, 0)
-    rightDoor.BackgroundColor3 = Zyrix.Theme.Header
-    rightDoor.BorderSizePixel = 0
-    rightDoor.ZIndex = 51
-    rightDoor.Parent = overlay
+    local canvas=mkFrame({Size=UDim2.new(1,0,1,0),BackgroundColor3=Color3.fromRGB(4,4,4),BackgroundTransparency=1,Parent=bg})
 
-    local logoSize = math.min(width, height) * 0.28
-    local logoImage = Instance.new("ImageLabel")
-    logoImage.Name = "DoorLogo"
-    logoImage.Size = UDim2.new(0, logoSize, 0, logoSize)
-    logoImage.Position = UDim2.new(0.5, 0, 0.5, 0)
-    logoImage.AnchorPoint = Vector2.new(0.5, 0.5)
-    logoImage.BackgroundTransparency = 1
-    logoImage.Image = getLogoIcon()
-    logoImage.ImageColor3 = Zyrix.Theme.Text
-    logoImage.ScaleType = Enum.ScaleType.Fit
-    logoImage.ZIndex = 54
-    logoImage.Parent = overlay
+    local vp=WS.CurrentCamera.ViewportSize
+    local cell=55
+    local cols=math.ceil(vp.X/cell)+2
+    local rows=math.ceil(vp.Y/cell)+2
+    local grid=mkFrame({Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,ClipsDescendants=true,Parent=canvas})
+    for i=0,cols do mkFrame({Size=UDim2.new(0,1,1,0),Position=UDim2.new(0,i*cell,0,0),BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=0.94,Parent=grid}) end
+    for i=0,rows do mkFrame({Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,0,i*cell),BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=0.94,Parent=grid}) end
 
-    local halfWidth = math.ceil(width / 2)
-
-    local function openDoors(callback)
-        TweenService:Create(logoImage, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {ImageTransparency = 1}):Play()
-        task.wait(0.25)
-        TweenService:Create(leftDoor, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Position = UDim2.new(0, -halfWidth, 0, 0)}):Play()
-        TweenService:Create(rightDoor, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Position = UDim2.new(1, 0, 0, 0)}):Play()
-        task.wait(0.45)
-        overlay.Visible = false
-        if callback then callback() end
-    end
-
-    local function closeDoors(callback)
-        overlay.Visible = true
-        leftDoor.Position = UDim2.new(0, -halfWidth, 0, 0)
-        rightDoor.Position = UDim2.new(1, 0, 0, 0)
-        logoImage.ImageTransparency = 1
-        TweenService:Create(leftDoor, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
-        TweenService:Create(rightDoor, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, 0, 0, 0)}):Play()
-        task.wait(0.38)
-        TweenService:Create(logoImage, TweenInfo.new(0.25, Enum.EasingStyle.Quart), {ImageTransparency = 0}):Play()
-        task.wait(0.3)
-        if callback then callback() end
-    end
-
-    return {overlay = overlay, open = openDoors, close = closeDoors}
-end
-
-local function ShowLoadingScreen(onComplete)
-    local completed = false
-    local oldGui = hui:FindFirstChild("ZyrixLoadingScreen")
-    if oldGui then oldGui:Destroy() end
-    local oldBlur = Lighting:FindFirstChild("ZyrixLoadingBlur")
-    if oldBlur then oldBlur:Destroy() end
-
-    local blurEffect = Instance.new("BlurEffect")
-    blurEffect.Name = "ZyrixLoadingBlur"
-    blurEffect.Size = 0
-    blurEffect.Parent = Lighting
-
-    local gui = Instance.new("ScreenGui")
-    gui.Name = "ZyrixLoadingScreen"
-    gui.ResetOnSpawn = false
-    gui.IgnoreGuiInset = true
-    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    gui.Parent = hui
-
-    local mobile = isMobile()
-
-    local loadingScreen = Instance.new("Frame")
-    loadingScreen.Size = UDim2.new(1, 0, 1, 0)
-    loadingScreen.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    loadingScreen.BackgroundTransparency = 1
-    loadingScreen.BorderSizePixel = 0
-    loadingScreen.Parent = gui
-
-    local linesContainer = Instance.new("Frame")
-    linesContainer.Size = UDim2.new(1, 0, 1, 0)
-    linesContainer.BackgroundTransparency = 1
-    linesContainer.Parent = loadingScreen
-
-    local longLines = {}
-    local linePositions = {0.15, 0.35, 0.65, 0.85}
-    for i = 1, 4 do
-        local line = Instance.new("Frame")
-        line.Size = UDim2.new(0.3, 0, 0, mobile and 2 or 3)
-        line.Position = UDim2.new(1.3, 0, linePositions[i], 0)
-        line.BackgroundColor3 = Zyrix.Theme.Text
-        line.BackgroundTransparency = 1
-        line.BorderSizePixel = 0
-        line.Parent = linesContainer
-        Instance.new("UICorner", line).CornerRadius = UDim.new(1, 0)
-        longLines[i] = line
-    end
-
-    local shipSize = mobile and 18 or 28
-    local shipContainer = Instance.new("Frame")
-    shipContainer.Size = UDim2.new(0, mobile and 100 or 150, 0, mobile and 30 or 50)
-    shipContainer.Position = UDim2.new(0.5, 0, 0.35, 0)
-    shipContainer.AnchorPoint = Vector2.new(0.5, 0.5)
-    shipContainer.BackgroundTransparency = 1
-    shipContainer.Parent = loadingScreen
-
-    local shipBody = Instance.new("Frame")
-    shipBody.Size = UDim2.new(0, shipSize, 0, shipSize)
-    shipBody.Position = UDim2.new(0.5, 10, 0.5, 0)
-    shipBody.AnchorPoint = Vector2.new(0.5, 0.5)
-    shipBody.BackgroundColor3 = Zyrix.Theme.Text
-    shipBody.BackgroundTransparency = 1
-    shipBody.BorderSizePixel = 0
-    shipBody.Parent = shipContainer
-    Instance.new("UICorner", shipBody).CornerRadius = UDim.new(1, 0)
-
-    local pointSize = mobile and 10 or 16
-    local shipPoint = Instance.new("Frame")
-    shipPoint.Size = UDim2.new(0, pointSize, 0, pointSize)
-    shipPoint.Position = UDim2.new(1, 2, 0.5, 0)
-    shipPoint.AnchorPoint = Vector2.new(0, 0.5)
-    shipPoint.BackgroundColor3 = Zyrix.Theme.Text
-    shipPoint.BackgroundTransparency = 1
-    shipPoint.BorderSizePixel = 0
-    shipPoint.Rotation = 45
-    shipPoint.Parent = shipBody
-    Instance.new("UICorner", shipPoint).CornerRadius = UDim.new(0, 3)
-
-    local trails = {}
-    local trailConfigs = {
-        {y = 0.20, width = mobile and 45 or 70},
-        {y = 0.38, width = mobile and 60 or 95},
-        {y = 0.62, width = mobile and 55 or 85},
-        {y = 0.80, width = mobile and 40 or 65}
-    }
-    for i, config in ipairs(trailConfigs) do
-        local trail = Instance.new("Frame")
-        trail.Size = UDim2.new(0, config.width, 0, mobile and 2 or 3)
-        trail.Position = UDim2.new(0.5, -15, config.y, 0)
-        trail.AnchorPoint = Vector2.new(1, 0.5)
-        trail.BackgroundColor3 = Zyrix.Theme.Text
-        trail.BackgroundTransparency = 1
-        trail.BorderSizePixel = 0
-        trail.Parent = shipContainer
-        local gradient = Instance.new("UIGradient", trail)
-        gradient.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.5), NumberSequenceKeypoint.new(1, 0)})
-        Instance.new("UICorner", trail).CornerRadius = UDim.new(1, 0)
-        trails[i] = {frame = trail, config = config}
-    end
-
-    local phasesContainer = Instance.new("Frame")
-    phasesContainer.Size = UDim2.new(0, mobile and 200 or 280, 0, mobile and 150 or 180)
-    phasesContainer.Position = UDim2.new(0.5, 0, 0.62, 0)
-    phasesContainer.AnchorPoint = Vector2.new(0.5, 0.5)
-    phasesContainer.BackgroundTransparency = 1
-    phasesContainer.Parent = loadingScreen
-
-    local phasesLayout = Instance.new("UIListLayout", phasesContainer)
-    phasesLayout.Padding = UDim.new(0, mobile and 8 or 12)
-    phasesLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    phasesLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    phasesLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-
-    local phases = {}
-    local phaseNames = {"Initializing", "Creating folders", "Downloading assets", "Preparing interface", "Ready"}
-    local phaseTextSize = mobile and 14 or 18
-
-    for i, name in ipairs(phaseNames) do
-        local row = Instance.new("Frame")
-        row.Size = UDim2.new(1, 0, 0, mobile and 22 or 28)
-        row.BackgroundTransparency = 1
-        row.LayoutOrder = i
-        row.Parent = phasesContainer
-
-        local indicator = Instance.new("TextLabel")
-        indicator.Size = UDim2.new(0, mobile and 22 or 28, 0, mobile and 22 or 28)
-        indicator.BackgroundTransparency = 1
-        indicator.Text = "○"
-        indicator.TextColor3 = Zyrix.Theme.Pending
-        indicator.TextSize = phaseTextSize
-        indicator.Font = Enum.Font.ArimoBold
-        indicator.TextTransparency = 1
-        indicator.Parent = row
-
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, mobile and -28 or -35, 1, 0)
-        label.Position = UDim2.new(0, mobile and 28 or 35, 0, 0)
-        label.BackgroundTransparency = 1
-        label.Text = name
-        label.TextColor3 = Zyrix.Theme.Pending
-        label.TextSize = phaseTextSize
-        label.Font = Enum.Font.ArimoBold
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.TextTransparency = 1
-        label.Parent = row
-
-        phases[i] = {indicator = indicator, label = label}
-    end
-
-    local animationRunning = true
-    local currentPhase = 0
-    local pulseThread = nil
-
-    local function animateLongLines()
-        local speeds = {0.8, 1.0, 0.7, 0.9}
-        while animationRunning do
-            for i, line in ipairs(longLines) do
-                task.spawn(function()
-                    line.Position = UDim2.new(1.3, 0, linePositions[i], 0)
-                    line.BackgroundTransparency = 0.5
-                    TweenService:Create(line, TweenInfo.new(speeds[i], Enum.EasingStyle.Linear), {Position = UDim2.new(-0.4, 0, linePositions[i], 0), BackgroundTransparency = 0.9}):Play()
-                end)
-            end
-            task.wait(0.5)
-        end
-    end
-
-    local function animateTrails()
-        while animationRunning do
-            for _, trail in ipairs(trails) do
-                local newWidth = trail.config.width + math.random(-12, 12)
-                TweenService:Create(trail.frame, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {Size = UDim2.new(0, newWidth, 0, mobile and 2 or 3), BackgroundTransparency = 0.1 + math.random() * 0.3}):Play()
-            end
-            task.wait(0.1)
-        end
-    end
-
-    local function animateShipShake()
-        while animationRunning do
-            local shakeAmount = mobile and 2 or 3
-            TweenService:Create(shipContainer, TweenInfo.new(0.04, Enum.EasingStyle.Linear), {Position = UDim2.new(0.5, math.random(-shakeAmount, shakeAmount), 0.35, math.random(-1, 1))}):Play()
-            task.wait(0.04)
-        end
-    end
-
-    local function setPhase(num)
-        if pulseThread then task.cancel(pulseThread) pulseThread = nil end
-        for i = 1, 5 do
-            local p = phases[i]
-            if i < num then
-                p.indicator.Text = "●"
-                TweenService:Create(p.indicator, TweenInfo.new(0.2), {TextColor3 = Zyrix.Theme.Success, TextTransparency = 0}):Play()
-                TweenService:Create(p.label, TweenInfo.new(0.2), {TextColor3 = Zyrix.Theme.Success}):Play()
-            elseif i == num then
-                p.indicator.Text = "●"
-                p.indicator.TextTransparency = 0
-                TweenService:Create(p.indicator, TweenInfo.new(0.2), {TextColor3 = Zyrix.Theme.Accent}):Play()
-                TweenService:Create(p.label, TweenInfo.new(0.2), {TextColor3 = Zyrix.Theme.Text}):Play()
-                currentPhase = num
-                pulseThread = task.spawn(function()
-                    while currentPhase == num do
-                        TweenService:Create(p.indicator, TweenInfo.new(0.4), {TextTransparency = 0.5}):Play()
-                        task.wait(0.4)
-                        if currentPhase ~= num then break end
-                        TweenService:Create(p.indicator, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
-                        task.wait(0.4)
-                    end
-                end)
-            else
-                p.indicator.Text = "○"
-                p.indicator.TextColor3 = Zyrix.Theme.Pending
-                p.label.TextColor3 = Zyrix.Theme.Pending
-            end
-        end
-    end
-
-    task.spawn(function()
-        TweenService:Create(blurEffect, TweenInfo.new(0.6), {Size = 24}):Play()
-        TweenService:Create(loadingScreen, TweenInfo.new(0.5), {BackgroundTransparency = 0.25}):Play()
-        task.wait(0.3)
-        TweenService:Create(shipBody, TweenInfo.new(0.4, Enum.EasingStyle.Back), {BackgroundTransparency = 0}):Play()
-        TweenService:Create(shipPoint, TweenInfo.new(0.4, Enum.EasingStyle.Back), {BackgroundTransparency = 0}):Play()
-        task.spawn(animateLongLines)
-        task.spawn(animateTrails)
-        task.spawn(animateShipShake)
-        task.wait(0.2)
-        for i = 1, 5 do
-            task.delay((i-1)*0.08, function()
-                TweenService:Create(phases[i].indicator, TweenInfo.new(0.25), {TextTransparency = 0}):Play()
-                TweenService:Create(phases[i].label, TweenInfo.new(0.25), {TextTransparency = 0}):Play()
-            end)
-        end
-        task.wait(0.5)
-        setPhase(1)
-        task.wait(0.3)
-        setPhase(2) ensureFolders() task.wait(0.25)
-        setPhase(3)
-        local iconNames = {"key", "shield", "check", "copy", "discord", "alert", "lock", "loading", "close", "changelog", "user", "clock", "cart", "nogetkey"}
-        if shouldDownloadLogo() then table.insert(iconNames, "logo") end
-        for _, name in ipairs(iconNames) do downloadIcon(name) task.wait(0.06) end
-        Internal.IconsLoaded = true
-        setPhase(4) task.wait(0.25)
-        setPhase(5) task.wait(0.5)
-        animationRunning = false
-        if pulseThread then task.cancel(pulseThread) end
-        TweenService:Create(loadingScreen, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
-        TweenService:Create(shipBody, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
-        TweenService:Create(shipPoint, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
-        for _, trail in pairs(trails) do TweenService:Create(trail.frame, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play() end
-        for _, line in pairs(longLines) do TweenService:Create(line, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play() end
-        for i = 1, 5 do
-            TweenService:Create(phases[i].indicator, TweenInfo.new(0.25), {TextTransparency = 1}):Play()
-            TweenService:Create(phases[i].label, TweenInfo.new(0.25), {TextTransparency = 1}):Play()
-        end
-        TweenService:Create(blurEffect, TweenInfo.new(0.3), {Size = 0}):Play()
-        task.wait(0.5)
-        gui:Destroy()
-        blurEffect:Destroy()
-        if onComplete then onComplete() end
-        completed = true
+    local offset=0
+    RS.Heartbeat:Connect(function(dt)
+        if not grid or not grid.Parent then return end
+        offset=(offset+dt*5)%cell
+        grid.Position=UDim2.new(0,-offset,0,-offset)
     end)
 
-    while not completed do task.wait(0.05) end
-end
-
-local function EnsureIconsReady(callback)
-    if allIconsCached() then
-        loadAllIconsFromCache()
-        if callback then callback() end
-    else
-        ShowLoadingScreen(callback)
-    end
-end
-
-function Zyrix:Notify(title, message, duration, iconType)
-    duration = duration or 5
-    iconType = iconType or "info"
-    local scale = getScale()
-    local width = math.clamp(320 * scale, 260, 380)
-    local height = math.clamp(80 * scale, 75, 105)
-
-    local notifGui = Instance.new("ScreenGui")
-    notifGui.ResetOnSpawn = false
-    notifGui.DisplayOrder = 999999
-    notifGui.Parent = hui
-
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, width, 0, height)
-    frame.Position = UDim2.new(1, width + 20, 1, -15)
-    frame.AnchorPoint = Vector2.new(1, 1)
-    frame.BackgroundColor3 = Zyrix.Theme.Header
-    frame.BorderSizePixel = 0
-    frame.Parent = notifGui
-    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 4)
-
-    local stroke = Instance.new("UIStroke", frame)
-    stroke.Color = Zyrix.Theme.Accent
-    stroke.Thickness = 1
-    stroke.Transparency = 0.7
-
-    local progressBg = Instance.new("Frame")
-    progressBg.Size = UDim2.new(1, 0, 0, 2)
-    progressBg.Position = UDim2.new(0, 0, 1, -2)
-    progressBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    progressBg.BorderSizePixel = 0
-    progressBg.Parent = frame
-
-    local progressBar = Instance.new("Frame")
-    progressBar.Size = UDim2.new(1, 0, 1, 0)
-    progressBar.BackgroundColor3 = Zyrix.Theme.Accent
-    progressBar.BorderSizePixel = 0
-    progressBar.Parent = progressBg
-
-    local iconSize = height - 35
-    local icon = Instance.new("ImageLabel")
-    icon.Size = UDim2.new(0, iconSize, 0, iconSize)
-    icon.Position = UDim2.new(0, 14, 0.5, -2)
-    icon.AnchorPoint = Vector2.new(0, 0.5)
-    icon.BackgroundTransparency = 1
-    icon.ScaleType = Enum.ScaleType.Fit
-    icon.Parent = frame
-
-    local iconMap = {
-        success = {"check", Zyrix.Theme.Success}, error = {"alert", Zyrix.Theme.Error},
-        warning = {"alert", Zyrix.Theme.Warning}, shield = {"shield", Zyrix.Theme.Accent},
-        info = {"shield", Zyrix.Theme.Accent}, key = {"key", Zyrix.Theme.Accent},
-        copy = {"copy", Zyrix.Theme.Success}, discord = {"discord", Zyrix.Theme.Discord},
-        close = {"close", Zyrix.Theme.Error}, nogetkey = {"nogetkey", Zyrix.Theme.TextDim}
-    }
-
-    if iconMap[iconType] then
-        icon.Image = getIcon(iconMap[iconType][1])
-        icon.ImageColor3 = iconMap[iconType][2]
-    else
-        icon.Image = getLogoIcon()
-        icon.ImageColor3 = Zyrix.Theme.Text
-    end
-
-    local textX = 14 + iconSize + 14
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, -(textX + 14), 0, 24)
-    titleLabel.Position = UDim2.new(0, textX, 0, 12)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Font = Enum.Font.ArimoBold
-    titleLabel.TextSize = math.clamp(15 * scale, 13, 18)
-    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    titleLabel.TextColor3 = Zyrix.Theme.Text
-    titleLabel.Text = title
-    titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
-    titleLabel.Parent = frame
-
-    local messageLabel = Instance.new("TextLabel")
-    messageLabel.Size = UDim2.new(1, -(textX + 14), 0, 22)
-    messageLabel.Position = UDim2.new(0, textX, 0, 38)
-    messageLabel.BackgroundTransparency = 1
-    messageLabel.Font = Enum.Font.ArimoBold
-    messageLabel.TextSize = math.clamp(13 * scale, 11, 15)
-    messageLabel.TextXAlignment = Enum.TextXAlignment.Left
-    messageLabel.TextColor3 = Zyrix.Theme.TextDim
-    messageLabel.Text = message
-    messageLabel.TextTruncate = Enum.TextTruncate.AtEnd
-    messageLabel.Parent = frame
-
-    local id = tick() .. HttpService:GenerateGUID(false)
-    table.insert(Internal.NotificationList, {id = id, frame = frame, gui = notifGui, height = height})
-
-    local function restack()
-        local yOffset = 0
-        for i = #Internal.NotificationList, 1, -1 do
-            local n = Internal.NotificationList[i]
-            if n and n.frame and n.frame.Parent then
-                TweenService:Create(n.frame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Position = UDim2.new(1, -15, 1, -15 - yOffset)}):Play()
-                yOffset = yOffset + n.height + 12
+    -- particles
+    local pc=mkFrame({Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,ClipsDescendants=true,ZIndex=2,Parent=canvas})
+    local function spawnParticle(instant)
+        local sz=math.random(2,4)
+        local px=math.random(0,100)/100
+        local py=instant and math.random(0,100)/100 or 1.05
+        local spd=math.random(20,50)
+        local drift=(math.random(-20,20))/1000
+        local p=mkFrame({Size=UDim2.new(0,sz,0,sz),Position=UDim2.new(px,0,py,0),BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=0.6+math.random()*0.3,ZIndex=2,Parent=pc})
+        applyCorner(p,UDim.new(1,0))
+        local conn2
+        conn2=RS.Heartbeat:Connect(function(dt)
+            if not p or not p.Parent then if conn2 then conn2:Disconnect() end return end
+            py=py-dt/spd; px=px+drift*dt
+            p.Position=UDim2.new(px,0,py,0)
+            local fade=math.clamp(py*5,0,1)*math.clamp((1-py)*5,0,1)
+            p.BackgroundTransparency=1-(1-(0.6+math.random()*0.1))*fade
+            if py<-0.05 then
+                conn2:Disconnect() p:Destroy()
+                task.delay(math.random(1,3),function() spawnParticle(false) end)
             end
-        end
+        end)
     end
+    for i=1,22 do task.delay(i*0.1,function() spawnParticle(true) end) end
 
-    TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Position = UDim2.new(1, -15, 1, -15)}):Play()
-    task.wait(0.1)
-    restack()
+    -- watermark
+    local wm=mkFrame({Size=UDim2.new(0,120,0,34),Position=UDim2.new(0,12,0,8),BackgroundColor3=Color3.fromRGB(10,10,10),BackgroundTransparency=0.35,ZIndex=5,Parent=canvas})
+    applyCorner(wm,UDim.new(0,6)) applyStroke(wm,Color3.fromRGB(40,40,40),1,0)
+    mkImage({Size=UDim2.new(0,18,0,18),Position=UDim2.new(0,8,0.5,0),AnchorPoint=Vector2.new(0,0.5),Image=Zyrix.Appearance.Icon,ZIndex=6,Parent=wm})
+    mkLabel({Size=UDim2.new(1,-32,1,0),Position=UDim2.new(0,30,0,0),Text=Zyrix.Appearance.Title,TextColor3=Color3.new(1,1,1),TextSize=14,ZIndex=6,Parent=wm})
 
-    local function dismiss()
-        for i, n in ipairs(Internal.NotificationList) do
-            if n.id == id then table.remove(Internal.NotificationList, i) break end
-        end
-        TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Position = UDim2.new(1, width + 20, frame.Position.Y.Scale, frame.Position.Y.Offset)}):Play()
-        task.wait(0.3)
-        notifGui:Destroy()
-        restack()
-    end
+    -- status bar
+    local sb=mkFrame({Size=UDim2.new(1,0,0,26),Position=UDim2.new(0,0,1,-26),BackgroundColor3=Color3.fromRGB(8,8,8),BackgroundTransparency=0.25,ZIndex=5,Parent=canvas})
+    mkFrame({Size=UDim2.new(1,0,0,1),BackgroundColor3=Color3.fromRGB(40,40,40),ZIndex=6,Parent=sb})
+    mkLabel({Size=UDim2.new(0.5,0,1,0),Position=UDim2.new(0,12,0,0),Text="AUTHENTICATION REQUIRED",TextColor3=Color3.fromRGB(80,80,80),TextSize=9,Font=Enum.Font.Gotham,TextXAlignment=Enum.TextXAlignment.Left,ZIndex=6,Parent=sb})
+    local clk=mkLabel({Size=UDim2.new(0.5,0,1,0),Position=UDim2.new(0.5,-12,0,0),Text=formatTime(),TextColor3=Color3.fromRGB(80,80,80),TextSize=9,Font=Enum.Font.Gotham,TextXAlignment=Enum.TextXAlignment.Right,ZIndex=6,Parent=sb})
+    task.spawn(function() while clk and clk.Parent do clk.Text=formatTime() task.wait(1) end end)
 
-    TweenService:Create(progressBar, TweenInfo.new(duration, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 1, 0)}):Play()
-    task.delay(duration, dismiss)
-
-    local clickBtn = Instance.new("TextButton")
-    clickBtn.Size = UDim2.new(1, 0, 1, 0)
-    clickBtn.BackgroundTransparency = 1
-    clickBtn.Text = ""
-    clickBtn.Parent = frame
-    clickBtn.MouseButton1Click:Connect(dismiss)
+    tw(canvas,0.5,{BackgroundTransparency=0})
+    return bg
 end
 
-local function CreateChangelogPanel(parent, windowWidth, panelHeight, panelWidth, mainFrame, gap)
-    panelWidth = panelWidth or 220
-    local isOpen = false
-
-    local panel = Instance.new("Frame")
-    panel.Name = "ChangelogPanel"
-    panel.Size = UDim2.new(0, 0, 0, panelHeight)
-    panel.Position = UDim2.new(1, gap, 0, 0)
-    panel.BackgroundColor3 = Zyrix.Theme.Background
-    panel.BorderSizePixel = 0
-    panel.ClipsDescendants = true
-    panel.Parent = mainFrame
-    Instance.new("UICorner", panel).CornerRadius = UDim.new(0, 4)
-
-    local panelStroke = Instance.new("UIStroke", panel)
-    panelStroke.Color = Zyrix.Theme.Accent
-    panelStroke.Thickness = 2
-    panelStroke.Transparency = 1
-
-    local panelHeader = Instance.new("Frame")
-    panelHeader.Size = UDim2.new(1, 0, 0, 50)
-    panelHeader.BackgroundColor3 = Zyrix.Theme.Header
-    panelHeader.BorderSizePixel = 0
-    panelHeader.Parent = panel
-    Instance.new("UICorner", panelHeader).CornerRadius = UDim.new(0, 4)
-
-    local panelHeaderFix = Instance.new("Frame")
-    panelHeaderFix.Size = UDim2.new(1, 0, 0, 8)
-    panelHeaderFix.Position = UDim2.new(0, 0, 1, -8)
-    panelHeaderFix.BackgroundColor3 = Zyrix.Theme.Header
-    panelHeaderFix.BorderSizePixel = 0
-    panelHeaderFix.Parent = panelHeader
-
-    local panelHeaderLine = Instance.new("Frame")
-    panelHeaderLine.Size = UDim2.new(1, 0, 0, 1)
-    panelHeaderLine.Position = UDim2.new(0, 0, 1, 0)
-    panelHeaderLine.BackgroundColor3 = Zyrix.Theme.Accent
-    panelHeaderLine.BackgroundTransparency = 0.6
-    panelHeaderLine.BorderSizePixel = 0
-    panelHeaderLine.Parent = panelHeader
-
-    local panelHeaderIcon = Instance.new("ImageLabel")
-    panelHeaderIcon.Size = UDim2.new(0, 16, 0, 16)
-    panelHeaderIcon.Position = UDim2.new(0, 12, 0.5, 0)
-    panelHeaderIcon.AnchorPoint = Vector2.new(0, 0.5)
-    panelHeaderIcon.BackgroundTransparency = 1
-    panelHeaderIcon.Image = getIcon("changelog")
-    panelHeaderIcon.ImageColor3 = Zyrix.Theme.Accent
-    panelHeaderIcon.ScaleType = Enum.ScaleType.Fit
-    panelHeaderIcon.Parent = panelHeader
-
-    local panelTitle = Instance.new("TextLabel")
-    panelTitle.Size = UDim2.new(1, -65, 1, 0)
-    panelTitle.Position = UDim2.new(0, 34, 0, 0)
-    panelTitle.BackgroundTransparency = 1
-    panelTitle.Text = "Changelog"
-    panelTitle.TextColor3 = Zyrix.Theme.Text
-    panelTitle.TextSize = 16
-    panelTitle.Font = Enum.Font.ArimoBold
-    panelTitle.TextXAlignment = Enum.TextXAlignment.Left
-    panelTitle.Parent = panelHeader
-
-    local panelClose = Instance.new("ImageButton")
-    panelClose.Size = UDim2.new(0, 20, 0, 20)
-    panelClose.Position = UDim2.new(1, -14, 0.5, 0)
-    panelClose.AnchorPoint = Vector2.new(1, 0.5)
-    panelClose.BackgroundTransparency = 1
-    panelClose.Image = getIcon("close")
-    panelClose.ImageColor3 = Zyrix.Theme.TextDim
-    panelClose.ScaleType = Enum.ScaleType.Fit
-    panelClose.Parent = panelHeader
-    panelClose.MouseEnter:Connect(function() TweenService:Create(panelClose, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.Error}):Play() end)
-    panelClose.MouseLeave:Connect(function() TweenService:Create(panelClose, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.TextDim}):Play() end)
-
-    local scrollFrame = Instance.new("ScrollingFrame")
-    scrollFrame.Size = UDim2.new(1, 0, 1, -55)
-    scrollFrame.Position = UDim2.new(0, 0, 0, 55)
-    scrollFrame.BackgroundTransparency = 1
-    scrollFrame.BorderSizePixel = 0
-    scrollFrame.ScrollBarThickness = 4
-    scrollFrame.ScrollBarImageColor3 = Zyrix.Theme.Accent
-    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-    scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    scrollFrame.Parent = panel
-
-    local scrollPadding = Instance.new("UIPadding", scrollFrame)
-    scrollPadding.PaddingLeft = UDim.new(0, 10)
-    scrollPadding.PaddingRight = UDim.new(0, 10)
-    scrollPadding.PaddingTop = UDim.new(0, 5)
-    scrollPadding.PaddingBottom = UDim.new(0, 5)
-
-    local contentLayout = Instance.new("UIListLayout", scrollFrame)
-    contentLayout.Padding = UDim.new(0, 10)
-    contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-    for i, update in ipairs(Zyrix.Changelog) do
-        local entry = Instance.new("Frame")
-        entry.Size = UDim2.new(1, 0, 0, 0)
-        entry.AutomaticSize = Enum.AutomaticSize.Y
-        entry.BackgroundTransparency = 1
-        entry.LayoutOrder = i * 2
-        entry.Parent = scrollFrame
-
-        local entryLayout = Instance.new("UIListLayout", entry)
-        entryLayout.Padding = UDim.new(0, 5)
-
-        local versionLabel = Instance.new("TextLabel")
-        versionLabel.Size = UDim2.new(1, 0, 0, 22)
-        versionLabel.BackgroundTransparency = 1
-        versionLabel.Text = update.Version .. "  •  " .. update.Date
-        versionLabel.TextColor3 = Zyrix.Theme.Accent
-        versionLabel.TextSize = 14
-        versionLabel.Font = Enum.Font.ArimoBold
-        versionLabel.TextXAlignment = Enum.TextXAlignment.Left
-        versionLabel.LayoutOrder = 1
-        versionLabel.Parent = entry
-
-        for j, change in ipairs(update.Changes) do
-            local changeLabel = Instance.new("TextLabel")
-            changeLabel.Size = UDim2.new(1, 0, 0, 0)
-            changeLabel.AutomaticSize = Enum.AutomaticSize.Y
-            changeLabel.BackgroundTransparency = 1
-            changeLabel.Text = "  •  " .. change
-            changeLabel.TextColor3 = Zyrix.Theme.TextDim
-            changeLabel.TextSize = 12
-            changeLabel.Font = Enum.Font.ArimoBold
-            changeLabel.TextXAlignment = Enum.TextXAlignment.Left
-            changeLabel.TextWrapped = true
-            changeLabel.LayoutOrder = j + 1
-            changeLabel.Parent = entry
-        end
-
-        if i < #Zyrix.Changelog then
-            local divWrapper = Instance.new("Frame")
-            divWrapper.Size = UDim2.new(1, 0, 0, 2)
-            divWrapper.BackgroundTransparency = 1
-            divWrapper.LayoutOrder = i * 2 + 1
-            divWrapper.Parent = scrollFrame
-
-            local div = Instance.new("Frame")
-            div.Size = UDim2.new(1, 0, 0, 2)
-            div.BackgroundColor3 = Zyrix.Theme.Divider
-            div.BorderSizePixel = 0
-            div.Parent = divWrapper
-        end
-    end
-
-    local function toggle(changelogIcon, container, currentContainerWidth)
-        isOpen = not isOpen
-        if isOpen then
-            TweenService:Create(panelStroke, TweenInfo.new(0.2), {Transparency = 0.4}):Play()
-            TweenService:Create(panel, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0, panelWidth, 0, panelHeight)}):Play()
-            TweenService:Create(container, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0, currentContainerWidth + gap + panelWidth, 0, panelHeight)}):Play()
-            if changelogIcon then TweenService:Create(changelogIcon, TweenInfo.new(0.3), {Rotation = 180}):Play() end
-        else
-            TweenService:Create(panelStroke, TweenInfo.new(0.2), {Transparency = 1}):Play()
-            TweenService:Create(panel, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, panelHeight)}):Play()
-            TweenService:Create(container, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Size = UDim2.new(0, currentContainerWidth, 0, panelHeight)}):Play()
-            if changelogIcon then TweenService:Create(changelogIcon, TweenInfo.new(0.3), {Rotation = 0}):Play() end
-        end
-    end
-
-    panelClose.MouseButton1Click:Connect(function() if isOpen then toggle(nil, parent, windowWidth) end end)
-    return panel, toggle, function() return isOpen end, panelWidth
+local function removeBackground()
+    local bg=hui:FindFirstChild("ZyrixBackground")
+    if not bg then return end
+    local c=bg:FindFirstChildOfClass("Frame")
+    if c then tw(c,0.4,{BackgroundTransparency=1}) end
+    task.delay(0.45,function() if bg and bg.Parent then bg:Destroy() end end)
 end
 
-local function CreateUserInfoPanel(parent, windowWidth, panelHeight, panelWidth, mainFrame, gap, startOpen)
-    panelWidth = panelWidth or 180
-    local isOpen = startOpen or false
-    local isCompact = panelHeight < 300
-    local avatarSize = isCompact and 42 or 55
-    local fieldHeight = isCompact and 24 or 28
-    local titleSize = isCompact and 8 or 9
-    local valueSize = isCompact and 10 or 11
-    local welcomeSize = isCompact and 11 or 12
-    local spacing = isCompact and 3 or 5
-
-    local panel = Instance.new("Frame")
-    panel.Name = "UserInfoPanel"
-    panel.Size = UDim2.new(0, isOpen and panelWidth or 0, 0, panelHeight)
-    panel.Position = UDim2.new(0, -(gap), 0, 0)
-    panel.AnchorPoint = Vector2.new(1, 0)
-    panel.BackgroundColor3 = Zyrix.Theme.Background
-    panel.BorderSizePixel = 0
-    panel.ClipsDescendants = true
-    panel.Parent = mainFrame
-    Instance.new("UICorner", panel).CornerRadius = UDim.new(0, 4)
-
-    local panelStroke = Instance.new("UIStroke", panel)
-    panelStroke.Color = Zyrix.Theme.Accent
-    panelStroke.Thickness = 2
-    panelStroke.Transparency = isOpen and 0.4 or 1
-
-    local panelHeader = Instance.new("Frame")
-    panelHeader.Size = UDim2.new(1, 0, 0, 50)
-    panelHeader.BackgroundColor3 = Zyrix.Theme.Header
-    panelHeader.BorderSizePixel = 0
-    panelHeader.Parent = panel
-    Instance.new("UICorner", panelHeader).CornerRadius = UDim.new(0, 4)
-
-    local panelHeaderFix = Instance.new("Frame")
-    panelHeaderFix.Size = UDim2.new(1, 0, 0, 8)
-    panelHeaderFix.Position = UDim2.new(0, 0, 1, -8)
-    panelHeaderFix.BackgroundColor3 = Zyrix.Theme.Header
-    panelHeaderFix.BorderSizePixel = 0
-    panelHeaderFix.Parent = panelHeader
-
-    local panelHeaderLine = Instance.new("Frame")
-    panelHeaderLine.Size = UDim2.new(1, 0, 0, 1)
-    panelHeaderLine.Position = UDim2.new(0, 0, 1, 0)
-    panelHeaderLine.BackgroundColor3 = Zyrix.Theme.Accent
-    panelHeaderLine.BackgroundTransparency = 0.6
-    panelHeaderLine.BorderSizePixel = 0
-    panelHeaderLine.Parent = panelHeader
-
-    local panelHeaderIcon = Instance.new("ImageLabel")
-    panelHeaderIcon.Size = UDim2.new(0, 16, 0, 16)
-    panelHeaderIcon.Position = UDim2.new(0, 12, 0.5, 0)
-    panelHeaderIcon.AnchorPoint = Vector2.new(0, 0.5)
-    panelHeaderIcon.BackgroundTransparency = 1
-    panelHeaderIcon.Image = getIcon("user")
-    panelHeaderIcon.ImageColor3 = Zyrix.Theme.Accent
-    panelHeaderIcon.ScaleType = Enum.ScaleType.Fit
-    panelHeaderIcon.Parent = panelHeader
-
-    local panelTitle = Instance.new("TextLabel")
-    panelTitle.Size = UDim2.new(1, -65, 1, 0)
-    panelTitle.Position = UDim2.new(0, 34, 0, 0)
-    panelTitle.BackgroundTransparency = 1
-    panelTitle.Text = "User Info"
-    panelTitle.TextColor3 = Zyrix.Theme.Text
-    panelTitle.TextSize = 16
-    panelTitle.Font = Enum.Font.ArimoBold
-    panelTitle.TextXAlignment = Enum.TextXAlignment.Left
-    panelTitle.Parent = panelHeader
-
-    local panelClose = Instance.new("ImageButton")
-    panelClose.Size = UDim2.new(0, 20, 0, 20)
-    panelClose.Position = UDim2.new(1, -14, 0.5, 0)
-    panelClose.AnchorPoint = Vector2.new(1, 0.5)
-    panelClose.BackgroundTransparency = 1
-    panelClose.Image = getIcon("close")
-    panelClose.ImageColor3 = Zyrix.Theme.TextDim
-    panelClose.ScaleType = Enum.ScaleType.Fit
-    panelClose.Parent = panelHeader
-    panelClose.MouseEnter:Connect(function() TweenService:Create(panelClose, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.Error}):Play() end)
-    panelClose.MouseLeave:Connect(function() TweenService:Create(panelClose, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.TextDim}):Play() end)
-
-    local contentFrame = Instance.new("Frame")
-    contentFrame.Size = UDim2.new(1, 0, 1, -55)
-    contentFrame.Position = UDim2.new(0, 0, 0, 55)
-    contentFrame.BackgroundTransparency = 1
-    contentFrame.Parent = panel
-
-    local contentPadding = Instance.new("UIPadding", contentFrame)
-    contentPadding.PaddingLeft = UDim.new(0, 8)
-    contentPadding.PaddingRight = UDim.new(0, 8)
-
-    local contentLayout = Instance.new("UIListLayout", contentFrame)
-    contentLayout.Padding = UDim.new(0, spacing)
-    contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    contentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    contentLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-
-    local player = cloneref(Players.LocalPlayer)
-
-    local avatarWrapper = Instance.new("Frame")
-    avatarWrapper.Size = UDim2.new(0, avatarSize + 6, 0, avatarSize + 6)
-    avatarWrapper.BackgroundTransparency = 1
-    avatarWrapper.LayoutOrder = 1
-    avatarWrapper.Parent = contentFrame
-
-    local avatarGlow = Instance.new("Frame")
-    avatarGlow.Size = UDim2.new(1, 0, 1, 0)
-    avatarGlow.Position = UDim2.new(0.5, 0, 0.5, 0)
-    avatarGlow.AnchorPoint = Vector2.new(0.5, 0.5)
-    avatarGlow.BackgroundColor3 = Zyrix.Theme.Accent
-    avatarGlow.BackgroundTransparency = 0.5
-    avatarGlow.BorderSizePixel = 0
-    avatarGlow.Parent = avatarWrapper
-    Instance.new("UICorner", avatarGlow).CornerRadius = UDim.new(0, 4)
-
-    local avatarGlowStroke = Instance.new("UIStroke", avatarGlow)
-    avatarGlowStroke.Color = Zyrix.Theme.Accent
-    avatarGlowStroke.Thickness = 1.5
-    avatarGlowStroke.Transparency = 0.3
-
-    local avatarContainer = Instance.new("Frame")
-    avatarContainer.Size = UDim2.new(0, avatarSize, 0, avatarSize)
-    avatarContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
-    avatarContainer.AnchorPoint = Vector2.new(0.5, 0.5)
-    avatarContainer.BackgroundColor3 = Zyrix.Theme.Input
-    avatarContainer.BorderSizePixel = 0
-    avatarContainer.ClipsDescendants = true
-    avatarContainer.Parent = avatarWrapper
-    Instance.new("UICorner", avatarContainer).CornerRadius = UDim.new(0, 4)
-
-    local avatarImage = Instance.new("ImageLabel")
-    avatarImage.Size = UDim2.new(1, 0, 1, 0)
-    avatarImage.Position = UDim2.new(0.5, 0, 0.5, 0)
-    avatarImage.AnchorPoint = Vector2.new(0.5, 0.5)
-    avatarImage.BackgroundTransparency = 1
-    avatarImage.ScaleType = Enum.ScaleType.Crop
-    avatarImage.Parent = avatarContainer
-    pcall(function()
-        local content = Players:GetUserThumbnailAsync(player and player.UserId or 0, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
-        avatarImage.Image = content
-    end)
-
-    local welcomeLabel = Instance.new("TextLabel")
-    welcomeLabel.Size = UDim2.new(1, 0, 0, isCompact and 14 or 18)
-    welcomeLabel.BackgroundTransparency = 1
-    welcomeLabel.Text = "Welcome, " .. (player and player.DisplayName or "User")
-    welcomeLabel.TextColor3 = Zyrix.Theme.Text
-    welcomeLabel.TextSize = welcomeSize
-    welcomeLabel.Font = Enum.Font.ArimoBold
-    welcomeLabel.TextTruncate = Enum.TextTruncate.AtEnd
-    welcomeLabel.LayoutOrder = 2
-    welcomeLabel.Parent = contentFrame
-
-    local divider1 = Instance.new("Frame")
-    divider1.Size = UDim2.new(1, 16, 0, 2)
-    divider1.Position = UDim2.new(0.5, 0, 0, 0)
-    divider1.AnchorPoint = Vector2.new(0.5, 0)
-    divider1.BackgroundColor3 = Zyrix.Theme.Divider
-    divider1.BorderSizePixel = 0
-    divider1.LayoutOrder = 3
-    divider1.Parent = contentFrame
-
-    local executorContainer = Instance.new("Frame")
-    executorContainer.Size = UDim2.new(1, 0, 0, fieldHeight)
-    executorContainer.BackgroundTransparency = 1
-    executorContainer.LayoutOrder = 4
-    executorContainer.Parent = contentFrame
-
-    local executorTitle = Instance.new("TextLabel")
-    executorTitle.Size = UDim2.new(1, 0, 0, 11)
-    executorTitle.BackgroundTransparency = 1
-    executorTitle.Text = "Executor"
-    executorTitle.TextColor3 = Zyrix.Theme.TextDim
-    executorTitle.TextSize = titleSize
-    executorTitle.Font = Enum.Font.ArimoBold
-    executorTitle.TextXAlignment = Enum.TextXAlignment.Left
-    executorTitle.Parent = executorContainer
-
-    local executorValue = Instance.new("TextLabel")
-    executorValue.Size = UDim2.new(1, 0, 0, 14)
-    executorValue.Position = UDim2.new(0, 0, 0, 11)
-    executorValue.BackgroundTransparency = 1
-    executorValue.Text = getExecutorName()
-    executorValue.TextColor3 = Zyrix.Theme.Accent
-    executorValue.TextSize = valueSize
-    executorValue.Font = Enum.Font.ArimoBold
-    executorValue.TextXAlignment = Enum.TextXAlignment.Left
-    executorValue.TextTruncate = Enum.TextTruncate.AtEnd
-    executorValue.Parent = executorContainer
-
-    local deviceContainer = Instance.new("Frame")
-    deviceContainer.Size = UDim2.new(1, 0, 0, fieldHeight)
-    deviceContainer.BackgroundTransparency = 1
-    deviceContainer.LayoutOrder = 5
-    deviceContainer.Parent = contentFrame
-
-    local deviceTitle = Instance.new("TextLabel")
-    deviceTitle.Size = UDim2.new(1, 0, 0, 11)
-    deviceTitle.BackgroundTransparency = 1
-    deviceTitle.Text = "Device"
-    deviceTitle.TextColor3 = Zyrix.Theme.TextDim
-    deviceTitle.TextSize = titleSize
-    deviceTitle.Font = Enum.Font.ArimoBold
-    deviceTitle.TextXAlignment = Enum.TextXAlignment.Left
-    deviceTitle.Parent = deviceContainer
-
-    local deviceValue = Instance.new("TextLabel")
-    deviceValue.Size = UDim2.new(1, 0, 0, 14)
-    deviceValue.Position = UDim2.new(0, 0, 0, 11)
-    deviceValue.BackgroundTransparency = 1
-    deviceValue.Text = getDeviceType()
-    deviceValue.TextColor3 = Zyrix.Theme.Accent
-    deviceValue.TextSize = valueSize
-    deviceValue.Font = Enum.Font.ArimoBold
-    deviceValue.TextXAlignment = Enum.TextXAlignment.Left
-    deviceValue.TextTruncate = Enum.TextTruncate.AtEnd
-    deviceValue.Parent = deviceContainer
-
-    local divider2 = Instance.new("Frame")
-    divider2.Size = UDim2.new(1, 16, 0, 2)
-    divider2.Position = UDim2.new(0.5, 0, 0, 0)
-    divider2.AnchorPoint = Vector2.new(0.5, 0)
-    divider2.BackgroundColor3 = Zyrix.Theme.Divider
-    divider2.BorderSizePixel = 0
-    divider2.LayoutOrder = 6
-    divider2.Parent = contentFrame
-
-    local hwidContainer = Instance.new("Frame")
-    hwidContainer.Size = UDim2.new(1, 0, 0, fieldHeight)
-    hwidContainer.BackgroundTransparency = 1
-    hwidContainer.LayoutOrder = 7
-    hwidContainer.Parent = contentFrame
-
-    local hwidTitle = Instance.new("TextLabel")
-    hwidTitle.Size = UDim2.new(1, 0, 0, 11)
-    hwidTitle.BackgroundTransparency = 1
-    hwidTitle.Text = "HWID"
-    hwidTitle.TextColor3 = Zyrix.Theme.TextDim
-    hwidTitle.TextSize = titleSize
-    hwidTitle.Font = Enum.Font.ArimoBold
-    hwidTitle.TextXAlignment = Enum.TextXAlignment.Left
-    hwidTitle.Parent = hwidContainer
-
-    local fullHWID = getHWID()
-    local copyBtnSize = 18
-    local dotAreaWidth = panelWidth - 16 - copyBtnSize - 6
-    local hiddenDots = generateHiddenDots(dotAreaWidth, 5)
-
-    local hwidValue = Instance.new("TextLabel")
-    hwidValue.Size = UDim2.new(1, -(copyBtnSize + 6), 0, 14)
-    hwidValue.Position = UDim2.new(0, 0, 0, 11)
-    hwidValue.BackgroundTransparency = 1
-    hwidValue.Text = hiddenDots
-    hwidValue.TextColor3 = Zyrix.Theme.TextDim
-    hwidValue.TextSize = isCompact and 9 or 10
-    hwidValue.Font = Enum.Font.ArimoBold
-    hwidValue.TextXAlignment = Enum.TextXAlignment.Left
-    hwidValue.TextTruncate = Enum.TextTruncate.AtEnd
-    hwidValue.Parent = hwidContainer
-
-    local copyBtn = Instance.new("ImageButton")
-    copyBtn.Size = UDim2.new(0, copyBtnSize, 0, copyBtnSize)
-    copyBtn.Position = UDim2.new(1, 0, 0.5, 1)
-    copyBtn.AnchorPoint = Vector2.new(1, 0.5)
-    copyBtn.BackgroundTransparency = 1
-    copyBtn.Image = getIcon("copy")
-    copyBtn.ImageColor3 = Zyrix.Theme.TextDim
-    copyBtn.ScaleType = Enum.ScaleType.Fit
-    copyBtn.Parent = hwidContainer
-    copyBtn.MouseEnter:Connect(function() TweenService:Create(copyBtn, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.Accent}):Play() end)
-    copyBtn.MouseLeave:Connect(function() TweenService:Create(copyBtn, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.TextDim}):Play() end)
-    copyBtn.MouseButton1Click:Connect(function()
-        pcall(function() setclipboard(fullHWID) end)
-        TweenService:Create(copyBtn, TweenInfo.new(0.1), {ImageColor3 = Zyrix.Theme.Success}):Play()
-        task.delay(0.3, function() TweenService:Create(copyBtn, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.TextDim}):Play() end)
-        Zyrix:Notify("Copied", "HWID copied to clipboard", 2, "copy")
-    end)
-
-    local divider3 = Instance.new("Frame")
-    divider3.Size = UDim2.new(1, 16, 0, 2)
-    divider3.Position = UDim2.new(0.5, 0, 0, 0)
-    divider3.AnchorPoint = Vector2.new(0.5, 0)
-    divider3.BackgroundColor3 = Zyrix.Theme.Divider
-    divider3.BorderSizePixel = 0
-    divider3.LayoutOrder = 8
-    divider3.Parent = contentFrame
-
-    local clockContainer = Instance.new("Frame")
-    clockContainer.Size = UDim2.new(1, 0, 0, isCompact and 30 or 38)
-    clockContainer.BackgroundTransparency = 1
-    clockContainer.LayoutOrder = 9
-    clockContainer.Parent = contentFrame
-
-    local clockRow = Instance.new("Frame")
-    clockRow.Size = UDim2.new(1, 0, 0, isCompact and 18 or 22)
-    clockRow.Position = UDim2.new(0.5, -8, 0, 0)
-    clockRow.AnchorPoint = Vector2.new(0.5, 0)
-    clockRow.BackgroundTransparency = 1
-    clockRow.Parent = clockContainer
-
-    local clockRowLayout = Instance.new("UIListLayout", clockRow)
-    clockRowLayout.FillDirection = Enum.FillDirection.Horizontal
-    clockRowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    clockRowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    clockRowLayout.Padding = UDim.new(0, isCompact and 4 or 6)
-
-    local clockIcon = Instance.new("ImageLabel")
-    clockIcon.Size = UDim2.new(0, isCompact and 14 or 16, 0, isCompact and 14 or 16)
-    clockIcon.BackgroundTransparency = 1
-    clockIcon.Image = getIcon("clock")
-    clockIcon.ImageColor3 = Zyrix.Theme.Accent
-    clockIcon.ScaleType = Enum.ScaleType.Fit
-    clockIcon.LayoutOrder = 1
-    clockIcon.Parent = clockRow
-
-    local clockTimeLabel = Instance.new("TextLabel")
-    clockTimeLabel.Size = UDim2.new(0, 0, 1, 0)
-    clockTimeLabel.AutomaticSize = Enum.AutomaticSize.X
-    clockTimeLabel.BackgroundTransparency = 1
-    clockTimeLabel.Text = formatTime12()
-    clockTimeLabel.TextColor3 = Zyrix.Theme.Accent
-    clockTimeLabel.TextSize = isCompact and 14 or 16
-    clockTimeLabel.Font = Enum.Font.ArimoBold
-    clockTimeLabel.LayoutOrder = 2
-    clockTimeLabel.Parent = clockRow
-
-    local clockDateLabel = Instance.new("TextLabel")
-    clockDateLabel.Size = UDim2.new(1, 0, 0, isCompact and 12 or 14)
-    clockDateLabel.Position = UDim2.new(0, -8, 0, isCompact and 18 or 22)
-    clockDateLabel.BackgroundTransparency = 1
-    clockDateLabel.Text = formatDate()
-    clockDateLabel.TextColor3 = Zyrix.Theme.TextDim
-    clockDateLabel.TextSize = isCompact and 9 or 11
-    clockDateLabel.Font = Enum.Font.ArimoBold
-    clockDateLabel.TextXAlignment = Enum.TextXAlignment.Center
-    clockDateLabel.Parent = clockContainer
-
-    local clockRunning = true
-    task.spawn(function()
-        while clockRunning do
-            if not clockTimeLabel or not clockTimeLabel.Parent then clockRunning = false break end
-            clockTimeLabel.Text = formatTime12()
-            clockDateLabel.Text = formatDate()
-            task.wait(1)
-        end
-    end)
-    panel.Destroying:Connect(function() clockRunning = false end)
-
-    local function toggle(userIcon, container, baseWidth)
-        isOpen = not isOpen
-        if isOpen then
-            TweenService:Create(panelStroke, TweenInfo.new(0.2), {Transparency = 0.4}):Play()
-            TweenService:Create(panel, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0, panelWidth, 0, panelHeight)}):Play()
-            TweenService:Create(container, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0, baseWidth + gap + panelWidth, 0, panelHeight)}):Play()
-        else
-            TweenService:Create(panelStroke, TweenInfo.new(0.2), {Transparency = 1}):Play()
-            TweenService:Create(panel, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, panelHeight)}):Play()
-            TweenService:Create(container, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Size = UDim2.new(0, baseWidth, 0, panelHeight)}):Play()
-        end
-    end
-
-    panelClose.MouseButton1Click:Connect(function() if isOpen then toggle(nil, parent, windowWidth) end end)
-    return panel, toggle, function() return isOpen end, panelWidth
-end
-
-local function handleKeylessSkip()
-    getgenv().SCRIPT_KEY = "KEYLESS"
-    getgenv().ZyrixLoaded = false
-    Zyrix:Notify("Access Granted", "Keyless access approved!", 3, "success")
-    task.wait(0.3)
-    if Zyrix.Callbacks.OnSuccess then Zyrix.Callbacks.OnSuccess() end
-end
-
-local function BuildCenteredUI(windowWidth, windowHeight, panelHeight, userPanelWidth, changelogPanelWidth, gap, buildContent)
-    local gui = buildContent.gui
-
-    local container = Instance.new("Frame")
-    container.Name = "Container"
-    container.Size = UDim2.new(0, windowWidth, 0, panelHeight)
-    container.Position = UDim2.new(0.5, 0, 1.5, 0)
-    container.AnchorPoint = Vector2.new(0.5, 0.5)
-    container.BackgroundTransparency = 1
-    container.Parent = gui
-
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Name = "MainFrame"
-    mainFrame.Size = UDim2.new(0, windowWidth, 0, windowHeight)
-    mainFrame.Position = UDim2.new(0.5, 0, 0, 0)
-    mainFrame.AnchorPoint = Vector2.new(0.5, 0)
-    mainFrame.BackgroundColor3 = Zyrix.Theme.Background
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Parent = container
-    Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 4)
-
-    local mainStroke = Instance.new("UIStroke", mainFrame)
-    mainStroke.Color = Zyrix.Theme.Accent
-    mainStroke.Thickness = 2
-    mainStroke.Transparency = 0.4
-
-    local userPanel, toggleUserPanel, isUserOpen, userPanelActualWidth = CreateUserInfoPanel(container, windowWidth, panelHeight, userPanelWidth, mainFrame, gap, false)
-    local changelogPanel, toggleChangelog, isChangelogOpen, changelogPanelActualWidth = CreateChangelogPanel(container, windowWidth, panelHeight, changelogPanelWidth, mainFrame, gap)
-
-    local function getContainerWidth()
-        local w = windowWidth
-        if isUserOpen() then w = w + gap + userPanelActualWidth end
-        if isChangelogOpen() then w = w + gap + changelogPanelActualWidth end
-        return w
-    end
-
-    local function toggleUser(userIcon)
-        local currentW = getContainerWidth()
-        if isUserOpen() then
-            toggleUserPanel(userIcon, container, currentW - gap - userPanelActualWidth)
-        else
-            toggleUserPanel(userIcon, container, currentW)
-        end
-    end
-
-    local function toggleCL(changelogIcon)
-        local currentW = getContainerWidth()
-        if isChangelogOpen() then
-            toggleChangelog(changelogIcon, container, currentW - gap - changelogPanelActualWidth)
-        else
-            toggleChangelog(changelogIcon, container, currentW)
-        end
-    end
-
-    local function closeAllPanels(userIcon, changelogIcon, callback)
-        if isChangelogOpen() then toggleCL(changelogIcon) task.wait(0.35) end
-        if isUserOpen() then toggleUser(userIcon) task.wait(0.35) end
-        if callback then callback() end
-    end
-
-    return {
-        container = container,
-        mainFrame = mainFrame,
-        mainStroke = mainStroke,
-        toggleUser = toggleUser,
-        toggleCL = toggleCL,
-        isUserOpen = isUserOpen,
-        isChangelogOpen = isChangelogOpen,
-        closeAllPanels = closeAllPanels
-    }
-end
-
-local function BuildKeylessUI()
-    local oldGui = hui:FindFirstChild("ZyrixKeylessSystem")
-    if oldGui then oldGui:Destroy() end
-    local oldGui2 = hui:FindFirstChild("ZyrixKeySystem")
-    if oldGui2 then oldGui2:Destroy() end
+-- key UI
+local function buildKeyUI()
+    local old=hui:FindFirstChild("ZyrixKeySystem")
+    if old then old:Destroy() end
 
     enableBlur()
+    local mobile=isMobile()
+    local W,H=380,330
 
-    local mobile = isMobile()
-    local padding = 14
-    local windowWidth = 300
-    local windowHeight = 265
-    local userPanelWidth = 165
-    local changelogPanelWidth = 200
-    local gap = 12
+    local sg=Instance.new("ScreenGui")
+    sg.Name="ZyrixKeySystem" sg.ResetOnSpawn=false
+    sg.IgnoreGuiInset=true sg.DisplayOrder=10 sg.Parent=hui
 
-    local gui = Instance.new("ScreenGui")
-    gui.Name = "ZyrixKeylessSystem"
-    gui.ResetOnSpawn = false
-    gui.IgnoreGuiInset = true
-    gui.Parent = hui
+    local cont=mkFrame({Size=UDim2.new(0,W,0,H),Position=UDim2.new(0.5,0,1.5,0),AnchorPoint=Vector2.new(0.5,0.5),BackgroundTransparency=1,Parent=sg})
 
-    local ui = BuildCenteredUI(windowWidth, windowHeight, windowHeight, userPanelWidth, changelogPanelWidth, gap, {gui = gui})
-    local container = ui.container
-    local main = ui.mainFrame
-    local mainStroke = ui.mainStroke
+    local main=mkFrame({Size=UDim2.new(1,0,1,0),BackgroundColor3=T.Background,Parent=cont})
+    applyCorner(main,UDim.new(0,8)) applyStroke(main,T.Accent,1,0.85)
 
-    local header = Instance.new("Frame")
-    header.Size = UDim2.new(1, 0, 0, 50)
-    header.BackgroundColor3 = Zyrix.Theme.Header
-    header.BorderSizePixel = 0
-    header.Active = true
-    header.Parent = main
-    Instance.new("UICorner", header).CornerRadius = UDim.new(0, 4)
+    -- header
+    local hdr=mkFrame({Size=UDim2.new(1,0,0,48),BackgroundColor3=T.Header,Parent=main})
+    applyCorner(hdr,UDim.new(0,8))
+    mkFrame({Size=UDim2.new(1,0,0,8),Position=UDim2.new(0,0,1,-8),BackgroundColor3=T.Header,Parent=hdr})
+    mkFrame({Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,1,0),BackgroundColor3=T.Accent,BackgroundTransparency=0.9,Parent=hdr})
+    mkImage({Size=UDim2.new(0,24,0,24),Position=UDim2.new(0,12,0.5,0),AnchorPoint=Vector2.new(0,0.5),Image=Zyrix.Appearance.Icon,Parent=hdr})
+    mkLabel({Size=UDim2.new(1,-80,1,0),Position=UDim2.new(0,42,0,0),Text=Zyrix.Appearance.Title,TextColor3=T.Text,TextSize=18,TextXAlignment=Enum.TextXAlignment.Left,Parent=hdr})
 
-    local headerFix = Instance.new("Frame")
-    headerFix.Size = UDim2.new(1, 0, 0, 8)
-    headerFix.Position = UDim2.new(0, 0, 1, -8)
-    headerFix.BackgroundColor3 = Zyrix.Theme.Header
-    headerFix.BorderSizePixel = 0
-    headerFix.Parent = header
+    local closeBtn=mkButton({Size=UDim2.new(0,20,0,20),Position=UDim2.new(1,-14,0.5,0),AnchorPoint=Vector2.new(1,0.5),BackgroundTransparency=1,Parent=hdr})
+    mkImage({Size=UDim2.new(1,0,1,0),Image=icon("close"),ImageColor3=T.TextDim,Parent=closeBtn})
+    closeBtn.MouseEnter:Connect(function() tw(closeBtn:FindFirstChildOfClass("ImageLabel"),0.12,{ImageColor3=T.Error}) end)
+    closeBtn.MouseLeave:Connect(function() tw(closeBtn:FindFirstChildOfClass("ImageLabel"),0.12,{ImageColor3=T.TextDim}) end)
 
-    local headerLine = Instance.new("Frame")
-    headerLine.Size = UDim2.new(1, 0, 0, 1)
-    headerLine.Position = UDim2.new(0, 0, 1, 0)
-    headerLine.BackgroundColor3 = Zyrix.Theme.Accent
-    headerLine.BackgroundTransparency = 0.6
-    headerLine.BorderSizePixel = 0
-    headerLine.Parent = header
+    -- status box
+    local statBox=mkFrame({Size=UDim2.new(0.92,0,0,54),Position=UDim2.new(0.5,0,0,58),AnchorPoint=Vector2.new(0.5,0),BackgroundColor3=T.Input,Parent=main})
+    applyCorner(statBox,UDim.new(0,6)) applyStroke(statBox,T.Accent,1,0.9)
+    local statIcon=mkImage({Size=UDim2.new(0,20,0,20),Position=UDim2.new(0,12,0.5,0),AnchorPoint=Vector2.new(0,0.5),Image=icon("lock"),ImageColor3=T.StatusIdle,Parent=statBox})
+    local statLbl=mkLabel({Size=UDim2.new(1,-50,1,0),Position=UDim2.new(0,42,0,0),Text=Zyrix.Appearance.Subtitle,TextColor3=T.StatusIdle,TextSize=14,TextXAlignment=Enum.TextXAlignment.Left,Parent=statBox})
 
-    local logo = Instance.new("ImageLabel")
-    logo.Size = UDim2.new(0, 30, 0, 30)
-    logo.Position = UDim2.new(0, padding, 0.5, 0)
-    logo.AnchorPoint = Vector2.new(0, 0.5)
-    logo.BackgroundTransparency = 1
-    logo.Image = getLogoIcon()
-    logo.ImageColor3 = Zyrix.Theme.Text
-    logo.ScaleType = Enum.ScaleType.Fit
-    logo.Parent = header
+    -- input
+    local inputBox=mkFrame({Size=UDim2.new(0.92,0,0,46),Position=UDim2.new(0.5,0,0,122),AnchorPoint=Vector2.new(0.5,0),BackgroundColor3=T.Input,Parent=main})
+    applyCorner(inputBox,UDim.new(0,6))
+    local inputStr=applyStroke(inputBox,T.Accent,1,0.85)
+    mkImage({Size=UDim2.new(0,16,0,16),Position=UDim2.new(0,10,0.5,0),AnchorPoint=Vector2.new(0,0.5),Image=icon("key"),ImageColor3=T.TextDim,Parent=inputBox})
+    local tb=Instance.new("TextBox")
+    tb.Size=UDim2.new(1,-38,1,0); tb.Position=UDim2.new(0,30,0,0)
+    tb.BackgroundTransparency=1; tb.Text=""
+    tb.PlaceholderText="Enter your key..."; tb.PlaceholderColor3=T.TextDim
+    tb.TextColor3=T.Text; tb.TextSize=14; tb.Font=Enum.Font.Gotham
+    tb.ClearTextOnFocus=false; tb.TextXAlignment=Enum.TextXAlignment.Left
+    tb.Parent=inputBox
+    tb.Focused:Connect(function() tw(inputStr,0.12,{Transparency=0.4}) end)
+    tb.FocusLost:Connect(function() tw(inputStr,0.12,{Transparency=0.85}) end)
 
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, -90, 1, 0)
-    title.Position = UDim2.new(0, padding + 40, 0, 0)
-    title.BackgroundTransparency = 1
-    title.Text = Zyrix.Appearance.Title
-    title.TextColor3 = Zyrix.Theme.Text
-    title.TextSize = mobile and 24 or 26
-    title.Font = Enum.Font.ArimoBold
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    title.Parent = header
+    mkFrame({Size=UDim2.new(1,0,0,1),Position=UDim2.new(0,0,0,178),BackgroundColor3=T.Divider,Parent=main})
 
-    local closeBtn = Instance.new("ImageButton")
-    closeBtn.Size = UDim2.new(0, 22, 0, 22)
-    closeBtn.Position = UDim2.new(1, -padding, 0.5, 0)
-    closeBtn.AnchorPoint = Vector2.new(1, 0.5)
-    closeBtn.BackgroundTransparency = 1
-    closeBtn.Image = getIcon("close")
-    closeBtn.ImageColor3 = Zyrix.Theme.TextDim
-    closeBtn.ScaleType = Enum.ScaleType.Fit
-    closeBtn.Parent = header
-    closeBtn.MouseEnter:Connect(function() TweenService:Create(closeBtn, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.Error}):Play() end)
-    closeBtn.MouseLeave:Connect(function() TweenService:Create(closeBtn, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.TextDim}):Play() end)
-
-    local contentY = 60
-
-    local successBox = Instance.new("Frame")
-    successBox.Size = UDim2.new(0.94, 0, 0, 52)
-    successBox.Position = UDim2.new(0.5, 0, 0, contentY)
-    successBox.AnchorPoint = Vector2.new(0.5, 0)
-    successBox.BackgroundColor3 = Zyrix.Theme.Success
-    successBox.BackgroundTransparency = 0.85
-    successBox.BorderSizePixel = 0
-    successBox.Parent = main
-    Instance.new("UICorner", successBox).CornerRadius = UDim.new(0, 4)
-
-    local successStroke = Instance.new("UIStroke", successBox)
-    successStroke.Color = Zyrix.Theme.Success
-    successStroke.Thickness = 1
-    successStroke.Transparency = 0.5
-
-    local checkIcon = Instance.new("ImageLabel")
-    checkIcon.Size = UDim2.new(0, 24, 0, 24)
-    checkIcon.Position = UDim2.new(0, 16, 0.5, 0)
-    checkIcon.AnchorPoint = Vector2.new(0, 0.5)
-    checkIcon.BackgroundTransparency = 1
-    checkIcon.Image = getIcon("check")
-    checkIcon.ImageColor3 = Zyrix.Theme.Success
-    checkIcon.ScaleType = Enum.ScaleType.Fit
-    checkIcon.Parent = successBox
-
-    local successText = Instance.new("TextLabel")
-    successText.Size = UDim2.new(1, -60, 1, 0)
-    successText.Position = UDim2.new(0, 52, 0, 0)
-    successText.BackgroundTransparency = 1
-    successText.Text = "Access Granted"
-    successText.TextColor3 = Zyrix.Theme.Success
-    successText.TextSize = mobile and 17 or 18
-    successText.Font = Enum.Font.ArimoBold
-    successText.TextXAlignment = Enum.TextXAlignment.Left
-    successText.Parent = successBox
-
-    local keylessText = Instance.new("TextLabel")
-    keylessText.Size = UDim2.new(1, 0, 0, 20)
-    keylessText.Position = UDim2.new(0.5, 0, 0, contentY + 60)
-    keylessText.AnchorPoint = Vector2.new(0.5, 0)
-    keylessText.BackgroundTransparency = 1
-    keylessText.Text = "Keyless Script"
-    keylessText.TextColor3 = Zyrix.Theme.TextDim
-    keylessText.TextSize = mobile and 14 or 15
-    keylessText.Font = Enum.Font.ArimoBold
-    keylessText.Parent = main
-
-    local divider = Instance.new("Frame")
-    divider.Size = UDim2.new(1, 0, 0, 3)
-    divider.Position = UDim2.new(0, 0, 0, contentY + 88)
-    divider.BackgroundColor3 = Zyrix.Theme.Divider
-    divider.BorderSizePixel = 0
-    divider.Parent = main
-
-    local launchBtn = Instance.new("TextButton")
-    launchBtn.Size = UDim2.new(0.75, 0, 0, 42)
-    launchBtn.Position = UDim2.new(0.5, 0, 0, contentY + 103)
-    launchBtn.AnchorPoint = Vector2.new(0.5, 0)
-    launchBtn.BackgroundColor3 = Zyrix.Theme.Accent
-    launchBtn.BorderSizePixel = 0
-    launchBtn.Text = ""
-    launchBtn.AutoButtonColor = false
-    launchBtn.Parent = main
-    Instance.new("UICorner", launchBtn).CornerRadius = UDim.new(0, 4)
-
-    local launchStroke = Instance.new("UIStroke", launchBtn)
-    launchStroke.Color = Zyrix.Theme.AccentHover
-    launchStroke.Thickness = 1
-    launchStroke.Transparency = 0.5
-
-    local launchContent = Instance.new("Frame")
-    launchContent.Size = UDim2.new(1, 0, 1, 0)
-    launchContent.BackgroundTransparency = 1
-    launchContent.Parent = launchBtn
-
-    local launchLayout = Instance.new("UIListLayout", launchContent)
-    launchLayout.FillDirection = Enum.FillDirection.Horizontal
-    launchLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    launchLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    launchLayout.Padding = UDim.new(0, 8)
-
-    local launchIcon = Instance.new("ImageLabel")
-    launchIcon.Size = UDim2.new(0, 18, 0, 18)
-    launchIcon.BackgroundTransparency = 1
-    launchIcon.Image = getIcon("shield")
-    launchIcon.ImageColor3 = Zyrix.Theme.Background
-    launchIcon.ScaleType = Enum.ScaleType.Fit
-    launchIcon.LayoutOrder = 1
-    launchIcon.Parent = launchContent
-
-    local launchLabel = Instance.new("TextLabel")
-    launchLabel.Size = UDim2.new(0, 0, 0, 18)
-    launchLabel.AutomaticSize = Enum.AutomaticSize.X
-    launchLabel.BackgroundTransparency = 1
-    launchLabel.Text = "Launch Script"
-    launchLabel.TextColor3 = Zyrix.Theme.Background
-    launchLabel.TextSize = mobile and 14 or 15
-    launchLabel.Font = Enum.Font.ArimoBold
-    launchLabel.LayoutOrder = 2
-    launchLabel.Parent = launchContent
-
-    launchBtn.MouseEnter:Connect(function() TweenService:Create(launchBtn, TweenInfo.new(0.15), {BackgroundColor3 = Zyrix.Theme.AccentHover}):Play() end)
-    launchBtn.MouseLeave:Connect(function() TweenService:Create(launchBtn, TweenInfo.new(0.15), {BackgroundColor3 = Zyrix.Theme.Accent}):Play() end)
-
-    local bottomY = contentY + 153
-
-    local userBtn = Instance.new("TextButton")
-    userBtn.Size = UDim2.new(0, 36, 0, 36)
-    userBtn.Position = UDim2.new(0.5, -44, 0, bottomY)
-    userBtn.AnchorPoint = Vector2.new(0.5, 0)
-    userBtn.BackgroundColor3 = Zyrix.Theme.Header
-    userBtn.BorderSizePixel = 0
-    userBtn.Text = ""
-    userBtn.AutoButtonColor = false
-    userBtn.Parent = main
-    Instance.new("UICorner", userBtn).CornerRadius = UDim.new(0, 4)
-
-    local userIcon = Instance.new("ImageLabel")
-    userIcon.Size = UDim2.new(0, 18, 0, 18)
-    userIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
-    userIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-    userIcon.BackgroundTransparency = 1
-    userIcon.Image = getIcon("user")
-    userIcon.ImageColor3 = Zyrix.Theme.TextDim
-    userIcon.ScaleType = Enum.ScaleType.Fit
-    userIcon.Parent = userBtn
-    userBtn.MouseEnter:Connect(function() TweenService:Create(userIcon, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.Accent}):Play() end)
-    userBtn.MouseLeave:Connect(function() TweenService:Create(userIcon, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.TextDim}):Play() end)
-
-    local discordBtn = Instance.new("TextButton")
-    discordBtn.Size = UDim2.new(0, 36, 0, 36)
-    discordBtn.Position = UDim2.new(0.5, 0, 0, bottomY)
-    discordBtn.AnchorPoint = Vector2.new(0.5, 0)
-    discordBtn.BackgroundColor3 = Zyrix.Theme.Header
-    discordBtn.BorderSizePixel = 0
-    discordBtn.Text = ""
-    discordBtn.AutoButtonColor = false
-    discordBtn.Parent = main
-    Instance.new("UICorner", discordBtn).CornerRadius = UDim.new(0, 4)
-
-    local discordIcon = Instance.new("ImageLabel")
-    discordIcon.Size = UDim2.new(0, 18, 0, 18)
-    discordIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
-    discordIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-    discordIcon.BackgroundTransparency = 1
-    discordIcon.Image = getIcon("discord")
-    discordIcon.ImageColor3 = Zyrix.Theme.Discord
-    discordIcon.ScaleType = Enum.ScaleType.Fit
-    discordIcon.Parent = discordBtn
-    discordBtn.MouseEnter:Connect(function() TweenService:Create(discordIcon, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.DiscordHover}):Play() end)
-    discordBtn.MouseLeave:Connect(function() TweenService:Create(discordIcon, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.Discord}):Play() end)
-
-    local changelogBtn = Instance.new("TextButton")
-    changelogBtn.Size = UDim2.new(0, 36, 0, 36)
-    changelogBtn.Position = UDim2.new(0.5, 44, 0, bottomY)
-    changelogBtn.AnchorPoint = Vector2.new(0.5, 0)
-    changelogBtn.BackgroundColor3 = Zyrix.Theme.Header
-    changelogBtn.BorderSizePixel = 0
-    changelogBtn.Text = ""
-    changelogBtn.AutoButtonColor = false
-    changelogBtn.Parent = main
-    Instance.new("UICorner", changelogBtn).CornerRadius = UDim.new(0, 4)
-
-    local changelogIcon = Instance.new("ImageLabel")
-    changelogIcon.Size = UDim2.new(0, 18, 0, 18)
-    changelogIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
-    changelogIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-    changelogIcon.BackgroundTransparency = 1
-    changelogIcon.Image = getIcon("changelog")
-    changelogIcon.ImageColor3 = Zyrix.Theme.TextDim
-    changelogIcon.ScaleType = Enum.ScaleType.Fit
-    changelogIcon.Parent = changelogBtn
-    changelogBtn.MouseEnter:Connect(function() TweenService:Create(changelogIcon, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.Text}):Play() end)
-    changelogBtn.MouseLeave:Connect(function() TweenService:Create(changelogIcon, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.TextDim}):Play() end)
-
-    if #Zyrix.Changelog == 0 then
-        changelogBtn.Visible = false
-        userBtn.Position = UDim2.new(0.5, -22, 0, bottomY)
-        discordBtn.Position = UDim2.new(0.5, 22, 0, bottomY)
+    -- buttons
+    local function actionBtn(label2,ico,primary,y)
+        local b=mkButton({Size=UDim2.new(0.78,0,0,38),Position=UDim2.new(0.5,0,0,y),AnchorPoint=Vector2.new(0.5,0),BackgroundColor3=primary and T.Accent or T.Input,Parent=main})
+        applyCorner(b,UDim.new(0,6)) applyStroke(b,primary and T.AccentHover or T.Accent,1,primary and 0.7 or 0.88)
+        local fc=mkFrame({Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Parent=b})
+        local fl=Instance.new("UIListLayout",fc) fl.FillDirection=Enum.FillDirection.Horizontal fl.HorizontalAlignment=Enum.HorizontalAlignment.Center fl.VerticalAlignment=Enum.VerticalAlignment.Center fl.Padding=UDim.new(0,7)
+        mkImage({Size=UDim2.new(0,14,0,14),Image=icon(ico),ImageColor3=primary and T.Background or T.Text,LayoutOrder=1,Parent=fc})
+        mkLabel({Size=UDim2.new(0,0,0,14),AutomaticSize=Enum.AutomaticSize.X,Text=label2,TextColor3=primary and T.Background or T.Text,TextSize=13,LayoutOrder=2,Parent=fc})
+        b.MouseEnter:Connect(function() tw(b,0.12,{BackgroundColor3=primary and T.AccentHover or Color3.fromRGB(30,30,30)}) end)
+        b.MouseLeave:Connect(function() tw(b,0.12,{BackgroundColor3=primary and T.Accent or T.Input}) end)
+        return b
     end
 
-    local doors = CreateDoorOverlay(main, windowWidth, windowHeight)
+    local getKeyBtn = actionBtn("Get Key",    "key",    false, 190)
+    local redeemBtn = actionBtn("Redeem Key", "shield", true,  234)
 
-    userBtn.MouseButton1Click:Connect(function() ui.toggleUser(userIcon) end)
-    changelogBtn.MouseButton1Click:Connect(function() ui.toggleCL(changelogIcon) end)
-
-    local function closeDoorsThenExit(callback)
-        ui.closeAllPanels(userIcon, changelogIcon, function()
-            doors.close(function() task.wait(0.3) if callback then callback() end end)
-        end)
+    -- icon row
+    local function iconBtn(ico,x,nc,hc)
+        local b=mkButton({Size=UDim2.new(0,32,0,32),Position=UDim2.new(0.5,x,0,280),AnchorPoint=Vector2.new(0.5,0),BackgroundColor3=T.Input,Parent=main})
+        applyCorner(b,UDim.new(0,6)) applyStroke(b,T.Accent,1,0.9)
+        local im2=mkImage({Size=UDim2.new(0,16,0,16),Position=UDim2.new(0.5,0,0.5,0),AnchorPoint=Vector2.new(0.5,0.5),Image=icon(ico),ImageColor3=nc,Parent=b})
+        b.MouseEnter:Connect(function() tw(im2,0.12,{ImageColor3=hc}) end)
+        b.MouseLeave:Connect(function() tw(im2,0.12,{ImageColor3=nc}) end)
+        return b,im2
     end
-
-    closeBtn.MouseButton1Click:Connect(function()
-        Zyrix:Notify("Goodbye", "See you next time!", 2, "close")
-        closeDoorsThenExit(function()
-            fullCleanup()
-            TweenService:Create(container, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Position = UDim2.new(0.5, 0, -0.5, 0)}):Play()
-            TweenService:Create(main, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
-            TweenService:Create(mainStroke, TweenInfo.new(0.3), {Transparency = 1}):Play()
-            task.wait(0.4) gui:Destroy()
-        end)
-        if Zyrix.Callbacks.OnClose then Zyrix.Callbacks.OnClose() end
-    end)
-
-    launchBtn.MouseButton1Click:Connect(function()
-        Zyrix:Notify("Launching", "Script loaded successfully!", 2, "success")
-        getgenv().SCRIPT_KEY = "KEYLESS"
-        getgenv().ZyrixLoaded = false
-        closeDoorsThenExit(function()
-            disableBlur()
-            TweenService:Create(container, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Position = UDim2.new(0.5, 0, -0.5, 0)}):Play()
-            TweenService:Create(main, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
-            TweenService:Create(mainStroke, TweenInfo.new(0.3), {Transparency = 1}):Play()
-            task.wait(0.4) gui:Destroy()
-            if not Internal.IsJunkieMode and Zyrix.Callbacks.OnSuccess then Zyrix.Callbacks.OnSuccess() end
-        end)
-    end)
-
-    discordBtn.MouseButton1Click:Connect(function()
-        if Zyrix.Links.Discord ~= "" then
-            Zyrix:Notify("Discord", "Invite link copied!", 2, "discord")
-            pcall(function() setclipboard(Zyrix.Links.Discord) end)
-        end
-    end)
-
-    setupDragging(header, container)
-    TweenService:Create(container, TweenInfo.new(0.5, Enum.EasingStyle.Quart), {Position = UDim2.new(0.5, 0, 0.45, 0)}):Play()
-    task.wait(0.6)
-    doors.open(function()
-        checkIcon.Size = UDim2.new(0, 0, 0, 0)
-        TweenService:Create(checkIcon, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 24, 0, 24)}):Play()
-        task.wait(0.2)
-        ui.toggleUser(userIcon)
-        if #Zyrix.Changelog > 0 then task.wait(0.3) ui.toggleCL(changelogIcon) end
-    end)
-end
-
-local function BuildKeyUI()
-    local oldGui = hui:FindFirstChild("ZyrixKeySystem")
-    if oldGui then oldGui:Destroy() end
-    local oldGui2 = hui:FindFirstChild("ZyrixKeylessSystem")
-    if oldGui2 then oldGui2:Destroy() end
-
-    enableBlur()
-
-    local mobile = isMobile()
-    local scale = getScale()
-    local padding = 14
-    local showShop = isShopEnabled()
-    local shopHeight = 52
-    local shopDividerHeight = 1
-    local shopExtra = showShop and (shopHeight + shopDividerHeight) or 0
-    local baseWindowHeight = mobile and math.clamp(360 * scale, 320, 400) or 360
-    local windowWidth = mobile and math.clamp(400 * scale, 320, 440) or 400
-    local windowHeight = baseWindowHeight + shopExtra
-    local elementHeight = mobile and math.clamp(56 * scale, 48, 62) or 56
-    local buttonHeight = mobile and math.clamp(42 * scale, 38, 48) or 42
-    local statusHeight = mobile and math.clamp(60 * scale, 52, 68) or 60
-    local userPanelWidth = 180
-    local changelogPanelWidth = 220
-    local gap = 12
-
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "ZyrixKeySystem"
-    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    screenGui.ResetOnSpawn = false
-    screenGui.IgnoreGuiInset = true
-    screenGui.Parent = hui
-
-    local ui = BuildCenteredUI(windowWidth, windowHeight, baseWindowHeight, userPanelWidth, changelogPanelWidth, gap, {gui = screenGui})
-    local container = ui.container
-    local mainFrame = ui.mainFrame
-    local mainStroke = ui.mainStroke
-
-    local header = Instance.new("Frame")
-    header.Size = UDim2.new(1, 0, 0, 50)
-    header.BackgroundColor3 = Zyrix.Theme.Header
-    header.BorderSizePixel = 0
-    header.Active = true
-    header.Parent = mainFrame
-    Instance.new("UICorner", header).CornerRadius = UDim.new(0, 4)
-
-    local headerFix = Instance.new("Frame")
-    headerFix.Size = UDim2.new(1, 0, 0, 6)
-    headerFix.Position = UDim2.new(0, 0, 1, -6)
-    headerFix.BackgroundColor3 = Zyrix.Theme.Header
-    headerFix.BorderSizePixel = 0
-    headerFix.Parent = header
-
-    local headerLine = Instance.new("Frame")
-    headerLine.Size = UDim2.new(1, 0, 0, 1)
-    headerLine.Position = UDim2.new(0, 0, 1, 0)
-    headerLine.BackgroundColor3 = Zyrix.Theme.Accent
-    headerLine.BackgroundTransparency = 0.6
-    headerLine.BorderSizePixel = 0
-    headerLine.Parent = header
-
-    local logo = Instance.new("ImageLabel")
-    logo.Size = Zyrix.Appearance.IconSize
-    logo.Position = UDim2.new(0, padding, 0.5, 0)
-    logo.AnchorPoint = Vector2.new(0, 0.5)
-    logo.BackgroundTransparency = 1
-    logo.Image = getLogoIcon()
-    logo.ImageColor3 = Zyrix.Theme.Text
-    logo.ScaleType = Enum.ScaleType.Fit
-    logo.Parent = header
-
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, -90, 1, 0)
-    titleLabel.Position = UDim2.new(0, padding + Zyrix.Appearance.IconSize.X.Offset + 10, 0, 0)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = Zyrix.Appearance.Title
-    titleLabel.TextColor3 = Zyrix.Theme.Text
-    titleLabel.TextSize = mobile and 24 or 26
-    titleLabel.Font = Enum.Font.ArimoBold
-    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    titleLabel.Parent = header
-
-    local closeBtn = Instance.new("ImageButton")
-    closeBtn.Size = UDim2.new(0, 22, 0, 22)
-    closeBtn.Position = UDim2.new(1, -padding, 0.5, 0)
-    closeBtn.AnchorPoint = Vector2.new(1, 0.5)
-    closeBtn.BackgroundTransparency = 1
-    closeBtn.Image = getIcon("close")
-    closeBtn.ImageColor3 = Zyrix.Theme.TextDim
-    closeBtn.ScaleType = Enum.ScaleType.Fit
-    closeBtn.Parent = header
-    closeBtn.MouseEnter:Connect(function() TweenService:Create(closeBtn, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.Error}):Play() end)
-    closeBtn.MouseLeave:Connect(function() TweenService:Create(closeBtn, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.TextDim}):Play() end)
-
-    local contentStartY = 60
-
-    local statusFrame = Instance.new("Frame")
-    statusFrame.Size = UDim2.new(0.94, 0, 0, statusHeight)
-    statusFrame.Position = UDim2.new(0.5, 0, 0, contentStartY)
-    statusFrame.AnchorPoint = Vector2.new(0.5, 0)
-    statusFrame.BackgroundColor3 = Zyrix.Theme.Input
-    statusFrame.BorderSizePixel = 0
-    statusFrame.ClipsDescendants = true
-    statusFrame.Parent = mainFrame
-    Instance.new("UICorner", statusFrame).CornerRadius = UDim.new(0, 4)
-
-    local statusStroke = Instance.new("UIStroke", statusFrame)
-    statusStroke.Color = Zyrix.Theme.Accent
-    statusStroke.Thickness = 1
-    statusStroke.Transparency = 0.8
-
-    local statusIcon = Instance.new("ImageLabel")
-    statusIcon.Size = UDim2.new(0, 24, 0, 24)
-    statusIcon.Position = UDim2.new(0, 16, 0.5, 0)
-    statusIcon.AnchorPoint = Vector2.new(0, 0.5)
-    statusIcon.BackgroundTransparency = 1
-    statusIcon.Image = getIcon("lock")
-    statusIcon.ImageColor3 = Zyrix.Theme.StatusIdle
-    statusIcon.ScaleType = Enum.ScaleType.Fit
-    statusIcon.Parent = statusFrame
-
-    local statusLabel = Instance.new("TextLabel")
-    statusLabel.Size = UDim2.new(1, -60, 1, 0)
-    statusLabel.Position = UDim2.new(0, 52, 0, 0)
-    statusLabel.BackgroundTransparency = 1
-    statusLabel.Text = Zyrix.Appearance.Subtitle
-    statusLabel.TextColor3 = Zyrix.Theme.StatusIdle
-    statusLabel.TextSize = mobile and 17 or 18
-    statusLabel.Font = Enum.Font.ArimoBold
-    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-    statusLabel.TextTruncate = Enum.TextTruncate.AtEnd
-    statusLabel.Parent = statusFrame
-
-    local inputStartY = contentStartY + statusHeight + 10
-
-    local inputFrame = Instance.new("Frame")
-    inputFrame.Size = UDim2.new(0.94, 0, 0, elementHeight)
-    inputFrame.Position = UDim2.new(0.5, 0, 0, inputStartY)
-    inputFrame.AnchorPoint = Vector2.new(0.5, 0)
-    inputFrame.BackgroundColor3 = Zyrix.Theme.Input
-    inputFrame.BorderSizePixel = 0
-    inputFrame.ClipsDescendants = true
-    inputFrame.Parent = mainFrame
-    Instance.new("UICorner", inputFrame).CornerRadius = UDim.new(0, 4)
-
-    local inputStroke = Instance.new("UIStroke", inputFrame)
-    inputStroke.Color = Zyrix.Theme.Accent
-    inputStroke.Thickness = 1
-    inputStroke.Transparency = 0.7
-
-    local textBox = Instance.new("TextBox")
-    textBox.Size = UDim2.new(1, -24, 1, 0)
-    textBox.Position = UDim2.new(0, 12, 0.5, 0)
-    textBox.AnchorPoint = Vector2.new(0, 0.5)
-    textBox.BackgroundTransparency = 1
-    textBox.Text = ""
-    textBox.TextColor3 = Zyrix.Theme.Text
-    textBox.PlaceholderText = "Enter your key..."
-    textBox.PlaceholderColor3 = Zyrix.Theme.TextDim
-    textBox.TextSize = mobile and 17 or 18
-    textBox.Font = Enum.Font.ArimoBold
-    textBox.ClearTextOnFocus = false
-    textBox.TextTruncate = Enum.TextTruncate.AtEnd
-    textBox.TextXAlignment = Enum.TextXAlignment.Left
-    textBox.Parent = inputFrame
-    textBox.Focused:Connect(function() TweenService:Create(inputStroke, TweenInfo.new(0.15), {Transparency = 0.3}):Play() end)
-    textBox.FocusLost:Connect(function() TweenService:Create(inputStroke, TweenInfo.new(0.15), {Transparency = 0.7}):Play() end)
-
-    local dividerY = inputStartY + elementHeight + 12
-
-    local dividerLine = Instance.new("Frame")
-    dividerLine.Size = UDim2.new(1, 0, 0, 3)
-    dividerLine.Position = UDim2.new(0, 0, 0, dividerY)
-    dividerLine.BackgroundColor3 = Zyrix.Theme.Divider
-    dividerLine.BorderSizePixel = 0
-    dividerLine.Parent = mainFrame
-
-    local acquireStartY = dividerY + 15
-
-    local function createButton(text, iconKey, isPrimary, yPos)
-        local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0.75, 0, 0, buttonHeight)
-        btn.Position = UDim2.new(0.5, 0, 0, yPos)
-        btn.AnchorPoint = Vector2.new(0.5, 0)
-        btn.BackgroundColor3 = isPrimary and Zyrix.Theme.Accent or Zyrix.Theme.Input
-        btn.BorderSizePixel = 0
-        btn.Text = ""
-        btn.AutoButtonColor = false
-        btn.Parent = mainFrame
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
-
-        local btnStroke = Instance.new("UIStroke", btn)
-        btnStroke.Color = isPrimary and Zyrix.Theme.AccentHover or Zyrix.Theme.Accent
-        btnStroke.Thickness = 1
-        btnStroke.Transparency = isPrimary and 0.5 or 0.7
-
-        local content = Instance.new("Frame")
-        content.Size = UDim2.new(1, 0, 1, 0)
-        content.BackgroundTransparency = 1
-        content.Parent = btn
-
-        local layout = Instance.new("UIListLayout", content)
-        layout.FillDirection = Enum.FillDirection.Horizontal
-        layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        layout.VerticalAlignment = Enum.VerticalAlignment.Center
-        layout.Padding = UDim.new(0, 8)
-
-        local iconImg = Instance.new("ImageLabel")
-        iconImg.Size = UDim2.new(0, 18, 0, 18)
-        iconImg.BackgroundTransparency = 1
-        iconImg.Image = getIcon(iconKey)
-        iconImg.ImageColor3 = isPrimary and Zyrix.Theme.Background or Zyrix.Theme.Text
-        iconImg.ScaleType = Enum.ScaleType.Fit
-        iconImg.LayoutOrder = 1
-        iconImg.Parent = content
-
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(0, 0, 0, 20)
-        label.AutomaticSize = Enum.AutomaticSize.X
-        label.BackgroundTransparency = 1
-        label.Text = text
-        label.TextColor3 = isPrimary and Zyrix.Theme.Background or Zyrix.Theme.Text
-        label.TextSize = mobile and 14 or 15
-        label.Font = Enum.Font.ArimoBold
-        label.LayoutOrder = 2
-        label.Parent = content
-
-        local origColor = btn.BackgroundColor3
-        local hoverColor = isPrimary and Zyrix.Theme.AccentHover or Zyrix.Theme.Accent
-        btn.MouseEnter:Connect(function() TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = hoverColor}):Play() end)
-        btn.MouseLeave:Connect(function() TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = origColor}):Play() end)
-        return btn
-    end
-
-    local acquireBtn = createButton(Zyrix.Options.NoGetKey and "Unavailable" or "Get Key", Zyrix.Options.NoGetKey and "nogetkey" or "key", false, acquireStartY)
-    if Zyrix.Options.NoGetKey then
-        acquireBtn.Active = false
-        TweenService:Create(acquireBtn, TweenInfo.new(0), {BackgroundColor3 = Zyrix.Theme.Pending}):Play()
-    end
-
-    local redeemBtn = createButton("Redeem Key", "shield", true, acquireStartY + buttonHeight + 5)
-    local bottomY = acquireStartY + buttonHeight * 2 + 10
-
-    local userBtn = Instance.new("TextButton")
-    userBtn.Size = UDim2.new(0, 36, 0, 36)
-    userBtn.Position = UDim2.new(0.5, -44, 0, bottomY)
-    userBtn.AnchorPoint = Vector2.new(0.5, 0)
-    userBtn.BackgroundColor3 = Zyrix.Theme.Header
-    userBtn.BorderSizePixel = 0
-    userBtn.Text = ""
-    userBtn.AutoButtonColor = false
-    userBtn.Parent = mainFrame
-    Instance.new("UICorner", userBtn).CornerRadius = UDim.new(0, 4)
-
-    local userIcon = Instance.new("ImageLabel")
-    userIcon.Size = UDim2.new(0, 18, 0, 18)
-    userIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
-    userIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-    userIcon.BackgroundTransparency = 1
-    userIcon.Image = getIcon("user")
-    userIcon.ImageColor3 = Zyrix.Theme.TextDim
-    userIcon.ScaleType = Enum.ScaleType.Fit
-    userIcon.Parent = userBtn
-    userBtn.MouseEnter:Connect(function() TweenService:Create(userIcon, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.Accent}):Play() end)
-    userBtn.MouseLeave:Connect(function() TweenService:Create(userIcon, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.TextDim}):Play() end)
-
-    local discordBtn = Instance.new("TextButton")
-    discordBtn.Size = UDim2.new(0, 36, 0, 36)
-    discordBtn.Position = UDim2.new(0.5, 0, 0, bottomY)
-    discordBtn.AnchorPoint = Vector2.new(0.5, 0)
-    discordBtn.BackgroundColor3 = Zyrix.Theme.Header
-    discordBtn.BorderSizePixel = 0
-    discordBtn.Text = ""
-    discordBtn.AutoButtonColor = false
-    discordBtn.Parent = mainFrame
-    Instance.new("UICorner", discordBtn).CornerRadius = UDim.new(0, 4)
-
-    local discordIcon = Instance.new("ImageLabel")
-    discordIcon.Size = UDim2.new(0, 18, 0, 18)
-    discordIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
-    discordIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-    discordIcon.BackgroundTransparency = 1
-    discordIcon.Image = getIcon("discord")
-    discordIcon.ImageColor3 = Zyrix.Theme.Discord
-    discordIcon.ScaleType = Enum.ScaleType.Fit
-    discordIcon.Parent = discordBtn
-    discordBtn.MouseEnter:Connect(function() TweenService:Create(discordIcon, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.DiscordHover}):Play() end)
-    discordBtn.MouseLeave:Connect(function() TweenService:Create(discordIcon, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.Discord}):Play() end)
-
-    local changelogBtn = Instance.new("TextButton")
-    changelogBtn.Size = UDim2.new(0, 36, 0, 36)
-    changelogBtn.Position = UDim2.new(0.5, 44, 0, bottomY)
-    changelogBtn.AnchorPoint = Vector2.new(0.5, 0)
-    changelogBtn.BackgroundColor3 = Zyrix.Theme.Header
-    changelogBtn.BorderSizePixel = 0
-    changelogBtn.Text = ""
-    changelogBtn.AutoButtonColor = false
-    changelogBtn.Parent = mainFrame
-    Instance.new("UICorner", changelogBtn).CornerRadius = UDim.new(0, 4)
-
-    local changelogIcon = Instance.new("ImageLabel")
-    changelogIcon.Size = UDim2.new(0, 18, 0, 18)
-    changelogIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
-    changelogIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-    changelogIcon.BackgroundTransparency = 1
-    changelogIcon.Image = getIcon("changelog")
-    changelogIcon.ImageColor3 = Zyrix.Theme.TextDim
-    changelogIcon.ScaleType = Enum.ScaleType.Fit
-    changelogIcon.Parent = changelogBtn
-    changelogBtn.MouseEnter:Connect(function() TweenService:Create(changelogIcon, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.Text}):Play() end)
-    changelogBtn.MouseLeave:Connect(function() TweenService:Create(changelogIcon, TweenInfo.new(0.15), {ImageColor3 = Zyrix.Theme.TextDim}):Play() end)
-
-    if #Zyrix.Changelog == 0 then
-        changelogBtn.Visible = false
-        userBtn.Position = UDim2.new(0.5, -22, 0, bottomY)
-        discordBtn.Position = UDim2.new(0.5, 22, 0, bottomY)
-    end
-
-    if showShop then
-        local shopDivider = Instance.new("Frame")
-        shopDivider.Size = UDim2.new(1, 0, 0, shopDividerHeight)
-        shopDivider.Position = UDim2.new(0, 0, 1, -shopHeight - shopDividerHeight)
-        shopDivider.AnchorPoint = Vector2.new(0, 0)
-        shopDivider.BackgroundColor3 = Zyrix.Theme.Accent
-        shopDivider.BackgroundTransparency = 0.6
-        shopDivider.BorderSizePixel = 0
-        shopDivider.Parent = mainFrame
-
-        local shopFrame = Instance.new("Frame")
-        shopFrame.Size = UDim2.new(1, 0, 0, shopHeight)
-        shopFrame.Position = UDim2.new(0, 0, 1, -shopHeight)
-        shopFrame.AnchorPoint = Vector2.new(0, 0)
-        shopFrame.BackgroundColor3 = Zyrix.Theme.Header
-        shopFrame.BorderSizePixel = 0
-        shopFrame.ClipsDescendants = true
-        shopFrame.Parent = mainFrame
-
-        local shopCorner = Instance.new("UICorner", shopFrame)
-        shopCorner.CornerRadius = UDim.new(0, 4)
-
-        local shopTopFix = Instance.new("Frame")
-        shopTopFix.Size = UDim2.new(1, 0, 0, 8)
-        shopTopFix.Position = UDim2.new(0, 0, 0, 0)
-        shopTopFix.BackgroundColor3 = Zyrix.Theme.Header
-        shopTopFix.BorderSizePixel = 0
-        shopTopFix.Parent = shopFrame
-
-        local shopPadding = 14
-        local shopIconSize = 28
-
-        local shopIconWrapper = Instance.new("Frame")
-        shopIconWrapper.Size = UDim2.new(0, shopIconSize + 4, 0, shopIconSize + 4)
-        shopIconWrapper.Position = UDim2.new(0, shopPadding, 0.5, 0)
-        shopIconWrapper.AnchorPoint = Vector2.new(0, 0.5)
-        shopIconWrapper.BackgroundColor3 = Zyrix.Theme.Accent
-        shopIconWrapper.BackgroundTransparency = 0.7
-        shopIconWrapper.BorderSizePixel = 0
-        shopIconWrapper.Parent = shopFrame
-        Instance.new("UICorner", shopIconWrapper).CornerRadius = UDim.new(0, 4)
-
-        local shopIconStroke = Instance.new("UIStroke", shopIconWrapper)
-        shopIconStroke.Color = Zyrix.Theme.Accent
-        shopIconStroke.Thickness = 1
-        shopIconStroke.Transparency = 0.5
-
-        local shopIconImg = Instance.new("ImageLabel")
-        shopIconImg.Size = UDim2.new(0, shopIconSize, 0, shopIconSize)
-        shopIconImg.Position = UDim2.new(0.5, 0, 0.5, 0)
-        shopIconImg.AnchorPoint = Vector2.new(0.5, 0.5)
-        shopIconImg.BackgroundTransparency = 1
-        shopIconImg.Image = getShopIcon()
-        shopIconImg.ImageColor3 = Zyrix.Theme.Text
-        shopIconImg.ScaleType = Enum.ScaleType.Fit
-        shopIconImg.Parent = shopIconWrapper
-
-        local buyBtnWidth = 60
-        local textStartX = shopPadding + shopIconSize + 4 + 10
-        local textAreaWidth = windowWidth - textStartX - buyBtnWidth - shopPadding - 8
-
-        local shopTitle = Instance.new("TextLabel")
-        shopTitle.Size = UDim2.new(0, textAreaWidth, 0, 18)
-        shopTitle.Position = UDim2.new(0, textStartX, 0, 9)
-        shopTitle.BackgroundTransparency = 1
-        shopTitle.Text = Zyrix.Shop.Title
-        shopTitle.TextColor3 = Zyrix.Theme.Text
-        shopTitle.TextSize = mobile and 13 or 14
-        shopTitle.Font = Enum.Font.ArimoBold
-        shopTitle.TextXAlignment = Enum.TextXAlignment.Left
-        shopTitle.TextTruncate = Enum.TextTruncate.AtEnd
-        shopTitle.Parent = shopFrame
-
-        local shopSubtitle = Instance.new("TextLabel")
-        shopSubtitle.Size = UDim2.new(0, textAreaWidth, 0, 14)
-        shopSubtitle.Position = UDim2.new(0, textStartX, 0, 29)
-        shopSubtitle.BackgroundTransparency = 1
-        shopSubtitle.Text = Zyrix.Shop.Subtitle
-        shopSubtitle.TextColor3 = Zyrix.Theme.TextDim
-        shopSubtitle.TextSize = mobile and 10 or 11
-        shopSubtitle.Font = Enum.Font.ArimoBold
-        shopSubtitle.TextXAlignment = Enum.TextXAlignment.Left
-        shopSubtitle.TextTruncate = Enum.TextTruncate.AtEnd
-        shopSubtitle.Parent = shopFrame
-
-        local buyBtn = Instance.new("TextButton")
-        buyBtn.Size = UDim2.new(0, buyBtnWidth, 0, 30)
-        buyBtn.Position = UDim2.new(1, -shopPadding, 0.5, 0)
-        buyBtn.AnchorPoint = Vector2.new(1, 0.5)
-        buyBtn.BackgroundColor3 = Zyrix.Theme.Accent
-        buyBtn.BorderSizePixel = 0
-        buyBtn.Text = ""
-        buyBtn.AutoButtonColor = false
-        buyBtn.Parent = shopFrame
-        Instance.new("UICorner", buyBtn).CornerRadius = UDim.new(0, 4)
-
-        local buyBtnStroke = Instance.new("UIStroke", buyBtn)
-        buyBtnStroke.Color = Zyrix.Theme.AccentHover
-        buyBtnStroke.Thickness = 1
-        buyBtnStroke.Transparency = 0.5
-
-        local buyContent = Instance.new("Frame")
-        buyContent.Size = UDim2.new(1, 0, 1, 0)
-        buyContent.BackgroundTransparency = 1
-        buyContent.Parent = buyBtn
-
-        local buyLayout = Instance.new("UIListLayout", buyContent)
-        buyLayout.FillDirection = Enum.FillDirection.Horizontal
-        buyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        buyLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-        buyLayout.Padding = UDim.new(0, 5)
-
-        local buyIcon = Instance.new("ImageLabel")
-        buyIcon.Size = UDim2.new(0, 14, 0, 14)
-        buyIcon.BackgroundTransparency = 1
-        buyIcon.Image = getIcon("cart")
-        buyIcon.ImageColor3 = Zyrix.Theme.Background
-        buyIcon.ScaleType = Enum.ScaleType.Fit
-        buyIcon.LayoutOrder = 1
-        buyIcon.Parent = buyContent
-
-        local buyLabel = Instance.new("TextLabel")
-        buyLabel.Size = UDim2.new(0, 0, 0, 14)
-        buyLabel.AutomaticSize = Enum.AutomaticSize.X
-        buyLabel.BackgroundTransparency = 1
-        buyLabel.Text = Zyrix.Shop.ButtonText
-        buyLabel.TextColor3 = Zyrix.Theme.Background
-        buyLabel.TextSize = mobile and 11 or 12
-        buyLabel.Font = Enum.Font.ArimoBold
-        buyLabel.LayoutOrder = 2
-        buyLabel.Parent = buyContent
-
-        buyBtn.MouseEnter:Connect(function() TweenService:Create(buyBtn, TweenInfo.new(0.15), {BackgroundColor3 = Zyrix.Theme.AccentHover}):Play() end)
-        buyBtn.MouseLeave:Connect(function() TweenService:Create(buyBtn, TweenInfo.new(0.15), {BackgroundColor3 = Zyrix.Theme.Accent}):Play() end)
-        buyBtn.MouseButton1Click:Connect(function()
-            if Zyrix.Shop.Link ~= "" then
-                pcall(function() setclipboard(Zyrix.Shop.Link) end)
-                Zyrix:Notify("Shop", "Shop link copied to clipboard!", 2, "copy")
-            end
-        end)
-    end
-
-    local doors = CreateDoorOverlay(mainFrame, windowWidth, windowHeight)
-
-    userBtn.MouseButton1Click:Connect(function() ui.toggleUser(userIcon) end)
-    changelogBtn.MouseButton1Click:Connect(function() ui.toggleCL(changelogIcon) end)
-
-    local spinConnection, dotsThread
-
-    local function setStatus(state, customText)
-        if spinConnection then spinConnection:Disconnect() spinConnection = nil statusIcon.Rotation = 0 end
-        if dotsThread then task.cancel(dotsThread) dotsThread = nil end
-        local color, icon, text = Zyrix.Theme.StatusIdle, getIcon("lock"), customText or "No key detected"
-        if state == "verifying" then
-            color, icon, text = Zyrix.Theme.Accent, getIcon("loading"), "Verifying key"
-            spinConnection = RunService.Heartbeat:Connect(function(dt)
-                if statusIcon and statusIcon.Parent then statusIcon.Rotation = (statusIcon.Rotation + dt * 360) % 360
-                else if spinConnection then spinConnection:Disconnect() end end
+    local discordBtn,_ = iconBtn("discord",-22, T.TextDim, Color3.fromRGB(180,180,255))
+    local keyLinkBtn,_ = iconBtn("key",     22, T.TextDim, T.Accent)
+
+    -- status helper
+    local spinConn,dotThread
+    local function setStatus(state,custom)
+        if spinConn then spinConn:Disconnect(); spinConn=nil; statIcon.Rotation=0 end
+        if dotThread then task.cancel(dotThread); dotThread=nil end
+        local col,ic,txt=T.StatusIdle,icon("lock"),custom or "No key detected"
+        if state=="verifying" then
+            col,ic,txt=T.Accent,icon("loading"),"Verifying key"
+            spinConn=RS.Heartbeat:Connect(function(dt)
+                if statIcon and statIcon.Parent then statIcon.Rotation=(statIcon.Rotation+dt*360)%360 end
             end)
-            local dots, i = {".", "..", "...", ""}, 1
-            dotsThread = task.spawn(function()
-                while statusLabel and statusLabel.Parent and statusLabel.Text:find("Verifying", 1, true) do
-                    statusLabel.Text = text .. dots[i] i = (i % #dots) + 1 task.wait(0.4)
+            local dots,di={".","..","...",""},1
+            dotThread=task.spawn(function()
+                while statLbl and statLbl.Parent and statLbl.Text:find("Verifying",1,true) do
+                    statLbl.Text="Verifying key"..dots[di]; di=(di%4)+1; task.wait(0.35)
                 end
             end)
-        elseif state == "success" then color, icon, text = Zyrix.Theme.Success, getIcon("check"), customText or "Access Granted"
-        elseif state == "error" then color, icon, text = Zyrix.Theme.Error, getIcon("alert"), customText or "Invalid Key" end
-        TweenService:Create(statusLabel, TweenInfo.new(0.3), {TextColor3 = color}):Play()
-        TweenService:Create(statusIcon, TweenInfo.new(0.3), {ImageColor3 = color}):Play()
-        statusLabel.Text = text statusIcon.Image = icon
+        elseif state=="success" then col,ic,txt=T.Success,icon("check"),custom or "Access Granted"
+        elseif state=="error"   then col,ic,txt=T.Error,  icon("alert"),custom or "Invalid Key" end
+        tw(statLbl,0.2,{TextColor3=col}); tw(statIcon,0.2,{ImageColor3=col})
+        statLbl.Text=txt; statIcon.Image=ic
     end
 
-    local function closeDoorsThenExit(callback)
-        ui.closeAllPanels(userIcon, changelogIcon, function()
-            doors.close(function() task.wait(0.3) if callback then callback() end end)
-        end)
+    local function closeAndClean(cb)
+        disableBlur()
+        tw(cont,0.3,{Position=UDim2.new(0.5,0,-0.6,0)})
+        tw(main,0.2,{BackgroundTransparency=1})
+        task.wait(0.32)
+        sg:Destroy()
+        if cb then cb() end
     end
 
     closeBtn.MouseButton1Click:Connect(function()
-        Zyrix:Notify("Goodbye", "See you next time!", 2, "close")
-        closeDoorsThenExit(function()
-            fullCleanup()
-            TweenService:Create(container, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Position = UDim2.new(0.5, 0, -0.5, 0)}):Play()
-            TweenService:Create(mainFrame, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
-            task.wait(0.4) screenGui:Destroy()
+        Zyrix:Notify("Goodbye","See you next time!",2,"close")
+        closeAndClean(function()
             if Zyrix.Callbacks.OnClose then Zyrix.Callbacks.OnClose() end
+            removeBackground()
         end)
     end)
 
     local function handleRedeem()
-        local key = textBox.Text:gsub("%s+", "")
-        if key == "" then Zyrix:Notify("Error", "Please enter your key", 3, "warning") return end
-        setStatus("verifying") redeemBtn.Active = false task.wait(0.3)
-        local valid, errorMsg = false, "Invalid key"
-        if Internal.ValidateFunction then
-            local success, result, msg = pcall(Internal.ValidateFunction, key)
-            if success then
-                if type(result) == "table" then
-                    valid = result.valid == true
-                    local errMsgs = {
-                        KEY_INVALID = "Key not found in system", KEY_EXPIRED = "Key has expired",
-                        HWID_BANNED = "Hardware banned", KEY_INVALIDATED = "Key was revoked",
-                        ALREADY_USED = "One-time key already used", HWID_MISMATCH = "HWID limit reached",
-                        SERVICE_NOT_FOUND = "Service not found", SERVICE_MISMATCH = "Wrong service",
-                        PREMIUM_REQUIRED = "Premium required", ERROR = "Network error"
-                    }
-                    local errCode = result.error or "Unknown"
-                    errorMsg = errMsgs[errCode] or result.message or errCode
-                    if errCode == "HWID_BANNED" then task.delay(2, function() cloneref(Players.LocalPlayer):Kick("Hardware banned") end) end
-                elseif type(result) == "boolean" then valid = result errorMsg = msg or "Invalid key" end
+        local key=tb.Text:gsub("%s+","")
+        if key=="" then Zyrix:Notify("Error","Please enter a key",3,"error") return end
+        setStatus("verifying"); redeemBtn.Active=false; task.wait(0.3)
+        local valid,errMsg=false,"Invalid key"
+        if Zyrix.Callbacks.OnVerify then
+            local ok,res=pcall(Zyrix.Callbacks.OnVerify,key)
+            if ok then
+                if type(res)=="boolean" then valid=res
+                elseif type(res)=="table" then valid=res.valid==true; errMsg=res.message or errMsg end
             end
         end
-        redeemBtn.Active = true
+        redeemBtn.Active=true
         if valid then
-            saveKey(key) getgenv().SCRIPT_KEY = key getgenv().ZyrixLoaded = false
-            setStatus("success") Zyrix:Notify("Success", "Key validated successfully!", 2, "success") task.wait(1)
-            closeDoorsThenExit(function()
-                disableBlur()
-                TweenService:Create(container, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Position = UDim2.new(0.5, 0, -0.5, 0)}):Play()
-                TweenService:Create(mainFrame, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
-                task.wait(0.4) screenGui:Destroy()
-                if not Internal.IsJunkieMode and Zyrix.Callbacks.OnSuccess then Zyrix.Callbacks.OnSuccess() end
+            if Zyrix.Storage.Remember then saveKey(Zyrix.Storage.FileName,key) end
+            getgenv().__ZyrixKey=key
+            setStatus("success"); Zyrix:Notify("Success","Key validated!",2,"success")
+            task.wait(0.8)
+            closeAndClean(function()
+                removeBackground()
+                if Zyrix.Callbacks.OnSuccess then Zyrix.Callbacks.OnSuccess() end
             end)
         else
-            setStatus("error", errorMsg) Zyrix:Notify("Invalid", errorMsg, 4, "error")
-            if Zyrix.Callbacks.OnFail then Zyrix.Callbacks.OnFail(errorMsg) end
+            setStatus("error",errMsg); Zyrix:Notify("Invalid",errMsg,4,"error")
+            if Zyrix.Callbacks.OnFail then Zyrix.Callbacks.OnFail(errMsg) end
         end
     end
 
     redeemBtn.MouseButton1Click:Connect(handleRedeem)
-    acquireBtn.MouseButton1Click:Connect(function()
-        if Zyrix.Options.NoGetKey then
-            Zyrix:Notify("Unavailable", "Get Key is unavailable", 3, "nogetkey")
-            return
-        end
-        if Zyrix.Links.GetKey ~= "" then
-            Zyrix:Notify("Copied", "Key link copied!", 3, "copy")
-            pcall(function() setclipboard(Zyrix.Links.GetKey) end)
-        else
-            Zyrix:Notify("Error", "No key link set", 3, "warning")
-        end
+    tb.FocusLost:Connect(function(enter) if enter then handleRedeem() end end)
+    getKeyBtn.MouseButton1Click:Connect(function()
+        if Zyrix.Links.GetKey~="" then pcall(setclipboard,Zyrix.Links.GetKey); Zyrix:Notify("Copied","Key link copied",2,"copy")
+        else Zyrix:Notify("Error","No key link set",3,"error") end
     end)
     discordBtn.MouseButton1Click:Connect(function()
-        if Zyrix.Links.Discord ~= "" then Zyrix:Notify("Discord", "Invite link copied!", 2, "discord") pcall(function() setclipboard(Zyrix.Links.Discord) end) end
+        if Zyrix.Links.Discord~="" then pcall(setclipboard,Zyrix.Links.Discord); Zyrix:Notify("Discord","Invite copied",2,"discord") end
     end)
-    textBox.FocusLost:Connect(function(enter) if enter then handleRedeem() end end)
 
-    setupDragging(header, container)
-    TweenService:Create(container, TweenInfo.new(0.5, Enum.EasingStyle.Quart), {Position = UDim2.new(0.5, 0, 0.45, 0)}):Play()
-    task.wait(0.6)
-    doors.open(function()
-        task.wait(0.2)
-        ui.toggleUser(userIcon)
-        if #Zyrix.Changelog > 0 then task.wait(0.3) ui.toggleCL(changelogIcon) end
-    end)
+    if Zyrix.Options.Draggable then draggable(hdr,cont) end
+
+    -- entrance
+    tw(cont,0.4,{Position=UDim2.new(0.5,0,0.48,0)},Enum.EasingStyle.Back)
 end
 
 function Zyrix:Launch()
-    Internal.IsJunkieMode = false
-    Internal.ValidateFunction = Zyrix.Callbacks.OnVerify
-    local existingKey = getgenv().SCRIPT_KEY
-    if existingKey and existingKey ~= "" then
-        if existingKey == "KEYLESS" then
-            Zyrix:Notify("Executed", "Script loaded successfully!", 2, "success")
-            if Zyrix.Callbacks.OnSuccess then Zyrix.Callbacks.OnSuccess() end return
-        elseif Internal.ValidateFunction and validateKey(existingKey, Internal.ValidateFunction) then
-            Zyrix:Notify("Executed", "Script loaded successfully!", 2, "success")
-            if Zyrix.Callbacks.OnSuccess then Zyrix.Callbacks.OnSuccess() end return
-        end
-        getgenv().SCRIPT_KEY = nil
-    end
-    getgenv().ZyrixClosed = false
-    EnsureIconsReady(function()
-        if Zyrix.Options.Keyless == true then
-            if Zyrix.Options.KeylessUI == false then handleKeylessSkip() return end
-            BuildKeylessUI()
-            while not getgenv().SCRIPT_KEY do task.wait(0.1) end
+    local existKey = getgenv().__ZyrixKey
+    if existKey and existKey~="" then
+        if validateKey(existKey, self.Callbacks.OnVerify) then
+            self:Notify("Welcome Back","Key still valid",2,"success")
+            if self.Callbacks.OnSuccess then self.Callbacks.OnSuccess() end
             return
         end
-        if Zyrix.Storage.AutoLoad and Internal.ValidateFunction then
-            local savedKey = loadKey()
-            if savedKey and savedKey ~= "" then
-                Zyrix:Notify("Checking", "Validating saved key...", 2, "shield") task.wait(0.5)
-                if validateKey(savedKey, Internal.ValidateFunction) then
-                    getgenv().SCRIPT_KEY = savedKey
-                    Zyrix:Notify("Welcome Back", "Key validated!", 2, "success")
-                    if Zyrix.Callbacks.OnSuccess then Zyrix.Callbacks.OnSuccess() end return
-                else clearKey() Zyrix:Notify("Expired", "Saved key is no longer valid", 3, "warning") task.wait(1) end
-            end
-        end
-        BuildKeyUI()
-        while not getgenv().SCRIPT_KEY do task.wait(0.1) end
-    end)
-end
-
-function Zyrix:LaunchJunkie(config)
-    assert(config and config.Service and config.Identifier and config.Provider, "Config required: Service, Identifier, Provider")
-    Internal.IsJunkieMode = true
-    local existingKey = getgenv().SCRIPT_KEY
-    if existingKey and existingKey ~= "" then
-        Zyrix:Notify("Executed", "Script loaded successfully!", 2, "success")
-        if Zyrix.Callbacks.OnSuccess then Zyrix.Callbacks.OnSuccess() end return
+        getgenv().__ZyrixKey=nil
     end
-    getgenv().ZyrixClosed = false
-    EnsureIconsReady(function()
-        local success, Junkie = pcall(function() return loadstring(game:HttpGet("https://jnkie.com/sdk/library.lua"))() end)
-        if not success or not Junkie then Zyrix:Notify("Error", "Failed to load Junkie SDK", 5, "error") return end
-        Junkie.service = config.Service
-        Junkie.identifier = config.Identifier
-        Junkie.provider = config.Provider
-        Internal.Junkie = Junkie
-        if Zyrix.Links.GetKey == "" then pcall(function() Zyrix.Links.GetKey = Junkie.get_key_link() end) end
-        Internal.ValidateFunction = function(key) return Junkie.check_key(key) end
-        if Zyrix.Options.Keyless == nil then
-            local ks, kr = pcall(function() return Junkie.check_key("KEYLESS") end)
-            if ks and kr and kr.valid then
-                if Zyrix.Options.KeylessUI == false then handleKeylessSkip() return end
-                BuildKeylessUI()
-                while not getgenv().SCRIPT_KEY do task.wait(0.1) end
+
+    if self.Storage.AutoLoad and self.Callbacks.OnVerify then
+        local saved=loadKey(self.Storage.FileName)
+        if saved then
+            self:Notify("Checking","Validating saved key...",2,"info")
+            task.wait(0.4)
+            if validateKey(saved, self.Callbacks.OnVerify) then
+                getgenv().__ZyrixKey=saved
+                self:Notify("Welcome Back","Key validated!",2,"success")
+                if self.Callbacks.OnSuccess then self.Callbacks.OnSuccess() end
                 return
-            end
-        elseif Zyrix.Options.Keyless == true then
-            if Zyrix.Options.KeylessUI == false then handleKeylessSkip() return end
-            BuildKeylessUI()
-            while not getgenv().SCRIPT_KEY do task.wait(0.1) end
-            return
-        end
-        if Zyrix.Storage.AutoLoad then
-            local savedKey = loadKey()
-            if savedKey and savedKey ~= "" then
-                Zyrix:Notify("Checking", "Validating saved key...", 2, "shield") task.wait(0.5)
-                local vs, vr = pcall(function() return Junkie.check_key(savedKey) end)
-                if vs and vr and vr.valid then
-                    getgenv().SCRIPT_KEY = savedKey
-                    Zyrix:Notify("Welcome Back", "Key validated!", 2, "success")
-                    if Zyrix.Callbacks.OnSuccess then Zyrix.Callbacks.OnSuccess() end return
-                else clearKey() Zyrix:Notify("Expired", "Saved key is no longer valid", 3, "warning") task.wait(1) end
+            else
+                clearKey(self.Storage.FileName)
+                self:Notify("Expired","Saved key expired",3,"error")
+                task.wait(0.6)
             end
         end
-        BuildKeyUI()
-        while not getgenv().SCRIPT_KEY do task.wait(0.1) end
-    end)
+    end
+
+    buildBackground()
+    buildKeyUI()
 end
 
-function Zyrix:GetSavedKey() return loadKey() end
-function Zyrix:ClearSavedKey() return clearKey() end
+function Zyrix:GetSavedKey()   return loadKey(self.Storage.FileName) end
+function Zyrix:ClearSavedKey() clearKey(self.Storage.FileName) end
 
-getgenv().Zyrix = Zyrix
+getgenv().__ZyrixLib = Zyrix
+getgenv().ZyrixUI    = ZyrixUI
+
 return Zyrix
