@@ -1129,6 +1129,764 @@ function Zyrix:ClearSavedKey() clearKey(self.Storage.FileName) end
 
 getgenv().__ZyrixLib = Zyrix
 getgenv().ZyrixUI    = ZyrixUI
+
+-- ══════════════════════════════════════════════════════════════════════════════
+--  ZyrixPanel  —  the main GUI that opens after the key is accepted
+--  Exact design from the provided script. Call ZyrixPanel:Open() in OnSuccess.
+-- ══════════════════════════════════════════════════════════════════════════════
+local ZyrixPanel = {}
+
+local function buildPanel()
+    -- remove any existing instance
+    local plr    = PLR.LocalPlayer
+    local pg     = plr:WaitForChild("PlayerGui")
+    local oldSG  = pg:FindFirstChild("ZyrixPanel")
+    if oldSG then oldSG:Destroy() end
+
+    local pSG = Instance.new("ScreenGui")
+    pSG.Name           = "ZyrixPanel"
+    pSG.ResetOnSpawn   = false
+    pSG.IgnoreGuiInset = true
+    pSG.DisplayOrder   = 60          -- above key system overlay
+    pSG.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    pSG.Parent         = pg
+
+    -- ── Palette ────────────────────────────────────────────────────────────────
+    local P = {
+        WIN       = Color3.fromRGB(20,  20,  20),
+        TAB       = Color3.fromRGB(23,  23,  23),
+        EL        = Color3.fromRGB(25,  25,  25),
+        INNER     = Color3.fromRGB(31,  31,  31),
+        PROGRESS  = Color3.fromRGB(201, 201, 201),
+        DD_BG     = Color3.fromRGB(19,  19,  19),
+        DD_ROW    = Color3.fromRGB(27,  27,  27),
+        STROKE_EL = Color3.fromRGB(41,  41,  41),
+        STROKE_IN = Color3.fromRGB(51,  51,  51),
+        STROKE_WIN= Color3.fromRGB(36,  36,  36),
+        TEXT      = Color3.fromRGB(231, 231, 231),
+        TEXT_DIM  = Color3.fromRGB(181, 181, 181),
+        TEXT_GREY = Color3.fromRGB(131, 131, 131),
+        WHITE     = Color3.fromRGB(255, 255, 255),
+        GREEN1    = Color3.fromRGB(0,   171, 0),
+        HOVER     = Color3.fromRGB(45,  45,  45),
+        OFF       = Color3.fromRGB(60,  60,  60),
+        LOGO_OFF  = Color3.fromRGB(100, 100, 100),
+    }
+
+    local FONT_B = Enum.Font.GothamBold
+    local FONT_M = Enum.Font.GothamMedium
+
+    -- ── Helpers ────────────────────────────────────────────────────────────────
+    local function pt(obj, t, props, style, dir)
+        TS:Create(obj, TweenInfo.new(t, style or Enum.EasingStyle.Quart, dir or Enum.EasingDirection.Out), props):Play()
+    end
+
+    local function pCorner(p, r)
+        local c = Instance.new("UICorner", p); c.CornerRadius = r or UDim.new(0,4); return c
+    end
+    local function pStroke(p, col, thick)
+        local s = Instance.new("UIStroke", p)
+        s.Color = col or P.STROKE_EL; s.Thickness = thick or 1
+        s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border; return s
+    end
+    local function pPad(p, t, b, l, r)
+        local pad = Instance.new("UIPadding", p)
+        pad.PaddingTop=UDim.new(0,t or 0); pad.PaddingBottom=UDim.new(0,b or 0)
+        pad.PaddingLeft=UDim.new(0,l or 0); pad.PaddingRight=UDim.new(0,r or 0)
+    end
+    local function pGrad(p, from, to, rot)
+        local g = Instance.new("UIGradient", p)
+        g.Color = ColorSequence.new(from or Color3.new(0,0,0), to or P.WIN)
+        g.Rotation = rot or 0; return g
+    end
+    local function pLabel(props)
+        local l = Instance.new("TextLabel"); l.BackgroundTransparency=1
+        l.TextXAlignment=Enum.TextXAlignment.Left; l.TextWrapped=true
+        for k,v in pairs(props) do l[k]=v end; return l
+    end
+    local function pBtn(parent, size, pos, bgCol)
+        local b = Instance.new("TextButton", parent)
+        b.AutoButtonColor=false; b.BackgroundTransparency=1
+        b.Size=size; b.Position=pos or UDim2.new(0,0,0,0)
+        b.Text=""; b.BorderSizePixel=0
+        if bgCol then b.BackgroundColor3=bgCol; b.BackgroundTransparency=0 end
+        return b
+    end
+    local function pFrame(parent, size, pos, col, trans)
+        local f = Instance.new("Frame", parent); f.BorderSizePixel=0
+        f.Size=size; f.Position=pos or UDim2.new(0,0,0,0)
+        f.BackgroundColor3=col or P.WIN
+        f.BackgroundTransparency=trans or 0
+        return f
+    end
+    local function pList(parent, spacing, dir)
+        local l = Instance.new("UIListLayout", parent)
+        l.Padding=UDim.new(0,spacing or 5); l.SortOrder=Enum.SortOrder.LayoutOrder
+        l.FillDirection=dir or Enum.FillDirection.Vertical; return l
+    end
+
+    -- ── Layout ─────────────────────────────────────────────────────────────────
+    local WIN_W=563; local WIN_H=354; local TAB_H=42; local GAP=8
+    local TOTAL_H=TAB_H+GAP+WIN_H
+
+    -- Outer container
+    local outer = pFrame(pSG, UDim2.new(0,WIN_W,0,TAB_H), UDim2.new(0,20,0,20), P.TAB)
+    outer.Name="ZyrixOuter"; outer.ClipsDescendants=false
+    pCorner(outer, UDim.new(0,8))
+    pStroke(outer, P.STROKE_WIN, 1)
+    pGrad(outer, Color3.new(0,0,0), P.TAB)
+
+    -- ── Tab bar ────────────────────────────────────────────────────────────────
+    local tabFrame = pFrame(outer, UDim2.new(1,0,0,TAB_H), UDim2.new(0,0,0,0), P.TAB)
+    tabFrame.Name="TabFrame"; tabFrame.ClipsDescendants=false
+    pCorner(tabFrame, UDim.new(0,8))
+    pGrad(tabFrame, Color3.new(0,0,0), P.TAB)
+
+    -- Z logo button
+    local logoBtn = pBtn(tabFrame, UDim2.new(0,36,0,36), UDim2.new(0,4,0.5,-18), P.TEXT)
+    logoBtn.BackgroundTransparency=0; logoBtn.Name="LogoBtn"
+    pCorner(logoBtn, UDim.new(0,6))
+    local logoText = pLabel({
+        Parent=logoBtn, Size=UDim2.new(1,0,1,0),
+        Text="Z", Font=FONT_B, TextSize=22,
+        TextColor3=P.WHITE, TextXAlignment=Enum.TextXAlignment.Center,
+        TextYAlignment=Enum.TextYAlignment.Center,
+    })
+    logoText.ZIndex = logoBtn.ZIndex+1
+
+    -- Pill scroll (tabs)
+    local tabSF = Instance.new("ScrollingFrame", tabFrame)
+    tabSF.Name="tablist"; tabSF.Size=UDim2.new(1,-50,1,0)
+    tabSF.Position=UDim2.new(0,46,0,0)
+    tabSF.BackgroundTransparency=1; tabSF.BorderSizePixel=0
+    tabSF.ScrollBarThickness=0
+    tabSF.ScrollingDirection=Enum.ScrollingDirection.X
+    tabSF.VerticalScrollBarInset=Enum.ScrollBarInset.Always
+    tabSF.AutomaticCanvasSize=Enum.AutomaticSize.X
+    tabSF.CanvasSize=UDim2.new(0,0,0,0)
+    pCorner(tabSF, UDim.new(0,100))
+    local tLayout=pList(tabSF,4,Enum.FillDirection.Horizontal)
+    tLayout.VerticalAlignment=Enum.VerticalAlignment.Center
+    pPad(tabSF,3,3,3,3)
+
+    -- ── Main window ────────────────────────────────────────────────────────────
+    local mainFrame = pFrame(outer, UDim2.new(0,WIN_W,0,WIN_H),
+        UDim2.new(0,0,0,TAB_H+GAP), P.WIN)
+    mainFrame.Name="main"; mainFrame.Visible=false
+    pCorner(mainFrame, UDim.new(0,12))   -- radius 12 as specified
+    pGrad(mainFrame, Color3.new(0,0,0), P.WIN)
+
+    -- drop-shadow effect via UIStroke
+    local mainStroke = pStroke(mainFrame, P.STROKE_WIN, 1.5)
+    mainStroke.Transparency = 0.4
+
+    -- Header
+    local hdr = pFrame(mainFrame, UDim2.new(1,0,0,36), UDim2.new(0,0,0,0), P.TAB)
+    hdr.Name="Header"; pCorner(hdr, UDim.new(0,12))
+    -- fill bottom corners
+    pFrame(hdr, UDim2.new(1,0,0,12), UDim2.new(0,0,1,-12), P.TAB)
+
+    pLabel({Parent=hdr, Size=UDim2.new(1,-42,1,-6), Position=UDim2.new(0,10,0,3),
+        Text="Zyrix", Font=FONT_B, TextSize=16, TextColor3=P.WHITE,
+        TextXAlignment=Enum.TextXAlignment.Left})
+
+    local closeBtn = pBtn(hdr, UDim2.new(0,26,0,26), UDim2.new(1,-30,0.5,-13), P.HOVER)
+    closeBtn.BackgroundTransparency=0; closeBtn.Name="CloseBtn"
+    pCorner(closeBtn, UDim.new(0,5))
+    pLabel({Parent=closeBtn, Size=UDim2.new(1,0,1,0), Text="✕",
+        Font=FONT_B, TextSize=13, TextColor3=P.TEXT,
+        TextXAlignment=Enum.TextXAlignment.Center, TextYAlignment=Enum.TextYAlignment.Center})
+    closeBtn.MouseEnter:Connect(function() pt(closeBtn,0.1,{BackgroundColor3=Color3.fromRGB(80,20,20)}) end)
+    closeBtn.MouseLeave:Connect(function() pt(closeBtn,0.1,{BackgroundColor3=P.HOVER}) end)
+
+    -- Separator
+    local sep = pFrame(mainFrame, UDim2.new(1,-20,0,1), UDim2.new(0,10,0,36), P.STROKE_IN)
+
+    -- Elements scroll
+    local elements = Instance.new("ScrollingFrame", mainFrame)
+    elements.Name="elements"
+    elements.Size=UDim2.new(1,-10,1,-42)
+    elements.Position=UDim2.new(0,5,0,40)
+    elements.BackgroundTransparency=1; elements.BorderSizePixel=0
+    elements.ScrollBarThickness=2
+    elements.ScrollBarImageColor3=Color3.fromRGB(141,141,141)
+    elements.ScrollBarImageTransparency=0.3
+    elements.CanvasSize=UDim2.new(0,0,0,0)
+    elements.AutomaticCanvasSize=Enum.AutomaticSize.Y
+    elements.ScrollingDirection=Enum.ScrollingDirection.Y
+    pPad(elements,4,6,4,4)
+    pList(elements,6)
+
+    -- ── Element builders ───────────────────────────────────────────────────────
+    local _tabPanels = {}
+    local _tabBtns   = {}
+    local _activeTab = nil
+    local _loMap     = {}   -- per-tab layout order counter
+
+    -- Section header
+    local function addSection(panel, title)
+        _loMap[panel] = (_loMap[panel] or 0) + 1
+        local s = pFrame(panel, UDim2.new(1,0,0,24), nil, P.WIN, 1)
+        s.LayoutOrder=_loMap[panel]
+        pLabel({Parent=s, Size=UDim2.new(1,0,1,0),
+            Text=title:upper(), Font=Enum.Font.Gotham, TextSize=9,
+            TextColor3=Color3.fromRGB(90,90,90), TextXAlignment=Enum.TextXAlignment.Left})
+        local ln=pFrame(s,UDim2.new(1,0,0,1),UDim2.new(0,0,1,-1),P.STROKE_EL)
+    end
+
+    -- Element wrapper
+    local function elBase(panel, h)
+        _loMap[panel] = (_loMap[panel] or 0) + 1
+        local f = pFrame(panel, UDim2.new(1,0,0,h), nil, P.EL)
+        f.LayoutOrder=_loMap[panel]
+        pCorner(f, UDim.new(0,5))
+        pStroke(f, P.STROKE_EL, 1)
+        pPad(f, 8, 8, 10, 10)
+        return f
+    end
+
+    -- Toggle (exact match to the provided script)
+    local function addToggle(panel, label, desc, default, callback)
+        local h = desc and 52 or 38
+        local f = elBase(panel, h)
+
+        -- Title
+        pLabel({Parent=f, Size=UDim2.new(1,-54,0,14),
+            Position=UDim2.new(0,0,0,desc and 2 or 0),
+            Text=label, Font=FONT_M, TextSize=13, TextColor3=P.TEXT,
+            TextXAlignment=Enum.TextXAlignment.Left})
+        if desc then
+            pLabel({Parent=f, Size=UDim2.new(1,-54,0,12),
+                Position=UDim2.new(0,0,0,18),
+                Text=desc, Font=Enum.Font.Gotham, TextSize=10,
+                TextColor3=Color3.fromRGB(100,100,100),
+                TextXAlignment=Enum.TextXAlignment.Left})
+        end
+
+        -- Switch frame
+        local sw = pFrame(f, UDim2.new(0,42,0,22), UDim2.new(1,-42,0.5,-11), P.OFF)
+        pCorner(sw, UDim.new(0,11))
+        pStroke(sw, P.STROKE_IN, 1)
+
+        -- Indicator dot
+        local dot = pFrame(sw, UDim2.new(0,18,0,18), UDim2.new(0,1,0.5,-9), Color3.fromRGB(178,178,178))
+        pCorner(dot, UDim.new(0,9))
+
+        local state = default or false
+        local function applyState(v, animate)
+            if animate then
+                pt(sw, 0.18, {BackgroundColor3=v and P.GREEN1 or P.OFF})
+                pt(dot, 0.18, {Position=UDim2.new(v and 1 or 0, v and -19 or 1, 0.5,-9),
+                    BackgroundColor3=v and P.WHITE or Color3.fromRGB(178,178,178)})
+            else
+                sw.BackgroundColor3=v and P.GREEN1 or P.OFF
+                dot.Position=UDim2.new(v and 1 or 0, v and -19 or 1, 0.5,-9)
+                dot.BackgroundColor3=v and P.WHITE or Color3.fromRGB(178,178,178)
+            end
+        end
+        applyState(state, false)
+
+        -- Hit zone covers the whole element
+        local hit = pBtn(f, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0))
+        hit.ZIndex = 5
+        hit.MouseButton1Click:Connect(function()
+            state=not state; applyState(state,true)
+            if callback then pcall(callback,state) end
+        end)
+        f.MouseEnter:Connect(function() pt(f,0.12,{BackgroundColor3=P.HOVER}) end)
+        f.MouseLeave:Connect(function() pt(f,0.12,{BackgroundColor3=P.EL}) end)
+
+        return {
+            GetValue=function() return state end,
+            SetValue=function(v) state=v; applyState(v,true) end,
+        }
+    end
+
+    -- Slider (exact match to provided script)
+    local function addSlider(panel, label, min, max, default, suffix, callback)
+        if type(suffix)=="function" then callback=suffix; suffix="units" end
+        suffix=suffix or "units"; min=min or 0; max=max or 100
+        default=math.clamp(default or min,min,max)
+        local value=default
+        local f=elBase(panel,52)
+
+        -- Label + value text
+        pLabel({Parent=f, Size=UDim2.new(0.55,0,0,14),
+            Text=label, Font=FONT_M, TextSize=13, TextColor3=P.TEXT,
+            TextXAlignment=Enum.TextXAlignment.Left})
+        local infoLbl=pLabel({Parent=f, Size=UDim2.new(0.45,0,0,14),
+            Position=UDim2.new(0.55,0,0,0),
+            Text=tostring(value).." "..suffix,
+            Font=FONT_M, TextSize=12, TextColor3=P.TEXT_DIM,
+            TextXAlignment=Enum.TextXAlignment.Right})
+
+        -- Track box (matches G2L["1f"])
+        local main=pFrame(f, UDim2.new(1,0,0,26), UDim2.new(0,0,0,20), P.INNER)
+        pCorner(main, UDim.new(0,4))
+        pStroke(main, P.STROKE_IN, 1)
+
+        -- Progress fill (G2L["21"])
+        local prog=pFrame(main, UDim2.new((value-min)/(max-min),0,1,0), nil, P.PROGRESS)
+        pCorner(prog, UDim.new(0,4))
+        local ps=Instance.new("UIStroke",prog); ps.Transparency=0.2; ps.Thickness=0.5; ps.Color=P.STROKE_IN
+
+        -- Info label over bar (G2L["24"])
+        local barInfo=pLabel({Parent=main, ZIndex=5, TextSize=11,
+            TextXAlignment=Enum.TextXAlignment.Left, TextTransparency=0.3,
+            Font=Enum.Font.GothamMedium, TextColor3=Color3.fromRGB(131,131,131),
+            AnchorPoint=Vector2.new(0.5,0.5),
+            Size=UDim2.new(0.9,0,0,14),
+            Text=tostring(value).." "..suffix,
+            Position=UDim2.new(0.45,0,0.5,0)})
+
+        local function updateSlider(x)
+            local rel=math.clamp((x-main.AbsolutePosition.X)/main.AbsoluteSize.X,0,1)
+            value=math.floor(min+(max-min)*rel+0.5)
+            prog.Size=UDim2.new((value-min)/(max-min),0,1,0)
+            local txt=tostring(value).." "..suffix
+            infoLbl.Text=txt; barInfo.Text=txt
+            if callback then pcall(callback,value) end
+        end
+
+        local dragging=false
+        local hit=pBtn(main, UDim2.new(1,0,1,0))
+        hit.ZIndex=10
+        hit.InputBegan:Connect(function(i)
+            if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
+                dragging=true; updateSlider(i.Position.X)
+                pt(main,0.08,{BackgroundColor3=P.HOVER})
+            end
+        end)
+        UIS.InputEnded:Connect(function(i)
+            if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
+                dragging=false; pt(main,0.15,{BackgroundColor3=P.INNER}) end
+        end)
+        UIS.InputChanged:Connect(function(i)
+            if not dragging then return end
+            if i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch then
+                updateSlider(i.Position.X) end
+        end)
+        f.MouseEnter:Connect(function() pt(f,0.12,{BackgroundColor3=P.HOVER}) end)
+        f.MouseLeave:Connect(function() pt(f,0.12,{BackgroundColor3=P.EL}) end)
+
+        return {
+            GetValue=function() return value end,
+            SetValue=function(v)
+                value=math.clamp(v,min,max)
+                prog.Size=UDim2.new((value-min)/(max-min),0,1,0)
+                local txt=tostring(value).." "..suffix
+                infoLbl.Text=txt; barInfo.Text=txt
+            end,
+        }
+    end
+
+    -- Button (exact match to provided script)
+    local function addButton(panel, label, desc, callback)
+        local h=desc and 52 or 38
+        local f=elBase(panel,h)
+
+        -- Star icon on left
+        pLabel({Parent=f, Size=UDim2.new(0,26,0,26),
+            Position=UDim2.new(0,0,0.5,-13),
+            Text="★", Font=Enum.Font.SourceSans, TextSize=18,
+            TextColor3=P.TEXT_GREY, TextXAlignment=Enum.TextXAlignment.Center,
+            TextYAlignment=Enum.TextYAlignment.Center})
+        -- Title
+        pLabel({Parent=f, Size=UDim2.new(1,-36,0,14),
+            Position=UDim2.new(0,30,0,desc and 2 or 0),
+            Text=label, Font=FONT_M, TextSize=13, TextColor3=P.TEXT,
+            TextXAlignment=Enum.TextXAlignment.Left})
+        if desc then
+            pLabel({Parent=f, Size=UDim2.new(1,-36,0,12),
+                Position=UDim2.new(0,30,0,18),
+                Text=desc, Font=Enum.Font.Gotham, TextSize=10,
+                TextColor3=Color3.fromRGB(100,100,100),
+                TextXAlignment=Enum.TextXAlignment.Left})
+        end
+        -- Type indicator right
+        pLabel({Parent=f, Size=UDim2.new(0,80,0,13),
+            Position=UDim2.new(1,-80,0.5,-6),
+            Text="Button", Font=FONT_M, TextSize=11,
+            TextTransparency=0.5, TextColor3=P.TEXT_GREY,
+            TextXAlignment=Enum.TextXAlignment.Right})
+
+        local hit=pBtn(f,UDim2.new(1,0,1,0))
+        hit.ZIndex=5
+        hit.MouseButton1Click:Connect(function()
+            pt(f,0.07,{BackgroundColor3=Color3.fromRGB(38,38,38)})
+            task.delay(0.1,function() pt(f,0.12,{BackgroundColor3=P.EL}) end)
+            if callback then pcall(callback) end
+        end)
+        hit.MouseButton1Down:Connect(function() pt(f,0.06,{Size=UDim2.new(0.99,0,0,h-2)}) end)
+        hit.MouseButton1Up:Connect(function()   pt(f,0.15,{Size=UDim2.new(1,0,0,h)},Enum.EasingStyle.Back) end)
+        f.MouseEnter:Connect(function() pt(f,0.12,{BackgroundColor3=P.HOVER}) end)
+        f.MouseLeave:Connect(function() pt(f,0.12,{BackgroundColor3=P.EL}) end)
+    end
+
+    -- Keybind (exact match to provided script)
+    local function addKeybind(panel, label, default, callback)
+        local key=default or Enum.KeyCode.Q
+        local f=elBase(panel,38)
+
+        pLabel({Parent=f, Size=UDim2.new(1,-90,1,0),
+            Text=label, Font=FONT_M, TextSize=13, TextColor3=P.TEXT,
+            TextXAlignment=Enum.TextXAlignment.Left})
+
+        -- Keybind pill
+        local kbFrame=pFrame(f, UDim2.new(0,70,0,24), UDim2.new(1,-70,0.5,-12), P.EL)
+        pCorner(kbFrame, UDim.new(0,4))
+        pStroke(kbFrame, P.STROKE_IN, 1)
+        local kbLbl=pLabel({Parent=kbFrame, Size=UDim2.new(1,0,1,0),
+            Text=tostring(key):gsub("Enum.KeyCode.",""),
+            Font=FONT_B, TextSize=12, TextColor3=P.TEXT,
+            TextXAlignment=Enum.TextXAlignment.Center,
+            TextYAlignment=Enum.TextYAlignment.Center})
+
+        local hit=pBtn(f,UDim2.new(1,0,1,0))
+        hit.ZIndex=5
+        local capturing=false; local conn2
+        hit.MouseButton1Click:Connect(function()
+            if capturing then return end
+            capturing=true; kbLbl.Text="..."
+            pt(kbFrame,0.1,{BackgroundColor3=P.HOVER})
+            conn2=UIS.InputBegan:Connect(function(i,gp)
+                if gp then return end
+                if i.UserInputType==Enum.UserInputType.Keyboard then
+                    key=i.KeyCode; kbLbl.Text=tostring(key):gsub("Enum.KeyCode.","")
+                    capturing=false; pt(kbFrame,0.1,{BackgroundColor3=P.EL})
+                    if conn2 then conn2:Disconnect() end
+                    if callback then pcall(callback,key) end
+                end
+            end)
+        end)
+        f.MouseEnter:Connect(function() pt(f,0.12,{BackgroundColor3=P.HOVER}) end)
+        f.MouseLeave:Connect(function() pt(f,0.12,{BackgroundColor3=P.EL}) end)
+        return {GetValue=function() return key end}
+    end
+
+    -- Dropdown (exact match to provided script)
+    local function addDropdown(panel, label, options, default, callback)
+        local selected=default or (options and options[1]) or ""
+        local isOpen=false; local ITEM_H=32
+        local f=elBase(panel,38)
+        f.ClipsDescendants=false; f.ZIndex=5
+
+        pLabel({Parent=f, Size=UDim2.new(0.5,0,0,14),
+            Text=label, Font=FONT_M, TextSize=13, TextColor3=P.TEXT,
+            TextXAlignment=Enum.TextXAlignment.Left})
+
+        -- Interact bar
+        local interact=pFrame(f, UDim2.new(0.5,-4,0,26), UDim2.new(0.5,4,0,0), P.INNER)
+        pCorner(interact, UDim.new(0,4))
+        pStroke(interact, P.STROKE_IN, 1)
+
+        local selLbl=pLabel({Parent=interact, Size=UDim2.new(1,-28,1,0),
+            Position=UDim2.new(0,8,0,0), Text=selected,
+            Font=FONT_M, TextSize=12, TextColor3=P.TEXT_DIM,
+            TextXAlignment=Enum.TextXAlignment.Left})
+
+        local arrowFrame=pFrame(interact, UDim2.new(0,20,0,20), UDim2.new(1,-24,0.5,-10), P.OFF)
+        pCorner(arrowFrame, UDim.new(0,4))
+        local arrowLbl=pLabel({Parent=arrowFrame, Size=UDim2.new(1,0,1,0),
+            Text="▼", Font=Enum.Font.SourceSans, TextSize=11, TextColor3=P.TEXT_DIM,
+            TextXAlignment=Enum.TextXAlignment.Center, TextYAlignment=Enum.TextYAlignment.Center})
+
+        -- Dropdown list (positioned below the element, no clipping issues)
+        local listHolder=pFrame(f, UDim2.new(1,0,0,0), UDim2.new(0,0,1,4), P.DD_BG)
+        listHolder.ZIndex=20; listHolder.ClipsDescendants=true
+        pCorner(listHolder, UDim.new(0,5))
+        pStroke(listHolder, P.STROKE_EL, 1)
+        local listLayout2=pList(listHolder,2)
+        pPad(listHolder,4,4,4,4)
+
+        for _,opt in ipairs(options or {}) do
+            local row=pFrame(listHolder, UDim2.new(1,0,0,ITEM_H-2), nil, P.DD_ROW)
+            pCorner(row, UDim.new(0,4))
+            pLabel({Parent=row, Size=UDim2.new(1,-16,1,0),
+                Position=UDim2.new(0,8,0,0), Text=opt,
+                Font=FONT_M, TextSize=12, TextColor3=P.TEXT,
+                TextXAlignment=Enum.TextXAlignment.Left})
+            local rh=pBtn(row, UDim2.new(1,0,1,0))
+            rh.ZIndex=21
+            rh.MouseEnter:Connect(function() pt(row,0.08,{BackgroundColor3=P.HOVER}) end)
+            rh.MouseLeave:Connect(function() pt(row,0.08,{BackgroundColor3=P.DD_ROW}) end)
+            rh.MouseButton1Click:Connect(function()
+                selected=opt; selLbl.Text=opt; isOpen=false
+                pt(arrowLbl,0.12,{Rotation=0}); pt(arrowFrame,0.12,{BackgroundColor3=P.OFF})
+                pt(listHolder,0.15,{Size=UDim2.new(1,0,0,0)},Enum.EasingStyle.Quart,Enum.EasingDirection.In)
+                f.Size=UDim2.new(1,0,0,38)
+                if callback then pcall(callback,opt) end
+            end)
+        end
+
+        local maxH=ITEM_H*math.min(#(options or {}),5)+8
+        local hit=pBtn(f, UDim2.new(1,0,1,0)); hit.ZIndex=6
+        hit.MouseButton1Click:Connect(function()
+            isOpen=not isOpen
+            if isOpen then
+                pt(arrowLbl,0.12,{Rotation=180}); pt(arrowFrame,0.12,{BackgroundColor3=P.EL})
+                pt(listHolder,0.18,{Size=UDim2.new(1,0,0,maxH)},Enum.EasingStyle.Back)
+                f.Size=UDim2.new(1,0,0,38+maxH+4)
+            else
+                pt(arrowLbl,0.12,{Rotation=0}); pt(arrowFrame,0.12,{BackgroundColor3=P.OFF})
+                pt(listHolder,0.15,{Size=UDim2.new(1,0,0,0)},Enum.EasingStyle.Quart,Enum.EasingDirection.In)
+                f.Size=UDim2.new(1,0,0,38)
+            end
+        end)
+        interact.MouseEnter:Connect(function() pt(interact,0.12,{BackgroundColor3=P.HOVER}) end)
+        interact.MouseLeave:Connect(function() pt(interact,0.12,{BackgroundColor3=P.INNER}) end)
+        return {GetValue=function() return selected end, SetValue=function(v) selected=v; selLbl.Text=v end}
+    end
+
+    -- TextBox
+    local function addTextBox(panel, label, placeholder, default, callback)
+        local f=elBase(panel,62)
+        pLabel({Parent=f, Size=UDim2.new(1,0,0,14),
+            Text=label, Font=FONT_M, TextSize=13, TextColor3=P.TEXT,
+            TextXAlignment=Enum.TextXAlignment.Left})
+        local ibg=pFrame(f, UDim2.new(1,0,0,28), UDim2.new(0,0,0,18), P.INNER)
+        pCorner(ibg); local ibs=pStroke(ibg, P.STROKE_IN, 1)
+        local tb=Instance.new("TextBox",ibg)
+        tb.Size=UDim2.new(1,-10,1,0); tb.Position=UDim2.new(0,5,0,0)
+        tb.BackgroundTransparency=1; tb.Text=default or ""
+        tb.PlaceholderText=placeholder or ""; tb.PlaceholderColor3=Color3.fromRGB(80,80,80)
+        tb.TextColor3=P.TEXT; tb.TextSize=12; tb.Font=Enum.Font.GothamMedium
+        tb.ClearTextOnFocus=false; tb.TextXAlignment=Enum.TextXAlignment.Left
+        tb.Focused:Connect(function() ibs.Color=Color3.fromRGB(130,130,130) end)
+        tb.FocusLost:Connect(function(enter)
+            ibs.Color=P.STROKE_IN
+            if enter and callback then pcall(callback,tb.Text) end
+        end)
+        f.MouseEnter:Connect(function() pt(f,0.12,{BackgroundColor3=P.HOVER}) end)
+        f.MouseLeave:Connect(function() pt(f,0.12,{BackgroundColor3=P.EL}) end)
+        return {GetValue=function() return tb.Text end, SetValue=function(v) tb.Text=v end}
+    end
+
+    -- Script Executor
+    local function addExecutor(panel, placeholder)
+        _loMap[panel]=(_loMap[panel] or 0)+1
+        local cont=pFrame(panel, UDim2.new(1,0,0,134), nil, P.EL)
+        cont.LayoutOrder=_loMap[panel]
+        pCorner(cont,UDim.new(0,5)); pStroke(cont,P.STROKE_EL,1); pPad(cont,8,8,10,10)
+        pLabel({Parent=cont, Size=UDim2.new(1,0,0,14),
+            Text="Script Executor", Font=FONT_M, TextSize=13, TextColor3=P.TEXT,
+            TextXAlignment=Enum.TextXAlignment.Left})
+        local ibg=pFrame(cont, UDim2.new(1,0,0,78), UDim2.new(0,0,0,18), P.INNER)
+        pCorner(ibg); pStroke(ibg,P.STROKE_IN,1)
+        local tb=Instance.new("TextBox",ibg)
+        tb.Size=UDim2.new(1,-10,1,-4); tb.Position=UDim2.new(0,5,0,2)
+        tb.BackgroundTransparency=1; tb.Text=""
+        tb.PlaceholderText=placeholder or "-- Enter script here..."
+        tb.PlaceholderColor3=Color3.fromRGB(70,70,70)
+        tb.TextColor3=Color3.fromRGB(220,220,220); tb.TextSize=11
+        tb.Font=Enum.Font.GothamMedium; tb.ClearTextOnFocus=false
+        tb.TextXAlignment=Enum.TextXAlignment.Left
+        tb.TextYAlignment=Enum.TextYAlignment.Top
+        tb.MultiLine=true; tb.TextWrapped=true
+        local runBtn=pBtn(cont, UDim2.new(0.49,0,0,22), UDim2.new(0,0,1,-24), P.INNER)
+        runBtn.BackgroundTransparency=0; pCorner(runBtn); pStroke(runBtn,P.STROKE_IN,1)
+        pLabel({Parent=runBtn, Size=UDim2.new(1,0,1,0), Text="▶  Execute",
+            Font=FONT_M, TextSize=11, TextColor3=P.TEXT,
+            TextXAlignment=Enum.TextXAlignment.Center, TextYAlignment=Enum.TextYAlignment.Center})
+        local clrBtn=pBtn(cont, UDim2.new(0.49,0,0,22), UDim2.new(0.51,0,1,-24), P.INNER)
+        clrBtn.BackgroundTransparency=0; pCorner(clrBtn); pStroke(clrBtn,P.STROKE_IN,1)
+        pLabel({Parent=clrBtn, Size=UDim2.new(1,0,1,0), Text="✕  Clear",
+            Font=FONT_M, TextSize=11, TextColor3=P.TEXT_GREY,
+            TextXAlignment=Enum.TextXAlignment.Center, TextYAlignment=Enum.TextYAlignment.Center})
+        local function flash(btn,col)
+            pt(btn,0.08,{BackgroundColor3=col})
+            task.delay(1.2,function() pt(btn,0.2,{BackgroundColor3=P.INNER}) end)
+        end
+        runBtn.MouseButton1Click:Connect(function()
+            local code=tb.Text; if code=="" or code:match("^%s*$") then return end
+            local fn,err=loadstring(code)
+            if not fn then flash(runBtn,Color3.fromRGB(80,20,20)); warn("[ZyrixPanel Executor] Syntax:",err)
+            else local ok,rerr=pcall(fn)
+                if ok then flash(runBtn,Color3.fromRGB(20,80,20))
+                else flash(runBtn,Color3.fromRGB(80,20,20)); warn("[ZyrixPanel Executor] Runtime:",rerr) end
+            end
+        end)
+        clrBtn.MouseButton1Click:Connect(function() tb.Text="" end)
+        runBtn.MouseEnter:Connect(function() pt(runBtn,0.1,{BackgroundColor3=P.HOVER}) end)
+        runBtn.MouseLeave:Connect(function() pt(runBtn,0.1,{BackgroundColor3=P.INNER}) end)
+        clrBtn.MouseEnter:Connect(function()  pt(clrBtn,0.1,{BackgroundColor3=P.HOVER}) end)
+        clrBtn.MouseLeave:Connect(function()  pt(clrBtn,0.1,{BackgroundColor3=P.INNER}) end)
+        return {
+            GetValue=function() return tb.Text end,
+            SetValue=function(v) tb.Text=v end,
+            Execute=function()
+                local fn,err=loadstring(tb.Text); if fn then pcall(fn) else warn("[ZyrixPanel Executor]",err) end
+            end,
+        }
+    end
+
+    -- Label
+    local function addLabel(panel, text, col)
+        _loMap[panel]=(_loMap[panel] or 0)+1
+        local lbl=pLabel({Parent=panel, Size=UDim2.new(1,0,0,22),
+            Text=text, Font=Enum.Font.Gotham, TextSize=11,
+            TextColor3=col or P.TEXT_GREY, TextXAlignment=Enum.TextXAlignment.Left,
+            LayoutOrder=_loMap[panel]})
+        return {SetText=function(t) lbl.Text=t end}
+    end
+
+    -- ── Tab management ─────────────────────────────────────────────────────────
+    local _tabLO = 0
+
+    local function setActiveTab(name)
+        _activeTab = name
+        for n, b in pairs(_tabBtns) do
+            local on = n == name
+            local txt = b:FindFirstChild("Text")
+            local ic  = b:FindFirstChild("Icon")
+            local str = b:FindFirstChildOfClass("UIStroke")
+            pt(b, 0.22, {BackgroundColor3 = on and P.EL or P.TAB})
+            if txt then pt(txt, 0.22, {TextColor3 = on and P.WHITE or P.TEXT_DIM}) end
+            if ic  then pt(ic,  0.22, {TextColor3 = on and P.WHITE or P.TEXT_DIM}) end
+            if str then pt(str, 0.22, {Transparency = on and 0 or 0.5}) end
+        end
+        for n, p in pairs(_tabPanels) do p.Visible = n == name end
+    end
+
+    -- AddTab returns a table of element builders
+    local function addTab(name, icon)
+        _tabLO = _tabLO + 1
+
+        -- Pill button
+        local pill = pBtn(tabSF, UDim2.new(0,math.max(64,#name*7+24),0,math.floor(TAB_H*0.75)))
+        pill.BackgroundColor3=P.EL; pill.BackgroundTransparency=0
+        pill.LayoutOrder=_tabLO; pill.Name=name.."Tab"
+        pCorner(pill, UDim.new(0,100))
+        pStroke(pill, P.STROKE_IN, 1)
+        pPad(pill, 4, 4, 8, 8)
+
+        local ic=pLabel({Parent=pill, Size=UDim2.new(0,18,1,0),
+            Text=icon or "", Font=Enum.Font.SourceSans, TextSize=15,
+            TextColor3=P.TEXT_DIM, TextXAlignment=Enum.TextXAlignment.Center,
+            TextYAlignment=Enum.TextYAlignment.Center, Name="Icon"})
+        local txt=pLabel({Parent=pill, Size=UDim2.new(1,icon and -20 or 0,1,0),
+            Position=UDim2.new(0,icon and 18 or 0,0,0),
+            Text=name, Font=FONT_M, TextSize=12,
+            TextColor3=P.TEXT_DIM, TextXAlignment=Enum.TextXAlignment.Center,
+            TextYAlignment=Enum.TextYAlignment.Center, Name="Text"})
+
+        pill.MouseEnter:Connect(function()
+            if _activeTab ~= name then pt(pill,0.12,{BackgroundColor3=P.HOVER}) end
+        end)
+        pill.MouseLeave:Connect(function()
+            if _activeTab ~= name then pt(pill,0.12,{BackgroundColor3=P.EL}) end
+        end)
+        pill.MouseButton1Click:Connect(function()
+            -- auto-open panel if closed
+            if not _tlOpen then openPanel() end
+            setActiveTab(name)
+        end)
+        _tabBtns[name] = pill
+
+        -- Panel (a Frame inside elements)
+        local panel = pFrame(elements, UDim2.new(1,0,0,0), nil, P.WIN, 1)
+        panel.AutomaticSize=Enum.AutomaticSize.Y; panel.Visible=false
+        panel.LayoutOrder=_tabLO; panel.Name=name.."Panel"
+        pList(panel, 6)
+        _tabPanels[name] = panel
+
+        if _tabLO == 1 then setActiveTab(name) end
+
+        -- Return builder API
+        return {
+            Section   = function(t)                  addSection(panel,t) end,
+            Toggle    = function(t,d,def,cb)          return addToggle(panel,t,d,def,cb) end,
+            Slider    = function(t,mn,mx,def,sfx,cb) return addSlider(panel,t,mn,mx,def,sfx,cb) end,
+            Button    = function(t,d,cb)              addButton(panel,t,d,cb) end,
+            Keybind   = function(t,def,cb)            return addKeybind(panel,t,def,cb) end,
+            Dropdown  = function(t,opts,def,cb)       return addDropdown(panel,t,opts,def,cb) end,
+            TextBox   = function(t,ph,def,cb)         return addTextBox(panel,t,ph,def,cb) end,
+            Executor  = function(ph)                  return addExecutor(panel,ph) end,
+            Label     = function(t,col)               return addLabel(panel,t,col) end,
+        }
+    end
+
+    -- ── Open / Close panel ──────────────────────────────────────────────────────
+    local _tlOpen = false   -- start closed; openPanel() called below
+
+    local function openPanel()
+        _tlOpen=true
+        mainFrame.Visible=true
+        mainFrame.Size=UDim2.new(0,WIN_W,0,0)
+        outer.Size=UDim2.new(0,WIN_W,0,TAB_H)
+        pt(outer,0.30,{Size=UDim2.new(0,WIN_W,0,TOTAL_H)},Enum.EasingStyle.Back)
+        pt(mainFrame,0.30,{Size=UDim2.new(0,WIN_W,0,WIN_H)},Enum.EasingStyle.Back)
+        pt(logoBtn,0.18,{BackgroundColor3=P.TEXT})
+    end
+
+    local function closePanel()
+        _tlOpen=false
+        pt(outer,0.26,{Size=UDim2.new(0,WIN_W,0,TAB_H)},Enum.EasingStyle.Quart,Enum.EasingDirection.In)
+        pt(mainFrame,0.26,{Size=UDim2.new(0,WIN_W,0,0)},Enum.EasingStyle.Quart,Enum.EasingDirection.In)
+        pt(logoBtn,0.18,{BackgroundColor3=P.LOGO_OFF})
+        task.delay(0.28,function() if not _tlOpen and mainFrame then mainFrame.Visible=false end end)
+    end
+
+    logoBtn.MouseEnter:Connect(function()
+        pt(logoBtn,0.12,{BackgroundColor3=_tlOpen and P.WHITE or P.HOVER})
+    end)
+    logoBtn.MouseLeave:Connect(function()
+        pt(logoBtn,0.12,{BackgroundColor3=_tlOpen and P.TEXT or P.LOGO_OFF})
+    end)
+    logoBtn.MouseButton1Click:Connect(function()
+        if _tlOpen then closePanel() else openPanel() end
+    end)
+    closeBtn.MouseButton1Click:Connect(function() closePanel() end)
+
+    -- Keyboard shortcut
+    UIS.InputBegan:Connect(function(i,gp)
+        if gp then return end
+        if i.KeyCode == (getgenv().__ZyrixPanelKey or Enum.KeyCode.RightControl) then
+            if _tlOpen then closePanel() else openPanel() end
+        end
+    end)
+
+    -- Drag (tab bar + main frame header)
+    local drag,ds,dp=false,nil,nil
+    local function startDrag(i)
+        if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
+            drag=true; ds=i.Position; dp=outer.Position
+            i.Changed:Connect(function()
+                if i.UserInputState==Enum.UserInputState.End then drag=false end
+            end)
+        end
+    end
+    tabFrame.InputBegan:Connect(startDrag)
+    hdr.InputBegan:Connect(startDrag)
+    UIS.InputChanged:Connect(function(i)
+        if not drag then return end
+        if i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch then
+            local d=i.Position-ds
+            outer.Position=UDim2.new(dp.X.Scale,dp.X.Offset+d.X,dp.Y.Scale,dp.Y.Offset+d.Y)
+        end
+    end)
+
+    -- Open the panel
+    openPanel()
+
+    -- ── Return the public API ──────────────────────────────────────────────────
+    return {
+        AddTab  = addTab,
+        Open    = openPanel,
+        Close   = closePanel,
+        Toggle  = function() if _tlOpen then closePanel() else openPanel() end end,
+        Destroy = function() if pSG then pSG:Destroy() end end,
+        SetToggleKey = function(k) getgenv().__ZyrixPanelKey = k end,
+    }
+end
+
+-- ZyrixPanel:Open() builds and shows the panel, returns the API
+function ZyrixPanel:Open()
+    return buildPanel()
+end
+
+getgenv().ZyrixPanel = ZyrixPanel
+
 return Zyrix
 
 --[[
