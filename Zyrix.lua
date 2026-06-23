@@ -42,7 +42,7 @@ local Zyrix = {}
 Zyrix.Appearance = {
     Title = "zyrix",
     Subtitle = "Enter your key to continue",
-    Icon = "rbxassetid://95721401302279",
+    Icon = "rbxassetid://105436073524298",
     IconSize = UDim2.new(0, 30, 0, 30)
 }
 
@@ -147,7 +147,7 @@ local FallbackIcons = {
     loading = "rbxassetid://116535712789945",
     close = "rbxassetid://6022668916",
     changelog = "rbxassetid://138133190015277",
-    logo = "rbxassetid://95721401302279",
+    logo = "rbxassetid://105436073524298",
     user = "rbxassetid://77400125196692",
     clock = "rbxassetid://87505349362628",
     cart = "rbxassetid://114754518183872",
@@ -157,7 +157,7 @@ local FallbackIcons = {
 local CachedIcons = {}
 local FolderName = "Zyrix"
 local IconsFolder = "Icons"
-local DefaultLogoAsset = "rbxassetid://95721401302279"
+local DefaultLogoAsset = "rbxassetid://105436073524298"
 
 local function isMobile()
     return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
@@ -2480,4 +2480,591 @@ function Zyrix:GetSavedKey() return loadKey() end
 function Zyrix:ClearSavedKey() return clearKey() end
 
 getgenv().Zyrix = Zyrix
+
+--[[
+    Zyrix v4 — UI Library
+    Programmatic build. Z-logo toggles TabList with smooth animation.
+    All elements functional: Dropdown, Slider, Toggle, Keybind, Button.
+]]
+
+local ZyrixUI = {}
+local uiBuilt = false
+local uiOpenPanel, uiClosePanel
+
+local function buildZyrixUI()
+    if uiBuilt then return end
+    uiBuilt = true
+
+    local TS  = TweenService
+    local UIS = UserInputService
+
+    local sg = hui:FindFirstChild("ZyrixMainUI") or Instance.new("ScreenGui")
+    sg.Name = "ZyrixMainUI"
+    sg.ResetOnSpawn = false
+    sg.IgnoreGuiInset = true
+    sg.DisplayOrder = 50
+    sg.Enabled = false
+    sg.Parent = hui
+
+    local C = {
+        WIN      = Color3.fromRGB(20, 20, 20),
+        TAB      = Color3.fromRGB(23, 23, 23),
+        EL       = Color3.fromRGB(25, 25, 25),
+        INNER    = Color3.fromRGB(31, 31, 31),
+        PROGRESS = Color3.fromRGB(201, 201, 201),
+        DD_BG    = Color3.fromRGB(19, 19, 19),
+        DD_ROW   = Color3.fromRGB(27, 27, 27),
+        STROKE_EL = Color3.fromRGB(41, 41, 41),
+        STROKE_IN = Color3.fromRGB(51, 51, 51),
+        STROKE_WIN= Color3.fromRGB(36, 36, 36),
+        TEXT      = Color3.fromRGB(231, 231, 231),
+        TEXT_DIM  = Color3.fromRGB(181, 181, 181),
+        TEXT_GREY = Color3.fromRGB(131, 131, 131),
+        WHITE     = Color3.fromRGB(255, 255, 255),
+        GREEN1    = Color3.fromRGB(0, 171, 0),
+        GREEN2    = Color3.fromRGB(0, 121, 0),
+        HOVER     = Color3.fromRGB(45, 45, 45),
+        LOGO_OFF  = Color3.fromRGB(100, 100, 100),
+        OFF       = Color3.fromRGB(60, 60, 60),
+    }
+
+    local function tw(obj, t, props, style, dir)
+        TS:Create(obj, TweenInfo.new(t, style or Enum.EasingStyle.Quart, dir or Enum.EasingDirection.Out), props):Play()
+    end
+    local function mkCorner(p, r)
+        local c = Instance.new("UICorner", p)
+        c.CornerRadius = r or UDim.new(0, 4); return c
+    end
+    local function mkStroke(p, col, thick)
+        local s = Instance.new("UIStroke", p)
+        s.Color = col or C.STROKE_EL; s.Thickness = thick or 1
+        s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border; return s
+    end
+    local function mkPad(p, t, b, l, r)
+        local pad = Instance.new("UIPadding", p)
+        pad.PaddingTop    = UDim.new(0, t or 0)
+        pad.PaddingBottom = UDim.new(0, b or 0)
+        pad.PaddingLeft   = UDim.new(0, l or 0)
+        pad.PaddingRight  = UDim.new(0, r or 0)
+    end
+    local function mkGradient(p, from, to, rot)
+        local g = Instance.new("UIGradient", p)
+        g.Color = ColorSequence.new(from or Color3.new(0,0,0), to or C.WIN)
+        g.Rotation = rot or 0; return g
+    end
+    local function mkBtn(props)
+        local b = Instance.new("TextButton")
+        b.AutoButtonColor = false; b.BackgroundTransparency = 1
+        b.Size = props.Size or UDim2.new(1, 0, 1, 0)
+        b.Text = ""; b.Parent = props.Parent
+        for k, v in pairs(props) do if k ~= "Parent" and k ~= "Size" then b[k] = v end end
+        if props.Size then b.Size = props.Size end
+        return b
+    end
+    local function mkLabel(props)
+        local l = Instance.new("TextLabel")
+        l.BackgroundTransparency = 1; l.TextXAlignment = Enum.TextXAlignment.Left
+        l.TextWrapped = true; l.RichText = false
+        for k, v in pairs(props) do l[k] = v end; return l
+    end
+    local function mkFrame(parent, props)
+        local f = Instance.new("Frame"); f.BorderSizePixel = 0
+        f.BackgroundTransparency = 1
+        for k, v in pairs(props or {}) do f[k] = v end
+        f.Parent = parent; return f
+    end
+
+    local WIN_W = 563; local WIN_H = 354
+    local TAB_H = 42;  local GAP = 8
+    local TOTAL_H = TAB_H + GAP + WIN_H
+
+    local outer = Instance.new("Frame")
+    outer.Name = "ZyrixOuter"
+    outer.Size = UDim2.new(0, WIN_W, 0, TAB_H)
+    outer.Position = UDim2.new(0, 20, 0, 20)
+    outer.BackgroundColor3 = C.TAB
+    outer.BorderSizePixel = 0
+    mkCorner(outer, UDim.new(0, 8))
+    mkStroke(outer, C.STROKE_WIN)
+    mkGradient(outer, Color3.fromRGB(0,0,0), C.TAB)
+    outer.Parent = sg
+
+    local tabFrame = mkFrame(outer, {
+        Name = "TabFrame";
+        BackgroundColor3 = C.TAB;
+        Size = UDim2.new(1, 0, 0, TAB_H);
+        Position = UDim2.new(0, 0, 0, 0);
+    })
+    mkCorner(tabFrame, UDim.new(0, 8))
+    mkGradient(tabFrame, Color3.fromRGB(0,0,0), C.TAB)
+
+    local logoBtn = mkBtn({
+        Name = "LogoBtn";
+        Parent = tabFrame;
+        Size = UDim2.new(0, 36, 0, 36);
+        Position = UDim2.new(0, 4, 0.5, -18);
+        BackgroundColor3 = C.LOGO_OFF;
+    })
+    mkCorner(logoBtn, UDim.new(0, 6))
+
+    local logoImg = Instance.new("ImageLabel")
+    logoImg.Name = "LogoImage"
+    logoImg.Size = UDim2.new(0, 28, 0, 28)
+    logoImg.Position = UDim2.new(0.5, 0, 0.5, 0)
+    logoImg.AnchorPoint = Vector2.new(0.5, 0.5)
+    logoImg.BackgroundTransparency = 1
+    logoImg.Image = Zyrix.Appearance.Icon
+    logoImg.ScaleType = Enum.ScaleType.Fit
+    logoImg.Parent = logoBtn
+
+    local tabSF = Instance.new("ScrollingFrame")
+    tabSF.Name = "tablist"
+    tabSF.Size = UDim2.new(1, -45, 1, 0)
+    tabSF.Position = UDim2.new(0, 42, 0, 0)
+    tabSF.BackgroundTransparency = 1
+    tabSF.BorderSizePixel = 0
+    tabSF.ScrollBarThickness = 0
+    tabSF.ScrollingDirection = Enum.ScrollingDirection.X
+    tabSF.VerticalScrollBarInset = Enum.ScrollBarInset.Always
+    tabSF.AutomaticCanvasSize = Enum.AutomaticSize.X
+    tabSF.CanvasSize = UDim2.new(0, 0, 0, 0)
+    tabSF.Parent = tabFrame
+
+    local tabList = Instance.new("UIListLayout")
+    tabList.Name = "TabList"
+    tabList.FillDirection = Enum.FillDirection.Horizontal
+    tabList.SortOrder = Enum.SortOrder.LayoutOrder
+    tabList.Padding = UDim.new(0, 4)
+    tabList.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    tabList.Parent = tabSF
+
+    Instance.new("UIPadding", tabSF).PaddingLeft = UDim.new(0, 3)
+
+    local tabs = {
+        {Name = "Combat",   Icon = "⚔️"};
+        {Name = "Visual",   Icon = "👁"};
+        {Name = "Misc",     Icon = "⚙"};
+        {Name = "Settings", Icon = "🔧"};
+        {Name = "Player",   Icon = "🧑"};
+    }
+    local tabBtns = {}
+
+    for _, t in ipairs(tabs) do
+        local btn = mkBtn({
+            Name = t.Name .. "Tab";
+            Parent = tabSF;
+            Size = UDim2.new(0, 72, 1, -4);
+            BackgroundColor3 = C.EL;
+        })
+        mkCorner(btn, UDim.new(0, 4))
+        mkStroke(btn, C.STROKE_IN)
+        mkPad(btn, 4, 8, 6, 6)
+
+        local icon = mkLabel({
+            Name = "Icon"; Parent = btn;
+            Size = UDim2.new(0, 20, 1, 0);
+            Text = t.Icon; Font = Enum.Font.SourceSans;
+            TextSize = 16; TextColor3 = C.TEXT_DIM;
+        })
+        local txt = mkLabel({
+            Name = "Text"; Parent = btn;
+            Size = UDim2.new(1, -22, 1, 0); Position = UDim2.new(0, 20, 0, 0);
+            Text = t.Name; Font = Enum.Font.GothamMedium;
+            TextSize = 13; TextColor3 = C.TEXT_DIM;
+        })
+
+        btn.MouseEnter:Connect(function()
+            if btn.Name ~= (tabBtns._active or "") then
+                tw(btn, 0.15, {BackgroundColor3 = C.HOVER})
+                tw(txt, 0.15, {TextColor3 = C.TEXT})
+                tw(icon, 0.15, {TextColor3 = C.WHITE})
+            end
+        end)
+        btn.MouseLeave:Connect(function()
+            if btn.Name ~= (tabBtns._active or "") then
+                tw(btn, 0.15, {BackgroundColor3 = C.EL})
+                tw(txt, 0.15, {TextColor3 = C.TEXT_DIM})
+                tw(icon, 0.15, {TextColor3 = C.TEXT_DIM})
+            end
+        end)
+        btn.MouseButton1Click:Connect(function()
+            for name, b in pairs(tabBtns) do
+                if name ~= "_active" then
+                    local tx = b:FindFirstChild("Text")
+                    local ic = b:FindFirstChild("Icon")
+                    local stroke = b:FindFirstChildOfClass("UIStroke")
+                    local isAct = (b.Name == btn.Name)
+                    tw(b, 0.25, {BackgroundColor3 = isAct and C.EL or C.TAB})
+                    if tx then tw(tx, 0.25, {TextColor3 = isAct and C.WHITE or C.TEXT_DIM}) end
+                    if ic then tw(ic, 0.25, {TextColor3 = isAct and C.WHITE or C.TEXT_DIM}) end
+                    if stroke then tw(stroke, 0.25, {Transparency = isAct and 0 or 0.5}) end
+                    if isAct then tabBtns._active = b.Name end
+                end
+            end
+        end)
+        tabBtns[t.Name] = btn
+    end
+
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "main"
+    mainFrame.Size = UDim2.new(0, WIN_W, 0, 0)
+    mainFrame.Position = UDim2.new(0, 0, 0, TAB_H + GAP)
+    mainFrame.BackgroundColor3 = C.WIN
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Visible = false
+    mainFrame.Parent = outer
+    mkCorner(mainFrame, UDim.new(0, 6))
+    mkGradient(mainFrame, Color3.fromRGB(0,0,0), C.WIN)
+
+    local hdr = mkFrame(mainFrame, {
+        Name = "Header"; Size = UDim2.new(1, 0, 0, 34);
+        BackgroundColor3 = C.TAB;
+    })
+    mkCorner(hdr, UDim.new(0, 6))
+
+    mkLabel({
+        Name = "Title"; Parent = hdr;
+        Size = UDim2.new(1, -40, 1, -5); Position = UDim2.new(0, 10, 0, 2);
+        Text = Zyrix.Appearance.Title; Font = Enum.Font.GothamBold;
+        TextSize = 16; TextColor3 = C.WHITE;
+    })
+
+    local closeBtn = mkBtn({
+        Name = "CloseBtn"; Parent = hdr;
+        Size = UDim2.new(0, 24, 0, 24); Position = UDim2.new(1, -28, 0.5, -12);
+        BackgroundColor3 = C.HOVER;
+    })
+    mkCorner(closeBtn, UDim.new(0, 4))
+    mkLabel({
+        Name = "CloseText"; Parent = closeBtn;
+        Size = UDim2.new(1, 0, 1, 0); Text = "✕";
+        Font = Enum.Font.GothamBold; TextSize = 13; TextColor3 = C.TEXT;
+    })
+
+    local sep = Instance.new("Frame")
+    sep.Size = UDim2.new(1, -20, 0, 1)
+    sep.Position = UDim2.new(0, 10, 0, 34)
+    sep.BackgroundColor3 = C.STROKE_IN
+    sep.BorderSizePixel = 0
+    sep.Parent = mainFrame
+
+    local elements = Instance.new("ScrollingFrame")
+    elements.Name = "elements"
+    elements.Size = UDim2.new(1, -10, 1, -38)
+    elements.Position = UDim2.new(0, 5, 0, 36)
+    elements.BackgroundTransparency = 1
+    elements.BorderSizePixel = 0
+    elements.ScrollBarThickness = 2
+    elements.ScrollBarImageColor3 = Color3.fromRGB(141, 141, 141)
+    elements.ScrollBarImageTransparency = 0.3
+    elements.CanvasSize = UDim2.new(0, 0, 0, 0)
+    elements.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    elements.ScrollingDirection = Enum.ScrollingDirection.Y
+    elements.Parent = mainFrame
+
+    mkPad(elements, 6, 4, 4, 4)
+    local elementsList = Instance.new("UIListLayout")
+    elementsList.Padding = UDim.new(0, 8)
+    elementsList.SortOrder = Enum.SortOrder.LayoutOrder
+    elementsList.FillDirection = Enum.FillDirection.Vertical
+    elementsList.Parent = elements
+
+    local function elementFrame(parent, titleText)
+        local f = mkFrame(parent, {
+            Name = titleText or "Element";
+            Size = UDim2.new(1, -2, 0, 0);
+            AutomaticSize = Enum.AutomaticSize.Y;
+            BackgroundColor3 = C.EL;
+        })
+        mkCorner(f, UDim.new(0, 4))
+        mkStroke(f, C.STROKE_EL, 1)
+        mkPad(f, 8, 8, 8, 8)
+        mkLabel({
+            Name = "Title"; Parent = f;
+            Size = UDim2.new(1, 0, 0, 14); Text = titleText or "";
+            Font = Enum.Font.GothamMedium; TextSize = 13; TextColor3 = C.TEXT_DIM;
+        })
+        local contentPad = Instance.new("UIPadding", f)
+        contentPad.PaddingTop = UDim.new(0, 22)
+        contentPad.Name = "ContentPad"
+        return f
+    end
+
+    local function buildDropdown()
+        local f = elementFrame(elements, "Dropdown")
+        local interact = mkBtn({Name = "Interact"; Parent = f; Size = UDim2.new(1, -5, 0, 30); BackgroundColor3 = C.INNER})
+        mkCorner(interact, UDim.new(0, 3)); mkStroke(interact, C.STROKE_IN)
+        local selected = mkLabel({Name = "Selected"; Parent = interact; Size = UDim2.new(1, -34, 1, 0); Position = UDim2.new(0, 8, 0, 0);
+            Text = "Option #1"; Font = Enum.Font.GothamMedium; TextSize = 13; TextColor3 = C.TEXT})
+        local toggleBtn = mkBtn({Name = "Toggle"; Parent = interact; Size = UDim2.new(0, 22, 0, 22);
+            Position = UDim2.new(1, -26, 0.5, -11); BackgroundColor3 = C.OFF})
+        mkCorner(toggleBtn, UDim.new(0, 3))
+        mkLabel({Name = "Arrow"; Parent = toggleBtn; Size = UDim2.new(1, 0, 1, 0); Text = "▼";
+            Font = Enum.Font.SourceSans; TextSize = 11; TextColor3 = C.TEXT_DIM;
+            TextXAlignment = Enum.TextXAlignment.Center; TextYAlignment = Enum.TextYAlignment.Center})
+        local list = mkFrame(elements, {Name = "List"; Size = UDim2.new(1, -5, 0, 0); BackgroundColor3 = C.DD_BG; Visible = false; AutomaticSize = Enum.AutomaticSize.Y})
+        mkCorner(list, UDim.new(0, 3)); mkStroke(list, C.STROKE_IN, 1); mkPad(list, 4, 4, 4, 4); list.LayoutOrder = 2
+        local options = {"Option #1", "Option #2", "Option #3", "Option #4"}
+        local isOpen = false
+        for i, optName in ipairs(options) do
+            local item = mkBtn({Name = optName; Parent = list; Size = UDim2.new(1, 0, 0, 28);
+                BackgroundColor3 = i == 1 and C.EL or Color3.fromRGB(27, 27, 27)})
+            mkCorner(item, UDim.new(0, 3))
+            mkLabel({Name = "Title"; Parent = item; Size = UDim2.new(1, 0, 0, 14); Position = UDim2.new(0, 8, 0.5, -7);
+                Text = optName; Font = Enum.Font.GothamMedium; TextSize = 13; TextColor3 = C.TEXT})
+            item.MouseButton1Click:Connect(function()
+                selected.Text = optName
+                tw(toggleBtn, 0.15, {Rotation = 0})
+                tw(list, 0.15, {Size = UDim2.new(1, -5, 0, 0)}, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+                task.delay(0.16, function() list.Visible = false; isOpen = false end)
+            end)
+            item.MouseEnter:Connect(function() tw(item, 0.12, {BackgroundColor3 = C.HOVER}) end)
+            item.MouseLeave:Connect(function() tw(item, 0.12, {BackgroundColor3 = i == 1 and C.EL or Color3.fromRGB(27, 27, 27)}) end)
+        end
+        local function toggleDropdown()
+            isOpen = not isOpen
+            if isOpen then
+                list.Visible = true; list.Size = UDim2.new(1, -5, 0, 0)
+                tw(toggleBtn, 0.15, {Rotation = 180})
+                tw(list, 0.18, {Size = UDim2.new(1, -5, 0, #options * 32 + 8)}, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+            else
+                tw(toggleBtn, 0.15, {Rotation = 0})
+                tw(list, 0.15, {Size = UDim2.new(1, -5, 0, 0)}, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+                task.delay(0.16, function() list.Visible = false end)
+            end
+        end
+        interact.MouseButton1Click:Connect(toggleDropdown)
+        toggleBtn.MouseButton1Click:Connect(toggleDropdown)
+        interact.MouseEnter:Connect(function() tw(interact, 0.15, {BackgroundColor3 = C.HOVER}) end)
+        interact.MouseLeave:Connect(function() tw(interact, 0.15, {BackgroundColor3 = C.INNER}) end)
+    end
+
+    local function buildSlider()
+        local f = elementFrame(elements, "Slider")
+        local main = mkFrame(f, {Name = "Main"; Size = UDim2.new(1, -5, 0, 26); BackgroundColor3 = C.INNER})
+        mkCorner(main, UDim.new(0, 4)); mkStroke(main, C.STROKE_IN)
+        local progress = mkFrame(main, {Name = "Progress"; Size = UDim2.new(0.75, 0, 1, 0); BackgroundColor3 = C.PROGRESS})
+        mkCorner(progress, UDim.new(0, 4)); mkStroke(progress, C.PROGRESS, 0.5)
+        local info = mkLabel({Name = "Information"; Parent = f; Size = UDim2.new(0, 100, 0, 14); Position = UDim2.new(1, -105, 0, 23);
+            Text = "750 studs"; Font = Enum.Font.GothamMedium; TextSize = 12; TextColor3 = C.TEXT_DIM})
+        local interact = mkBtn({Name = "Interact"; Parent = main; Size = UDim2.new(1, 0, 1, 0); BackgroundColor3 = Color3.new(1, 1, 1)})
+        interact.BackgroundTransparency = 0.99
+        local dragging = false
+        local function updateSlider(pct)
+            pct = math.clamp(pct, 0, 1)
+            progress.Size = UDim2.new(pct, 0, 1, 0)
+            info.Text = tostring(math.floor(pct * 1000)) .. " studs"
+        end
+        updateSlider(0.75)
+        interact.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                local absX, absW = main.AbsolutePosition.X, main.AbsoluteSize.X
+                updateSlider(math.clamp((input.Position.X - absX) / absW, 0, 1))
+                tw(main, 0.08, {Size = UDim2.new(1, 6, 1, 4)}, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+            end
+        end)
+        UIS.InputChanged:Connect(function(input)
+            if not dragging then return end
+            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                local absX, absW = main.AbsolutePosition.X, main.AbsoluteSize.X
+                updateSlider(math.clamp((input.Position.X - absX) / absW, 0, 1))
+            end
+        end)
+        UIS.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = false
+                tw(main, 0.20, {Size = UDim2.new(1, -5, 0, 26)}, Enum.EasingStyle.Back)
+            end
+        end)
+        interact.MouseEnter:Connect(function() tw(main, 0.12, {BackgroundColor3 = C.HOVER}) end)
+        interact.MouseLeave:Connect(function() tw(main, 0.12, {BackgroundColor3 = C.INNER}) end)
+    end
+
+    local function buildToggle()
+        local f = elementFrame(elements, "Toggle")
+        local interact = mkBtn({Name = "Interact"; Parent = f; Size = UDim2.new(1, -5, 0, 30); BackgroundColor3 = C.INNER})
+        mkCorner(interact, UDim.new(0, 3)); mkStroke(interact, C.STROKE_IN)
+        mkLabel({Name = "ToggleLabel"; Parent = interact; Size = UDim2.new(1, -42, 1, 0); Position = UDim2.new(0, 8, 0, 0);
+            Text = "Aimbot"; Font = Enum.Font.GothamMedium; TextSize = 13; TextColor3 = C.TEXT})
+        local switchFrame = mkFrame(interact, {Name = "Switch"; Size = UDim2.new(0, 40, 0, 20);
+            Position = UDim2.new(1, -44, 0.5, -10); BackgroundColor3 = C.OFF})
+        mkCorner(switchFrame, UDim.new(0, 10))
+        local indicator = mkFrame(switchFrame, {Name = "Indicator"; Size = UDim2.new(0, 18, 0, 18);
+            Position = UDim2.new(0, 1, 0.5, -9); BackgroundColor3 = Color3.new(0.7, 0.7, 0.7)})
+        mkCorner(indicator, UDim.new(0, 9))
+        local isOn = false
+        interact.MouseButton1Click:Connect(function()
+            isOn = not isOn
+            if isOn then
+                tw(switchFrame, 0.18, {BackgroundColor3 = C.GREEN1})
+                tw(indicator, 0.18, {Position = UDim2.new(1, -19, 0.5, -9), BackgroundColor3 = C.WHITE})
+            else
+                tw(switchFrame, 0.18, {BackgroundColor3 = C.OFF})
+                tw(indicator, 0.18, {Position = UDim2.new(0, 1, 0.5, -9), BackgroundColor3 = Color3.new(0.7, 0.7, 0.7)})
+            end
+        end)
+        interact.MouseEnter:Connect(function() tw(interact, 0.12, {BackgroundColor3 = C.HOVER}) end)
+        interact.MouseLeave:Connect(function() tw(interact, 0.12, {BackgroundColor3 = C.INNER}) end)
+    end
+
+    local function buildKeybind()
+        local f = elementFrame(elements, "Keybind")
+        local keyFrame = mkFrame(f, {Name = "KeybindFrame"; Size = UDim2.new(1, -5, 0, 30); BackgroundColor3 = C.INNER})
+        mkCorner(keyFrame, UDim.new(0, 4)); mkStroke(keyFrame, C.STROKE_IN)
+        local keyBox = mkBtn({Name = "KeybindBox"; Parent = keyFrame; Size = UDim2.new(0, 70, 0, 22);
+            Position = UDim2.new(1, -76, 0.5, -11); BackgroundColor3 = C.EL})
+        mkCorner(keyBox, UDim.new(0, 4)); mkStroke(keyBox, C.STROKE_IN)
+        local keyLabel = mkLabel({Name = "KeyLabel"; Parent = keyBox; Size = UDim2.new(1, -6, 1, 0); Position = UDim2.new(0, 3, 0, 0);
+            Text = "Q"; Font = Enum.Font.GothamBold; TextSize = 12; TextColor3 = C.TEXT;
+            TextXAlignment = Enum.TextXAlignment.Center; TextYAlignment = Enum.TextYAlignment.Center})
+        mkLabel({Name = "ActionLabel"; Parent = f; Size = UDim2.new(1, -90, 0, 14); Position = UDim2.new(0, 0, 0, 23);
+            Text = "Trigger Aimbot"; Font = Enum.Font.GothamMedium; TextSize = 13; TextColor3 = C.TEXT_DIM})
+        local capturing = false
+        keyBox.MouseButton1Click:Connect(function()
+            capturing = true; keyLabel.Text = "..."
+            tw(keyBox, 0.12, {BackgroundColor3 = C.HOVER})
+        end)
+        UIS.InputBegan:Connect(function(input, gp)
+            if capturing and not gp and input.KeyCode ~= Enum.KeyCode.Escape then
+                keyLabel.Text = input.KeyCode.Name
+                capturing = false
+                tw(keyBox, 0.12, {BackgroundColor3 = C.EL})
+            end
+        end)
+    end
+
+    local function buildButton()
+        local f = elementFrame(elements, "Button")
+        local interact = mkBtn({Name = "Interact"; Parent = f; Size = UDim2.new(1, -5, 0, 32); BackgroundColor3 = C.EL})
+        mkCorner(interact, UDim.new(0, 4)); mkStroke(interact, C.STROKE_IN)
+        local centerImg = mkLabel({Name = "CenterImg"; Parent = interact; Size = UDim2.new(0, 32, 0, 20);
+            Position = UDim2.new(0, 8, 0.5, -10); Text = "★"; Font = Enum.Font.SourceSans; TextSize = 16;
+            TextColor3 = C.TEXT_GREY; TextXAlignment = Enum.TextXAlignment.Center; TextYAlignment = Enum.TextYAlignment.Center})
+        mkLabel({Name = "Title"; Parent = interact; Size = UDim2.new(1, -50, 1, 0); Position = UDim2.new(0, 42, 0, 0);
+            Text = "Execute Action"; Font = Enum.Font.GothamMedium; TextSize = 13; TextColor3 = C.TEXT})
+        interact.MouseButton1Click:Connect(function()
+            tw(interact, 0.10, {BackgroundColor3 = Color3.fromRGB(150, 150, 150)})
+            tw(interact, 0.25, {BackgroundColor3 = C.EL})
+        end)
+        interact.MouseEnter:Connect(function()
+            tw(interact, 0.12, {BackgroundColor3 = C.HOVER})
+            tw(centerImg, 0.12, {TextColor3 = C.WHITE})
+        end)
+        interact.MouseLeave:Connect(function()
+            tw(interact, 0.12, {BackgroundColor3 = C.EL})
+            tw(centerImg, 0.12, {TextColor3 = C.TEXT_GREY})
+        end)
+        interact.MouseButton1Down:Connect(function()
+            tw(interact, 0.06, {Size = UDim2.new(1, -2, 0, 30)}, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+        end)
+        interact.MouseButton1Up:Connect(function()
+            tw(interact, 0.20, {Size = UDim2.new(1, -5, 0, 32)}, Enum.EasingStyle.Back)
+        end)
+    end
+
+    buildDropdown()
+    buildSlider()
+    buildToggle()
+    buildKeybind()
+    buildButton()
+
+    local function setActiveTab(name)
+        for _, btn in pairs(tabBtns) do
+            if typeof(btn) == "Instance" then
+                local isAct = btn.Name == name .. "Tab"
+                if isAct then tabBtns._active = btn.Name end
+                local tx, ic = btn:FindFirstChild("Text"), btn:FindFirstChild("Icon")
+                local stroke = btn:FindFirstChildOfClass("UIStroke")
+                tw(btn, 0.25, {BackgroundColor3 = isAct and C.EL or C.TAB})
+                if tx then tw(tx, 0.25, {TextColor3 = isAct and C.WHITE or C.TEXT_DIM}) end
+                if ic then tw(ic, 0.25, {TextColor3 = isAct and C.WHITE or C.TEXT_DIM}) end
+                if stroke then tw(stroke, 0.25, {Transparency = isAct and 0 or 0.5}) end
+            end
+        end
+    end
+    setActiveTab("Combat")
+
+    local _tlOpen = false
+
+    local function openPanel()
+        _tlOpen = true
+        sg.Enabled = true
+        mainFrame.Size = UDim2.new(0, WIN_W, 0, 0)
+        mainFrame.Position = UDim2.new(0, 0, 0, TAB_H + GAP)
+        mainFrame.Visible = true
+        tw(outer, 0.30, {Size = UDim2.new(0, WIN_W, 0, TOTAL_H)}, Enum.EasingStyle.Back)
+        tw(mainFrame, 0.30, {Size = UDim2.new(0, WIN_W, 0, WIN_H)}, Enum.EasingStyle.Back)
+        tw(logoBtn, 0.18, {BackgroundColor3 = C.TEXT})
+    end
+
+    local function closePanel()
+        _tlOpen = false
+        tw(outer, 0.26, {Size = UDim2.new(0, WIN_W, 0, TAB_H)}, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+        tw(mainFrame, 0.26, {Size = UDim2.new(0, WIN_W, 0, 0)}, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+        tw(logoBtn, 0.18, {BackgroundColor3 = C.LOGO_OFF})
+        task.delay(0.28, function()
+            if not _tlOpen then mainFrame.Visible = false end
+        end)
+    end
+
+    uiOpenPanel = openPanel
+    uiClosePanel = closePanel
+
+    logoBtn.MouseEnter:Connect(function()
+        if not _tlOpen then tw(logoBtn, 0.12, {BackgroundColor3 = C.HOVER})
+        else tw(logoBtn, 0.12, {BackgroundColor3 = C.WHITE}) end
+    end)
+    logoBtn.MouseLeave:Connect(function()
+        if not _tlOpen then tw(logoBtn, 0.12, {BackgroundColor3 = C.LOGO_OFF})
+        else tw(logoBtn, 0.12, {BackgroundColor3 = C.TEXT}) end
+    end)
+    logoBtn.MouseButton1Click:Connect(function()
+        if _tlOpen then closePanel() else openPanel() end
+    end)
+    closeBtn.MouseButton1Click:Connect(closePanel)
+
+    UIS.InputBegan:Connect(function(input, gp)
+        if gp then return end
+        if input.KeyCode == Enum.KeyCode.RightShift then
+            if _tlOpen then closePanel() else openPanel() end
+        end
+    end)
+
+    local drag, ds, dp = false, nil, nil
+    tabFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            drag = true; ds = input.Position; dp = outer.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then drag = false end
+            end)
+        end
+    end)
+    hdr.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            drag = true; ds = input.Position; dp = outer.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then drag = false end
+            end)
+        end
+    end)
+    UIS.InputChanged:Connect(function(i)
+        if not drag then return end
+        if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then
+            local d = i.Position - ds
+            outer.Position = UDim2.new(dp.X.Scale, dp.X.Offset + d.X, dp.Y.Scale, dp.Y.Offset + d.Y)
+        end
+    end)
+end
+
+function ZyrixUI:Open()
+    buildZyrixUI()
+    if uiOpenPanel then uiOpenPanel() end
+end
+
+function ZyrixUI:Close()
+    if uiClosePanel then uiClosePanel() end
+end
+
+getgenv().ZyrixUI = ZyrixUI
 return Zyrix
