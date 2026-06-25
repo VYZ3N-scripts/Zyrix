@@ -31,8 +31,12 @@ local Players = cloneref(game:GetService("Players"))
 
 local hui = gethui()
 
-if getgenv().ZyrixLoaded and hui:FindFirstChild("ZyrixKeySystem") then return getgenv().Zyrix end
-if getgenv().ZyrixLoaded and hui:FindFirstChild("ZyrixKeylessSystem") then return getgenv().Zyrix end
+if getgenv().ZyrixLoaded and hui:FindFirstChild("ZyrixKeySystem") then
+    return getgenv().Zyrix
+end
+if getgenv().ZyrixLoaded and hui:FindFirstChild("ZyrixKeylessSystem") then
+    return getgenv().Zyrix
+end
 getgenv().ZyrixLoaded = true
 getgenv().ZyrixClosed = false
 
@@ -94,6 +98,8 @@ Zyrix.Callbacks = {
     OnFail = nil,
     OnClose = nil
 }
+
+local fireOnSuccess
 
 Zyrix.Changelog = {}
 
@@ -1418,7 +1424,7 @@ local function handleKeylessSkip()
     getgenv().ZyrixLoaded = false
     Zyrix:Notify("Access Granted", "Keyless access approved!", 3, "success")
     task.wait(0.3)
-    if Zyrix.Callbacks.OnSuccess then Zyrix.Callbacks.OnSuccess() end
+    fireOnSuccess()
 end
 
 local function BuildCenteredUI(windowWidth, windowHeight, panelHeight, userPanelWidth, changelogPanelWidth, gap, buildContent)
@@ -1792,7 +1798,7 @@ local function BuildKeylessUI()
             TweenService:Create(main, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
             TweenService:Create(mainStroke, TweenInfo.new(0.3), {Transparency = 1}):Play()
             task.wait(0.4) gui:Destroy()
-            if not Internal.IsJunkieMode and Zyrix.Callbacks.OnSuccess then Zyrix.Callbacks.OnSuccess() end
+            if not Internal.IsJunkieMode then fireOnSuccess() end
         end)
     end)
 
@@ -2353,7 +2359,10 @@ local function BuildKeyUI()
                 TweenService:Create(container, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Position = UDim2.new(0.5, 0, -0.5, 0)}):Play()
                 TweenService:Create(mainFrame, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
                 task.wait(0.4) screenGui:Destroy()
-                if not Internal.IsJunkieMode and Zyrix.Callbacks.OnSuccess then Zyrix.Callbacks.OnSuccess() end
+                task.spawn(function()
+                    task.wait(0.15)
+                    if not Internal.IsJunkieMode then fireOnSuccess() end
+                end)
             end)
         else
             setStatus("error", errorMsg) Zyrix:Notify("Invalid", errorMsg, 4, "error")
@@ -2396,10 +2405,10 @@ function Zyrix:Launch()
     if existingKey and existingKey ~= "" then
         if existingKey == "KEYLESS" then
             Zyrix:Notify("Executed", "Script loaded successfully!", 2, "success")
-            if Zyrix.Callbacks.OnSuccess then Zyrix.Callbacks.OnSuccess() end return
+            fireOnSuccess() return
         elseif Internal.ValidateFunction and validateKey(existingKey, Internal.ValidateFunction) then
             Zyrix:Notify("Executed", "Script loaded successfully!", 2, "success")
-            if Zyrix.Callbacks.OnSuccess then Zyrix.Callbacks.OnSuccess() end return
+            fireOnSuccess() return
         end
         getgenv().SCRIPT_KEY = nil
     end
@@ -2418,7 +2427,7 @@ function Zyrix:Launch()
                 if validateKey(savedKey, Internal.ValidateFunction) then
                     getgenv().SCRIPT_KEY = savedKey
                     Zyrix:Notify("Welcome Back", "Key validated!", 2, "success")
-                    if Zyrix.Callbacks.OnSuccess then Zyrix.Callbacks.OnSuccess() end return
+                    fireOnSuccess() return
                 else clearKey() Zyrix:Notify("Expired", "Saved key is no longer valid", 3, "warning") task.wait(1) end
             end
         end
@@ -2433,7 +2442,7 @@ function Zyrix:LaunchJunkie(config)
     local existingKey = getgenv().SCRIPT_KEY
     if existingKey and existingKey ~= "" then
         Zyrix:Notify("Executed", "Script loaded successfully!", 2, "success")
-        if Zyrix.Callbacks.OnSuccess then Zyrix.Callbacks.OnSuccess() end return
+        fireOnSuccess() return
     end
     getgenv().ZyrixClosed = false
     EnsureIconsReady(function()
@@ -2467,7 +2476,7 @@ function Zyrix:LaunchJunkie(config)
                 if vs and vr and vr.valid then
                     getgenv().SCRIPT_KEY = savedKey
                     Zyrix:Notify("Welcome Back", "Key validated!", 2, "success")
-                    if Zyrix.Callbacks.OnSuccess then Zyrix.Callbacks.OnSuccess() end return
+                    fireOnSuccess() return
                 else clearKey() Zyrix:Notify("Expired", "Saved key is no longer valid", 3, "warning") task.wait(1) end
             end
         end
@@ -2492,21 +2501,24 @@ local uiOpenPanel
 local uiClosePanel
 
 local function buildZyrixUI()
-    if uiBuilt then return end
-    uiBuilt = true
+    if uiBuilt and uiScreenGui and uiScreenGui.Parent then return end
+
+    local uiParent = hui
+    local oldGui = uiParent:FindFirstChild("ZyrixMainUI")
+    if oldGui then oldGui:Destroy() end
 
 -- Instances: 92 | Scripts: 2 | Modules: 0 | Tags: 0
 local G2L = {};
 
--- StarterGui.Zyrix
+-- StarterGui.ZyrixMainUI
 G2L["1"] = Instance.new("ScreenGui");
-G2L["1"]["Name"] = [[Zyrix]];
+G2L["1"]["Name"] = [[ZyrixMainUI]];
 G2L["1"]["ZIndexBehavior"] = Enum.ZIndexBehavior.Sibling;
 G2L["1"]["ResetOnSpawn"] = false;
 G2L["1"]["IgnoreGuiInset"] = true;
-G2L["1"]["DisplayOrder"] = 50;
-G2L["1"]["Enabled"] = false;
-G2L["1"]["Parent"] = hui;
+G2L["1"]["DisplayOrder"] = 100;
+G2L["1"]["Enabled"] = true;
+G2L["1"]["Parent"] = uiParent;
 -- Attributes
 G2L["1"]:SetAttribute([[_lemonadeUniqueId]], [[teVRcf7zteVR]]);
 
@@ -3642,7 +3654,7 @@ local script = G2L["5b"];
 	local main = zyrix:FindFirstChild("main")
 	local tabFrame = zyrix:FindFirstChild("Frame")
 	
-	local isOpen = false
+	local isOpen = true
 	
 	local function updateUI()
 		if main then main.Visible = isOpen end
@@ -3666,21 +3678,61 @@ local script = G2L["5b"];
 	
 	updateUI()
 end;
-task.spawn(C_5b);
+C_5b();
 
 
     uiScreenGui = G2L["1"]
+    if syn and syn.protect_gui then
+        pcall(syn.protect_gui, uiScreenGui)
+    end
+    uiBuilt = true
 end
 
 function ZyrixUI:Open()
-    buildZyrixUI()
-    if uiScreenGui then uiScreenGui.Enabled = true end
+    local ok, err = pcall(buildZyrixUI)
+    if not ok then
+        uiBuilt = false
+        uiScreenGui = nil
+        warn("[ZyrixUI] Failed to build:", err)
+        if Zyrix and Zyrix.Notify then
+            Zyrix:Notify("UI Error", tostring(err), 5, "error")
+        end
+        return false
+    end
+    local sg = uiScreenGui
+    if not sg then return false end
+    sg.Enabled = true
+    local main = sg:FindFirstChild("main")
+    local tabFrame = sg:FindFirstChild("Frame")
+    local toggleBtn = sg:FindFirstChild("ToggleUI")
+    if main then main.Visible = true end
+    if tabFrame then tabFrame.Visible = true end
+    if toggleBtn then toggleBtn.Text = "✕" end
     if uiOpenPanel then uiOpenPanel() end
+    return true
 end
 
 function ZyrixUI:Close()
     if uiClosePanel then uiClosePanel() end
     if uiScreenGui then uiScreenGui.Enabled = false end
+end
+
+fireOnSuccess = function()
+    task.spawn(function()
+        task.wait(0.2)
+        local ui = getgenv().ZyrixUI
+        if ui and ui.Open then
+            local opened = ui:Open()
+            if opened and Zyrix and Zyrix.Notify then
+                Zyrix:Notify("zyrix", "Interface loaded", 2, "success")
+            end
+        end
+        pcall(function()
+            if Zyrix.Callbacks.OnSuccess then
+                Zyrix.Callbacks.OnSuccess()
+            end
+        end)
+    end)
 end
 
 getgenv().ZyrixUI = ZyrixUI
