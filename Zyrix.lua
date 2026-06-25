@@ -2511,20 +2511,20 @@ local function buildZyrixUI()
     local UIS = UserInputService
 
     local C = {
-        WIN = Color3.fromRGB(19, 19, 19),
-        TAB = Color3.fromRGB(19, 19, 19),
-        EL = Color3.fromRGB(23, 23, 23),
-        INNER = Color3.fromRGB(31, 31, 31),
-        PROGRESS = Color3.fromRGB(201, 201, 201),
-        DD_BG = Color3.fromRGB(19, 19, 19),
-        STROKE = Color3.fromRGB(41, 41, 41),
-        STROKE_IN = Color3.fromRGB(51, 51, 51),
-        TEXT = Color3.fromRGB(231, 231, 231),
-        TEXT_DIM = Color3.fromRGB(181, 181, 181),
-        TEXT_GREY = Color3.fromRGB(131, 131, 131),
+        WIN = Color3.fromRGB(0, 0, 0),
+        TAB = Color3.fromRGB(4, 4, 4),
+        EL = Color3.fromRGB(8, 8, 8),
+        INNER = Color3.fromRGB(12, 12, 12),
+        PROGRESS = Color3.fromRGB(210, 210, 210),
+        DD_BG = Color3.fromRGB(5, 5, 5),
+        STROKE = Color3.fromRGB(24, 24, 24),
+        STROKE_IN = Color3.fromRGB(18, 18, 18),
+        TEXT = Color3.fromRGB(245, 245, 245),
+        TEXT_DIM = Color3.fromRGB(140, 140, 140),
+        TEXT_GREY = Color3.fromRGB(90, 90, 90),
         WHITE = Color3.fromRGB(255, 255, 255),
-        HOVER = Color3.fromRGB(35, 35, 35),
-        OFF = Color3.fromRGB(60, 60, 60),
+        HOVER = Color3.fromRGB(16, 16, 16),
+        DOOR = Color3.fromRGB(0, 0, 0),
     }
 
     local function tw(obj, t, props, style, dir)
@@ -2603,7 +2603,7 @@ local function buildZyrixUI()
     stroke(tabBar, C.STROKE)
     local tabGrad = Instance.new("UIGradient", tabBar)
     tabGrad.Rotation = 90
-    tabGrad.Color = ColorSequence.new(Color3.fromRGB(19, 19, 19), Color3.fromRGB(29, 29, 29))
+    tabGrad.Color = ColorSequence.new(Color3.fromRGB(0, 0, 0), Color3.fromRGB(10, 10, 10))
 
     local tabScroll = Instance.new("ScrollingFrame")
     tabScroll.Name = "tablist"
@@ -2665,7 +2665,7 @@ local function buildZyrixUI()
             Name = "ActiveIndicator",
             Size = UDim2.new(0.5, 0, 0, 2),
             Position = UDim2.new(0.25, 0, 1, -3),
-            BackgroundColor3 = Color3.fromRGB(68, 68, 68),
+            BackgroundColor3 = C.WHITE,
             Visible = name == "Combat",
             Parent = t,
         })
@@ -2694,10 +2694,83 @@ local function buildZyrixUI()
         Parent = root,
     })
     corner(main, UDim.new(0, 10))
-    stroke(main, Color3.fromRGB(46, 46, 46))
+    stroke(main, C.STROKE)
     local mainGrad = Instance.new("UIGradient", main)
     mainGrad.Rotation = 90
-    mainGrad.Color = ColorSequence.new(Color3.fromRGB(19, 19, 19), Color3.fromRGB(26, 26, 26))
+    mainGrad.Color = ColorSequence.new(Color3.fromRGB(0, 0, 0), Color3.fromRGB(8, 8, 8))
+
+    -- Door fold animation (matches key system)
+    local doorOverlay = frame({
+        Name = "DoorOverlay",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        ClipsDescendants = true,
+        ZIndex = 50,
+        Parent = main,
+    })
+    local leftDoor = frame({
+        Name = "LeftDoor",
+        Size = UDim2.new(0.5, 0, 1, 0),
+        BackgroundColor3 = C.DOOR,
+        ZIndex = 51,
+        Parent = doorOverlay,
+    })
+    local rightDoor = frame({
+        Name = "RightDoor",
+        Size = UDim2.new(0.5, 0, 1, 0),
+        Position = UDim2.new(0.5, 0, 0, 0),
+        BackgroundColor3 = C.DOOR,
+        ZIndex = 51,
+        Parent = doorOverlay,
+    })
+    local doorLogo = Instance.new("ImageLabel")
+    doorLogo.Name = "DoorLogo"
+    doorLogo.Size = UDim2.new(0, 72, 0, 72)
+    doorLogo.Position = UDim2.new(0.5, 0, 0.5, 0)
+    doorLogo.AnchorPoint = Vector2.new(0.5, 0.5)
+    doorLogo.BackgroundTransparency = 1
+    doorLogo.Image = Zyrix.Appearance.Icon
+    doorLogo.ImageColor3 = C.WHITE
+    doorLogo.ScaleType = Enum.ScaleType.Fit
+    doorLogo.ZIndex = 54
+    doorLogo.Parent = doorOverlay
+    local halfW = math.ceil(WIN_W / 2)
+
+    local function resetDoorsClosed()
+        doorOverlay.Visible = true
+        leftDoor.Position = UDim2.new(0, 0, 0, 0)
+        rightDoor.Position = UDim2.new(0.5, 0, 0, 0)
+        doorLogo.ImageTransparency = 0
+    end
+
+    local function playOpenDoors(done)
+        task.spawn(function()
+            tw(doorLogo, 0.2, {ImageTransparency = 1})
+            task.wait(0.22)
+            tw(leftDoor, 0.42, {Position = UDim2.new(0, -halfW, 0, 0)}, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+            tw(rightDoor, 0.42, {Position = UDim2.new(1, 0, 0, 0)}, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+            task.wait(0.44)
+            doorOverlay.Visible = false
+            if done then done() end
+        end)
+    end
+
+    local function playCloseDoors(done)
+        task.spawn(function()
+            doorOverlay.Visible = true
+            leftDoor.Position = UDim2.new(0, -halfW, 0, 0)
+            rightDoor.Position = UDim2.new(1, 0, 0, 0)
+            doorLogo.ImageTransparency = 1
+            tw(leftDoor, 0.36, {Position = UDim2.new(0, 0, 0, 0)}, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+            tw(rightDoor, 0.36, {Position = UDim2.new(0.5, 0, 0, 0)}, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+            task.wait(0.38)
+            tw(doorLogo, 0.25, {ImageTransparency = 0})
+            task.wait(0.28)
+            if done then done() end
+        end)
+    end
+
+    resetDoorsClosed()
 
     local header = frame({
         Name = "Header",
@@ -2736,6 +2809,7 @@ local function buildZyrixUI()
         Size = UDim2.new(1, -16, 0, 1),
         Position = UDim2.new(0, 8, 0, 34),
         BackgroundColor3 = C.STROKE_IN,
+        BackgroundTransparency = 0.35,
         Parent = main,
     })
 
@@ -3011,7 +3085,7 @@ local function buildZyrixUI()
             Name = opt,
             Parent = ddList,
             Size = UDim2.new(1, 0, 0, 28),
-            BackgroundColor3 = Color3.fromRGB(27, 27, 27),
+            BackgroundColor3 = Color3.fromRGB(10, 10, 10),
             Text = opt,
             Font = Enum.Font.GothamMedium,
             TextSize = 12,
@@ -3025,7 +3099,7 @@ local function buildZyrixUI()
             tw(ddArrow, 0.12, {Rotation = 0})
         end)
         item.MouseEnter:Connect(function() tw(item, 0.1, {BackgroundColor3 = C.HOVER}) end)
-        item.MouseLeave:Connect(function() tw(item, 0.1, {BackgroundColor3 = Color3.fromRGB(27, 27, 27)}) end)
+        item.MouseLeave:Connect(function() tw(item, 0.1, {BackgroundColor3 = Color3.fromRGB(10, 10, 10)}) end)
     end
     local function toggleDropdown()
         ddOpen = not ddOpen
@@ -3042,9 +3116,9 @@ local function buildZyrixUI()
         Size = UDim2.new(0, 44, 0, 44),
         Position = UDim2.new(1, -54, 0, 10),
         AnchorPoint = Vector2.new(0, 0),
-        BackgroundColor3 = Color3.new(0, 0, 0),
-        BackgroundTransparency = 0.5,
-        Text = "✕",
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+        BackgroundTransparency = 0.25,
+        Text = "☰",
         Font = Enum.Font.GothamBold,
         TextSize = 17,
         TextColor3 = C.TEXT,
@@ -3053,30 +3127,95 @@ local function buildZyrixUI()
     corner(toggleUI, UDim.new(1, 0))
     stroke(toggleUI, C.STROKE)
 
-    local uiOpen = true
-    local function refreshVisibility()
-        root.Visible = uiOpen
-        toggleUI.Text = uiOpen and "✕" or "☰"
+    local TOTAL_H = TAB_H + GAP + WIN_H
+    local uiExpanded = false
+    local uiAnimating = false
+
+    local function setCollapsed(instant)
+        root.Size = UDim2.new(0, WIN_W, 0, TAB_H)
+        main.Size = UDim2.new(0, WIN_W, 0, 0)
+        main.Visible = false
+        resetDoorsClosed()
+        uiExpanded = false
+        toggleUI.Text = "☰"
+        if instant then return end
+    end
+
+    local function expandPanel(done)
+        if uiAnimating then return end
+        uiAnimating = true
+        root.Visible = true
+        main.Visible = true
+        main.Size = UDim2.new(0, WIN_W, 0, WIN_H)
+        resetDoorsClosed()
+        tw(root, 0.34, {Size = UDim2.new(0, WIN_W, 0, TOTAL_H)}, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+        task.wait(0.34)
+        playOpenDoors(function()
+            uiExpanded = true
+            uiAnimating = false
+            toggleUI.Text = "✕"
+            if done then done() end
+        end)
+    end
+
+    local function collapsePanel(done)
+        if uiAnimating then return end
+        uiAnimating = true
+        playCloseDoors(function()
+            tw(root, 0.3, {Size = UDim2.new(0, WIN_W, 0, TAB_H)}, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+            tw(main, 0.3, {Size = UDim2.new(0, WIN_W, 0, 0)}, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+            task.wait(0.32)
+            main.Visible = false
+            uiExpanded = false
+            uiAnimating = false
+            toggleUI.Text = "☰"
+            if done then done() end
+        end)
     end
 
     uiOpenPanel = function()
-        uiOpen = true
-        refreshVisibility()
+        root.Visible = true
+        if not uiExpanded then
+            task.spawn(expandPanel)
+        end
     end
+
     uiClosePanel = function()
-        uiOpen = false
-        refreshVisibility()
+        if uiExpanded and not uiAnimating then
+            task.spawn(function()
+                collapsePanel(function()
+                    root.Visible = false
+                end)
+            end)
+        else
+            root.Visible = false
+            setCollapsed(true)
+        end
     end
 
     toggleUI.MouseButton1Click:Connect(function()
-        uiOpen = not uiOpen
-        refreshVisibility()
+        if uiAnimating then return end
+        if uiExpanded then
+            task.spawn(collapsePanel)
+        else
+            task.spawn(expandPanel)
+        end
     end)
 
     logoBtn.MouseButton1Click:Connect(function()
-        uiOpen = not uiOpen
-        refreshVisibility()
+        if uiAnimating then return end
+        if uiExpanded then
+            task.spawn(collapsePanel)
+        else
+            task.spawn(expandPanel)
+        end
     end)
+
+    -- Start collapsed (tab bar only), opens with fold anim on first Open()
+    root.Size = UDim2.new(0, WIN_W, 0, TAB_H)
+    main.Visible = false
+    main.Size = UDim2.new(0, WIN_W, 0, 0)
+    root.Visible = true
 
     -- Drag root
     local dragging, dragStart, startPos = false, nil, nil
@@ -3100,7 +3239,6 @@ local function buildZyrixUI()
         end
     end)
 
-    refreshVisibility()
     uiScreenGui = sg
     if syn and syn.protect_gui then
         pcall(syn.protect_gui, uiScreenGui)
@@ -3122,8 +3260,6 @@ function ZyrixUI:Open()
     local sg = uiScreenGui
     if not sg then return false end
     sg.Enabled = true
-    local root = sg:FindFirstChild("Root")
-    if root then root.Visible = true end
     if uiOpenPanel then uiOpenPanel() end
     return true
 end
