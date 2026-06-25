@@ -102,7 +102,7 @@ Zyrix.Shop = {
     Enabled = false,
     Icon = "",
     Title = "Get Premium Access",
-    Subtitle = "Instant delivery • 24/7 support",
+    Subtitle = "Instant delivery â€¢ 24/7 support",
     ButtonText = "Buy",
     Link = ""
 }
@@ -316,7 +316,7 @@ local function generateHiddenDots(availableWidth, charWidth)
     charWidth = charWidth or 5
     local count = math.floor(availableWidth / charWidth)
     count = math.max(count, 8)
-    return string.rep("•", count)
+    return string.rep("â€¢", count)
 end
 
 local function formatTime12()
@@ -606,7 +606,7 @@ local function ShowLoadingScreen(onComplete)
         local indicator = Instance.new("TextLabel")
         indicator.Size = UDim2.new(0, mobile and 22 or 28, 0, mobile and 22 or 28)
         indicator.BackgroundTransparency = 1
-        indicator.Text = "○"
+        indicator.Text = "â—‹"
         indicator.TextColor3 = Zyrix.Theme.Pending
         indicator.TextSize = phaseTextSize
         indicator.Font = Enum.Font.ArimoBold
@@ -669,11 +669,11 @@ local function ShowLoadingScreen(onComplete)
         for i = 1, 5 do
             local p = phases[i]
             if i < num then
-                p.indicator.Text = "●"
+                p.indicator.Text = "â—"
                 TweenService:Create(p.indicator, TweenInfo.new(0.2), {TextColor3 = Zyrix.Theme.Success, TextTransparency = 0}):Play()
                 TweenService:Create(p.label, TweenInfo.new(0.2), {TextColor3 = Zyrix.Theme.Success}):Play()
             elseif i == num then
-                p.indicator.Text = "●"
+                p.indicator.Text = "â—"
                 p.indicator.TextTransparency = 0
                 TweenService:Create(p.indicator, TweenInfo.new(0.2), {TextColor3 = Zyrix.Theme.Accent}):Play()
                 TweenService:Create(p.label, TweenInfo.new(0.2), {TextColor3 = Zyrix.Theme.Text}):Play()
@@ -688,7 +688,7 @@ local function ShowLoadingScreen(onComplete)
                     end
                 end)
             else
-                p.indicator.Text = "○"
+                p.indicator.Text = "â—‹"
                 p.indicator.TextColor3 = Zyrix.Theme.Pending
                 p.label.TextColor3 = Zyrix.Theme.Pending
             end
@@ -990,7 +990,7 @@ local function CreateChangelogPanel(parent, windowWidth, panelHeight, panelWidth
         local versionLabel = Instance.new("TextLabel")
         versionLabel.Size = UDim2.new(1, 0, 0, 22)
         versionLabel.BackgroundTransparency = 1
-        versionLabel.Text = update.Version .. "  •  " .. update.Date
+        versionLabel.Text = update.Version .. "  â€¢  " .. update.Date
         versionLabel.TextColor3 = Zyrix.Theme.Accent
         versionLabel.TextSize = 14
         versionLabel.Font = Enum.Font.ArimoBold
@@ -1003,7 +1003,7 @@ local function CreateChangelogPanel(parent, windowWidth, panelHeight, panelWidth
             changeLabel.Size = UDim2.new(1, 0, 0, 0)
             changeLabel.AutomaticSize = Enum.AutomaticSize.Y
             changeLabel.BackgroundTransparency = 1
-            changeLabel.Text = "  •  " .. change
+            changeLabel.Text = "  â€¢  " .. change
             changeLabel.TextColor3 = Zyrix.Theme.TextDim
             changeLabel.TextSize = 12
             changeLabel.Font = Enum.Font.ArimoBold
@@ -2482,588 +2482,1205 @@ function Zyrix:ClearSavedKey() return clearKey() end
 getgenv().Zyrix = Zyrix
 
 --[[
-    Zyrix v4 — UI Library
-    Programmatic build. Z-logo toggles TabList with smooth animation.
-    All elements functional: Dropdown, Slider, Toggle, Keybind, Button.
+ @uniquadev CONVERTER UI — Lemonade build
 ]]
 
 local ZyrixUI = {}
 local uiBuilt = false
-local uiOpenPanel, uiClosePanel
+local uiScreenGui
+local uiOpenPanel
+local uiClosePanel
 
 local function buildZyrixUI()
     if uiBuilt then return end
     uiBuilt = true
 
-    local TS  = TweenService
-    local UIS = UserInputService
+-- Instances: 92 | Scripts: 2 | Modules: 0 | Tags: 0
+local G2L = {};
 
-    local sg = hui:FindFirstChild("ZyrixMainUI") or Instance.new("ScreenGui")
-    sg.Name = "ZyrixMainUI"
-    sg.ResetOnSpawn = false
-    sg.IgnoreGuiInset = true
-    sg.DisplayOrder = 50
-    sg.Enabled = false
-    sg.Parent = hui
+-- StarterGui.Zyrix
+G2L["1"] = Instance.new("ScreenGui");
+G2L["1"]["Name"] = [[Zyrix]];
+G2L["1"]["ZIndexBehavior"] = Enum.ZIndexBehavior.Sibling;
+G2L["1"]["ResetOnSpawn"] = false;
+G2L["1"]["IgnoreGuiInset"] = true;
+G2L["1"]["DisplayOrder"] = 50;
+G2L["1"]["Enabled"] = false;
+G2L["1"]["Parent"] = hui;
+-- Attributes
+G2L["1"]:SetAttribute([[_lemonadeUniqueId]], [[teVRcf7zteVR]]);
 
-    local C = {
-        WIN      = Color3.fromRGB(20, 20, 20),
-        TAB      = Color3.fromRGB(23, 23, 23),
-        EL       = Color3.fromRGB(25, 25, 25),
-        INNER    = Color3.fromRGB(31, 31, 31),
-        PROGRESS = Color3.fromRGB(201, 201, 201),
-        DD_BG    = Color3.fromRGB(19, 19, 19),
-        DD_ROW   = Color3.fromRGB(27, 27, 27),
-        STROKE_EL = Color3.fromRGB(41, 41, 41),
-        STROKE_IN = Color3.fromRGB(51, 51, 51),
-        STROKE_WIN= Color3.fromRGB(36, 36, 36),
-        TEXT      = Color3.fromRGB(231, 231, 231),
-        TEXT_DIM  = Color3.fromRGB(181, 181, 181),
-        TEXT_GREY = Color3.fromRGB(131, 131, 131),
-        WHITE     = Color3.fromRGB(255, 255, 255),
-        GREEN1    = Color3.fromRGB(0, 171, 0),
-        GREEN2    = Color3.fromRGB(0, 121, 0),
-        HOVER     = Color3.fromRGB(45, 45, 45),
-        LOGO_OFF  = Color3.fromRGB(100, 100, 100),
-        OFF       = Color3.fromRGB(60, 60, 60),
-    }
 
-    local function tw(obj, t, props, style, dir)
-        TS:Create(obj, TweenInfo.new(t, style or Enum.EasingStyle.Quart, dir or Enum.EasingDirection.Out), props):Play()
-    end
-    local function mkCorner(p, r)
-        local c = Instance.new("UICorner", p)
-        c.CornerRadius = r or UDim.new(0, 4); return c
-    end
-    local function mkStroke(p, col, thick)
-        local s = Instance.new("UIStroke", p)
-        s.Color = col or C.STROKE_EL; s.Thickness = thick or 1
-        s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border; return s
-    end
-    local function mkPad(p, t, b, l, r)
-        local pad = Instance.new("UIPadding", p)
-        pad.PaddingTop    = UDim.new(0, t or 0)
-        pad.PaddingBottom = UDim.new(0, b or 0)
-        pad.PaddingLeft   = UDim.new(0, l or 0)
-        pad.PaddingRight  = UDim.new(0, r or 0)
-    end
-    local function mkGradient(p, from, to, rot)
-        local g = Instance.new("UIGradient", p)
-        g.Color = ColorSequence.new(from or Color3.new(0,0,0), to or C.WIN)
-        g.Rotation = rot or 0; return g
-    end
-    local function mkBtn(props)
-        local b = Instance.new("TextButton")
-        b.AutoButtonColor = false; b.BackgroundTransparency = 1
-        b.Size = props.Size or UDim2.new(1, 0, 1, 0)
-        b.Text = ""; b.Parent = props.Parent
-        for k, v in pairs(props) do if k ~= "Parent" and k ~= "Size" then b[k] = v end end
-        if props.Size then b.Size = props.Size end
-        return b
-    end
-    local function mkLabel(props)
-        local l = Instance.new("TextLabel")
-        l.BackgroundTransparency = 1; l.TextXAlignment = Enum.TextXAlignment.Left
-        l.TextWrapped = true; l.RichText = false
-        for k, v in pairs(props) do l[k] = v end; return l
-    end
-    local function mkFrame(parent, props)
-        local f = Instance.new("Frame"); f.BorderSizePixel = 0
-        f.BackgroundTransparency = 1
-        for k, v in pairs(props or {}) do f[k] = v end
-        f.Parent = parent; return f
-    end
+-- StarterGui.Zyrix.main
+G2L["2"] = Instance.new("Frame", G2L["1"]);
+G2L["2"]["BorderSizePixel"] = 0;
+G2L["2"]["BackgroundColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["2"]["Size"] = UDim2.new(0.39696, 0, 0.52711, 0);
+G2L["2"]["Position"] = UDim2.new(0.29841, 0, 0.27131, 0);
+G2L["2"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["2"]["Name"] = [[main]];
+-- Attributes
+G2L["2"]:SetAttribute([[_lemonadeUniqueId]], [[P1oiKE9TP1oi]]);
 
-    local WIN_W = 563; local WIN_H = 354
-    local TAB_H = 42;  local GAP = 8
-    local TOTAL_H = TAB_H + GAP + WIN_H
 
-    local outer = Instance.new("Frame")
-    outer.Name = "ZyrixOuter"
-    outer.Size = UDim2.new(0, WIN_W, 0, TAB_H)
-    outer.Position = UDim2.new(0, 20, 0, 20)
-    outer.BackgroundColor3 = C.TAB
-    outer.BorderSizePixel = 0
-    mkCorner(outer, UDim.new(0, 8))
-    mkStroke(outer, C.STROKE_WIN)
-    mkGradient(outer, Color3.fromRGB(0,0,0), C.TAB)
-    outer.Parent = sg
+-- StarterGui.Zyrix.main.TextLabel
+G2L["3"] = Instance.new("TextLabel", G2L["2"]);
+G2L["3"]["BorderSizePixel"] = 0;
+G2L["3"]["TextSize"] = 15;
+G2L["3"]["TextXAlignment"] = Enum.TextXAlignment.Left;
+G2L["3"]["BackgroundColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["3"]["FontFace"] = Font.new([[rbxasset://fonts/families/GothamSSm.json]], Enum.FontWeight.Bold, Enum.FontStyle.Normal);
+G2L["3"]["TextColor3"] = Color3.fromRGB(231, 231, 231);
+G2L["3"]["BackgroundTransparency"] = 1;
+G2L["3"]["Size"] = UDim2.new(0.85258, 0, 0.06497, 0);
+G2L["3"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["3"]["Text"] = [[zyrix]];
+G2L["3"]["Position"] = UDim2.new(0.05684, 0, 0.01695, 0);
+-- Attributes
+G2L["3"]:SetAttribute([[_lemonadeUniqueId]], [[5wsAPDmq5wsA]]);
 
-    local tabFrame = mkFrame(outer, {
-        Name = "TabFrame";
-        BackgroundColor3 = C.TAB;
-        Size = UDim2.new(1, 0, 0, TAB_H);
-        Position = UDim2.new(0, 0, 0, 0);
-    })
-    mkCorner(tabFrame, UDim.new(0, 8))
-    mkGradient(tabFrame, Color3.fromRGB(0,0,0), C.TAB)
 
-    local logoBtn = mkBtn({
-        Name = "LogoBtn";
-        Parent = tabFrame;
-        Size = UDim2.new(0, 36, 0, 36);
-        Position = UDim2.new(0, 4, 0.5, -18);
-        BackgroundColor3 = C.LOGO_OFF;
-    })
-    mkCorner(logoBtn, UDim.new(0, 6))
+-- StarterGui.Zyrix.main.openTab
+G2L["4"] = Instance.new("ImageButton", G2L["2"]);
+G2L["4"]["BorderSizePixel"] = 0;
+G2L["4"]["BackgroundTransparency"] = 1;
+G2L["4"]["BackgroundColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["4"]["ImageColor3"] = Color3.fromRGB(231, 231, 231);
+G2L["4"]["Image"] = [[rbxassetid://105436073524298]];
+G2L["4"]["Size"] = UDim2.new(0.04618, 0, 0.08192, 0);
+G2L["4"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["4"]["Name"] = [[openTab]];
+G2L["4"]["Position"] = UDim2.new(0.00888, 0, 0.01695, 0);
+-- Attributes
+G2L["4"]:SetAttribute([[_lemonadeUniqueId]], [[6BxpA91t6Bxp]]);
 
-    local logoImg = Instance.new("ImageLabel")
-    logoImg.Name = "LogoImage"
-    logoImg.Size = UDim2.new(0, 28, 0, 28)
-    logoImg.Position = UDim2.new(0.5, 0, 0.5, 0)
-    logoImg.AnchorPoint = Vector2.new(0.5, 0.5)
-    logoImg.BackgroundTransparency = 1
-    logoImg.Image = Zyrix.Appearance.Icon
-    logoImg.ScaleType = Enum.ScaleType.Fit
-    logoImg.Parent = logoBtn
 
-    local tabSF = Instance.new("ScrollingFrame")
-    tabSF.Name = "tablist"
-    tabSF.Size = UDim2.new(1, -45, 1, 0)
-    tabSF.Position = UDim2.new(0, 42, 0, 0)
-    tabSF.BackgroundTransparency = 1
-    tabSF.BorderSizePixel = 0
-    tabSF.ScrollBarThickness = 0
-    tabSF.ScrollingDirection = Enum.ScrollingDirection.X
-    tabSF.VerticalScrollBarInset = Enum.ScrollBarInset.Always
-    tabSF.AutomaticCanvasSize = Enum.AutomaticSize.X
-    tabSF.CanvasSize = UDim2.new(0, 0, 0, 0)
-    tabSF.Parent = tabFrame
+-- StarterGui.Zyrix.main.TextLabel
+G2L["5"] = Instance.new("TextLabel", G2L["2"]);
+G2L["5"]["BorderSizePixel"] = 0;
+G2L["5"]["TextSize"] = 14;
+G2L["5"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["5"]["FontFace"] = Font.new([[rbxasset://fonts/families/SourceSansPro.json]], Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+G2L["5"]["TextColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["5"]["Size"] = UDim2.new(1, 0, -0.00565, 0);
+G2L["5"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["5"]["Text"] = [[]];
+G2L["5"]["Position"] = UDim2.new(0, 0, 0.10452, 0);
+-- Attributes
+G2L["5"]:SetAttribute([[_lemonadeUniqueId]], [[gtwrrRRLgtwr]]);
 
-    local tabList = Instance.new("UIListLayout")
-    tabList.Name = "TabList"
-    tabList.FillDirection = Enum.FillDirection.Horizontal
-    tabList.SortOrder = Enum.SortOrder.LayoutOrder
-    tabList.Padding = UDim.new(0, 4)
-    tabList.HorizontalAlignment = Enum.HorizontalAlignment.Left
-    tabList.Parent = tabSF
 
-    Instance.new("UIPadding", tabSF).PaddingLeft = UDim.new(0, 3)
+-- StarterGui.Zyrix.main.TextLabel.UIGradient
+G2L["6"] = Instance.new("UIGradient", G2L["5"]);
+G2L["6"]["Color"] = ColorSequence.new{ColorSequenceKeypoint.new(0.000, Color3.fromRGB(0, 0, 0)),ColorSequenceKeypoint.new(0.415, Color3.fromRGB(6, 6, 6)),ColorSequenceKeypoint.new(0.637, Color3.fromRGB(34, 34, 34)),ColorSequenceKeypoint.new(0.780, Color3.fromRGB(50, 50, 50)),ColorSequenceKeypoint.new(0.888, Color3.fromRGB(65, 65, 65)),ColorSequenceKeypoint.new(0.960, Color3.fromRGB(79, 79, 79)),ColorSequenceKeypoint.new(0.995, Color3.fromRGB(98, 98, 98)),ColorSequenceKeypoint.new(1.000, Color3.fromRGB(127, 127, 127)),ColorSequenceKeypoint.new(1.000, Color3.fromRGB(255, 255, 255))};
+-- Attributes
+G2L["6"]:SetAttribute([[_lemonadeUniqueId]], [[3KBQ7MLCQZ43]]);
 
-    local tabs = {
-        {Name = "Combat",   Icon = "⚔️"};
-        {Name = "Visual",   Icon = "👁"};
-        {Name = "Misc",     Icon = "⚙"};
-        {Name = "Settings", Icon = "🔧"};
-        {Name = "Player",   Icon = "🧑"};
-    }
-    local tabBtns = {}
 
-    for _, t in ipairs(tabs) do
-        local btn = mkBtn({
-            Name = t.Name .. "Tab";
-            Parent = tabSF;
-            Size = UDim2.new(0, 72, 1, -4);
-            BackgroundColor3 = C.EL;
-        })
-        mkCorner(btn, UDim.new(0, 4))
-        mkStroke(btn, C.STROKE_IN)
-        mkPad(btn, 4, 8, 6, 6)
+-- StarterGui.Zyrix.main.elements
+G2L["7"] = Instance.new("ScrollingFrame", G2L["2"]);
+G2L["7"]["Active"] = true;
+G2L["7"]["BorderSizePixel"] = 0;
+G2L["7"]["Name"] = [[elements]];
+G2L["7"]["ScrollBarImageTransparency"] = 0.3;
+G2L["7"]["BackgroundColor3"] = Color3.fromRGB(11, 11, 11);
+G2L["7"]["Size"] = UDim2.new(0.9698, 0, 0.87853, 0);
+G2L["7"]["ScrollBarImageColor3"] = Color3.fromRGB(141, 141, 141);
+G2L["7"]["Position"] = UDim2.new(0.00979, 0, 0.10452, 0);
+G2L["7"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["7"]["ScrollBarThickness"] = 2;
+G2L["7"]["BackgroundTransparency"] = 1;
+-- Attributes
+G2L["7"]:SetAttribute([[_lemonadeUniqueId]], [[Rad6MzCQRad6]]);
 
-        local icon = mkLabel({
-            Name = "Icon"; Parent = btn;
-            Size = UDim2.new(0, 20, 1, 0);
-            Text = t.Icon; Font = Enum.Font.SourceSans;
-            TextSize = 16; TextColor3 = C.TEXT_DIM;
-        })
-        local txt = mkLabel({
-            Name = "Text"; Parent = btn;
-            Size = UDim2.new(1, -22, 1, 0); Position = UDim2.new(0, 20, 0, 0);
-            Text = t.Name; Font = Enum.Font.GothamMedium;
-            TextSize = 13; TextColor3 = C.TEXT_DIM;
-        })
 
-        btn.MouseEnter:Connect(function()
-            if btn.Name ~= (tabBtns._active or "") then
-                tw(btn, 0.15, {BackgroundColor3 = C.HOVER})
-                tw(txt, 0.15, {TextColor3 = C.TEXT})
-                tw(icon, 0.15, {TextColor3 = C.WHITE})
-            end
-        end)
-        btn.MouseLeave:Connect(function()
-            if btn.Name ~= (tabBtns._active or "") then
-                tw(btn, 0.15, {BackgroundColor3 = C.EL})
-                tw(txt, 0.15, {TextColor3 = C.TEXT_DIM})
-                tw(icon, 0.15, {TextColor3 = C.TEXT_DIM})
-            end
-        end)
-        btn.MouseButton1Click:Connect(function()
-            for name, b in pairs(tabBtns) do
-                if name ~= "_active" then
-                    local tx = b:FindFirstChild("Text")
-                    local ic = b:FindFirstChild("Icon")
-                    local stroke = b:FindFirstChildOfClass("UIStroke")
-                    local isAct = (b.Name == btn.Name)
-                    tw(b, 0.25, {BackgroundColor3 = isAct and C.EL or C.TAB})
-                    if tx then tw(tx, 0.25, {TextColor3 = isAct and C.WHITE or C.TEXT_DIM}) end
-                    if ic then tw(ic, 0.25, {TextColor3 = isAct and C.WHITE or C.TEXT_DIM}) end
-                    if stroke then tw(stroke, 0.25, {Transparency = isAct and 0 or 0.5}) end
-                    if isAct then tabBtns._active = b.Name end
-                end
-            end
-        end)
-        tabBtns[t.Name] = btn
-    end
+-- StarterGui.Zyrix.main.elements.Dropdown
+G2L["8"] = Instance.new("Frame", G2L["7"]);
+G2L["8"]["BorderSizePixel"] = 0;
+G2L["8"]["BackgroundColor3"] = Color3.fromRGB(23, 23, 23);
+G2L["8"]["Size"] = UDim2.new(0.38169, 0, 1.00468, 0);
+G2L["8"]["Position"] = UDim2.new(0.63159, 0, 0.00187, 0);
+G2L["8"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["8"]["Name"] = [[Dropdown]];
+-- Attributes
+G2L["8"]:SetAttribute([[_lemonadeUniqueId]], [[q0tESgAEq0tE]]);
 
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Name = "main"
-    mainFrame.Size = UDim2.new(0, WIN_W, 0, 0)
-    mainFrame.Position = UDim2.new(0, 0, 0, TAB_H + GAP)
-    mainFrame.BackgroundColor3 = C.WIN
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Visible = false
-    mainFrame.Parent = outer
-    mkCorner(mainFrame, UDim.new(0, 6))
-    mkGradient(mainFrame, Color3.fromRGB(0,0,0), C.WIN)
 
-    local hdr = mkFrame(mainFrame, {
-        Name = "Header"; Size = UDim2.new(1, 0, 0, 34);
-        BackgroundColor3 = C.TAB;
-    })
-    mkCorner(hdr, UDim.new(0, 6))
+-- StarterGui.Zyrix.main.elements.Dropdown.Title
+G2L["9"] = Instance.new("TextLabel", G2L["8"]);
+G2L["9"]["ZIndex"] = 3;
+G2L["9"]["BorderSizePixel"] = 0;
+G2L["9"]["TextSize"] = 13;
+G2L["9"]["TextXAlignment"] = Enum.TextXAlignment.Left;
+G2L["9"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["9"]["FontFace"] = Font.new([[rbxasset://fonts/families/GothamSSm.json]], Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+G2L["9"]["TextColor3"] = Color3.fromRGB(231, 231, 231);
+G2L["9"]["BackgroundTransparency"] = 1;
+G2L["9"]["AnchorPoint"] = Vector2.new(0.5, 0.5);
+G2L["9"]["Size"] = UDim2.new(0.99361, 0, 0.02789, 0);
+G2L["9"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["9"]["Text"] = [[Dropdown]];
+G2L["9"]["Name"] = [[Title]];
+G2L["9"]["Position"] = UDim2.new(0.48939, 0, 0.03386, 0);
+-- Attributes
+G2L["9"]:SetAttribute([[_lemonadeUniqueId]], [[T1aVgBpjT1aV]]);
 
-    mkLabel({
-        Name = "Title"; Parent = hdr;
-        Size = UDim2.new(1, -40, 1, -5); Position = UDim2.new(0, 10, 0, 2);
-        Text = Zyrix.Appearance.Title; Font = Enum.Font.GothamBold;
-        TextSize = 16; TextColor3 = C.WHITE;
-    })
 
-    local closeBtn = mkBtn({
-        Name = "CloseBtn"; Parent = hdr;
-        Size = UDim2.new(0, 24, 0, 24); Position = UDim2.new(1, -28, 0.5, -12);
-        BackgroundColor3 = C.HOVER;
-    })
-    mkCorner(closeBtn, UDim.new(0, 4))
-    mkLabel({
-        Name = "CloseText"; Parent = closeBtn;
-        Size = UDim2.new(1, 0, 1, 0); Text = "✕";
-        Font = Enum.Font.GothamBold; TextSize = 13; TextColor3 = C.TEXT;
-    })
+-- StarterGui.Zyrix.main.elements.Dropdown.List
+G2L["a"] = Instance.new("ScrollingFrame", G2L["8"]);
+G2L["a"]["Active"] = true;
+G2L["a"]["BorderSizePixel"] = 0;
+G2L["a"]["CanvasPosition"] = Vector2.new(0, 200);
+G2L["a"]["Name"] = [[List]];
+G2L["a"]["ScrollBarImageTransparency"] = 0.7;
+G2L["a"]["BackgroundColor3"] = Color3.fromRGB(19, 19, 19);
+G2L["a"]["AutomaticCanvasSize"] = Enum.AutomaticSize.Y;
+G2L["a"]["Size"] = UDim2.new(0.90463, 0, 0.45015, 0);
+G2L["a"]["ScrollBarImageColor3"] = Color3.fromRGB(141, 141, 141);
+G2L["a"]["Position"] = UDim2.new(0, 0, 0.07569, 0);
+G2L["a"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["a"]["ScrollBarThickness"] = 2;
+G2L["a"]["BackgroundTransparency"] = 1;
+-- Attributes
+G2L["a"]:SetAttribute([[_lemonadeUniqueId]], [[7rn8V1dF7rn8]]);
 
-    local sep = Instance.new("Frame")
-    sep.Size = UDim2.new(1, -20, 0, 1)
-    sep.Position = UDim2.new(0, 10, 0, 34)
-    sep.BackgroundColor3 = C.STROKE_IN
-    sep.BorderSizePixel = 0
-    sep.Parent = mainFrame
 
-    local elements = Instance.new("ScrollingFrame")
-    elements.Name = "elements"
-    elements.Size = UDim2.new(1, -10, 1, -38)
-    elements.Position = UDim2.new(0, 5, 0, 36)
-    elements.BackgroundTransparency = 1
-    elements.BorderSizePixel = 0
-    elements.ScrollBarThickness = 2
-    elements.ScrollBarImageColor3 = Color3.fromRGB(141, 141, 141)
-    elements.ScrollBarImageTransparency = 0.3
-    elements.CanvasSize = UDim2.new(0, 0, 0, 0)
-    elements.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    elements.ScrollingDirection = Enum.ScrollingDirection.Y
-    elements.Parent = mainFrame
+-- StarterGui.Zyrix.main.elements.Dropdown.List.Placeholder
+G2L["b"] = Instance.new("Frame", G2L["a"]);
+G2L["b"]["BorderSizePixel"] = 0;
+G2L["b"]["BackgroundColor3"] = Color3.fromRGB(27, 27, 27);
+G2L["b"]["Position"] = UDim2.new(0.39247, 0, 0, 0);
+G2L["b"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["b"]["Name"] = [[Placeholder]];
+G2L["b"]["LayoutOrder"] = -100;
+-- Attributes
+G2L["b"]:SetAttribute([[_lemonadeUniqueId]], [[qSnThAD5qSnT]]);
 
-    mkPad(elements, 6, 4, 4, 4)
-    local elementsList = Instance.new("UIListLayout")
-    elementsList.Padding = UDim.new(0, 8)
-    elementsList.SortOrder = Enum.SortOrder.LayoutOrder
-    elementsList.FillDirection = Enum.FillDirection.Vertical
-    elementsList.Parent = elements
 
-    local function elementFrame(parent, titleText)
-        local f = mkFrame(parent, {
-            Name = titleText or "Element";
-            Size = UDim2.new(1, -2, 0, 0);
-            AutomaticSize = Enum.AutomaticSize.Y;
-            BackgroundColor3 = C.EL;
-        })
-        mkCorner(f, UDim.new(0, 4))
-        mkStroke(f, C.STROKE_EL, 1)
-        mkPad(f, 8, 8, 8, 8)
-        mkLabel({
-            Name = "Title"; Parent = f;
-            Size = UDim2.new(1, 0, 0, 14); Text = titleText or "";
-            Font = Enum.Font.GothamMedium; TextSize = 13; TextColor3 = C.TEXT_DIM;
-        })
-        local contentPad = Instance.new("UIPadding", f)
-        contentPad.PaddingTop = UDim.new(0, 22)
-        contentPad.Name = "ContentPad"
-        return f
-    end
+-- StarterGui.Zyrix.main.elements.Dropdown.List.Template
+G2L["c"] = Instance.new("Frame", G2L["a"]);
+G2L["c"]["BorderSizePixel"] = 0;
+G2L["c"]["BackgroundColor3"] = Color3.fromRGB(27, 27, 27);
+G2L["c"]["Size"] = UDim2.new(1.02819, 0, 0.10699, 0);
+G2L["c"]["Position"] = UDim2.new(-0.0082, 0, 0.00353, 0);
+G2L["c"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["c"]["Name"] = [[Template]];
+-- Attributes
+G2L["c"]:SetAttribute([[_lemonadeUniqueId]], [[lcXPMGaOlcXP]]);
 
-    local function buildDropdown()
-        local f = elementFrame(elements, "Dropdown")
-        local interact = mkBtn({Name = "Interact"; Parent = f; Size = UDim2.new(1, -5, 0, 30); BackgroundColor3 = C.INNER})
-        mkCorner(interact, UDim.new(0, 3)); mkStroke(interact, C.STROKE_IN)
-        local selected = mkLabel({Name = "Selected"; Parent = interact; Size = UDim2.new(1, -34, 1, 0); Position = UDim2.new(0, 8, 0, 0);
-            Text = "Option #1"; Font = Enum.Font.GothamMedium; TextSize = 13; TextColor3 = C.TEXT})
-        local toggleBtn = mkBtn({Name = "Toggle"; Parent = interact; Size = UDim2.new(0, 22, 0, 22);
-            Position = UDim2.new(1, -26, 0.5, -11); BackgroundColor3 = C.OFF})
-        mkCorner(toggleBtn, UDim.new(0, 3))
-        mkLabel({Name = "Arrow"; Parent = toggleBtn; Size = UDim2.new(1, 0, 1, 0); Text = "▼";
-            Font = Enum.Font.SourceSans; TextSize = 11; TextColor3 = C.TEXT_DIM;
-            TextXAlignment = Enum.TextXAlignment.Center; TextYAlignment = Enum.TextYAlignment.Center})
-        local list = mkFrame(elements, {Name = "List"; Size = UDim2.new(1, -5, 0, 0); BackgroundColor3 = C.DD_BG; Visible = false; AutomaticSize = Enum.AutomaticSize.Y})
-        mkCorner(list, UDim.new(0, 3)); mkStroke(list, C.STROKE_IN, 1); mkPad(list, 4, 4, 4, 4); list.LayoutOrder = 2
-        local options = {"Option #1", "Option #2", "Option #3", "Option #4"}
-        local isOpen = false
-        for i, optName in ipairs(options) do
-            local item = mkBtn({Name = optName; Parent = list; Size = UDim2.new(1, 0, 0, 28);
-                BackgroundColor3 = i == 1 and C.EL or Color3.fromRGB(27, 27, 27)})
-            mkCorner(item, UDim.new(0, 3))
-            mkLabel({Name = "Title"; Parent = item; Size = UDim2.new(1, 0, 0, 14); Position = UDim2.new(0, 8, 0.5, -7);
-                Text = optName; Font = Enum.Font.GothamMedium; TextSize = 13; TextColor3 = C.TEXT})
-            item.MouseButton1Click:Connect(function()
-                selected.Text = optName
-                tw(toggleBtn, 0.15, {Rotation = 0})
-                tw(list, 0.15, {Size = UDim2.new(1, -5, 0, 0)}, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
-                task.delay(0.16, function() list.Visible = false; isOpen = false end)
-            end)
-            item.MouseEnter:Connect(function() tw(item, 0.12, {BackgroundColor3 = C.HOVER}) end)
-            item.MouseLeave:Connect(function() tw(item, 0.12, {BackgroundColor3 = i == 1 and C.EL or Color3.fromRGB(27, 27, 27)}) end)
-        end
-        local function toggleDropdown()
-            isOpen = not isOpen
-            if isOpen then
-                list.Visible = true; list.Size = UDim2.new(1, -5, 0, 0)
-                tw(toggleBtn, 0.15, {Rotation = 180})
-                tw(list, 0.18, {Size = UDim2.new(1, -5, 0, #options * 32 + 8)}, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-            else
-                tw(toggleBtn, 0.15, {Rotation = 0})
-                tw(list, 0.15, {Size = UDim2.new(1, -5, 0, 0)}, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
-                task.delay(0.16, function() list.Visible = false end)
-            end
-        end
-        interact.MouseButton1Click:Connect(toggleDropdown)
-        toggleBtn.MouseButton1Click:Connect(toggleDropdown)
-        interact.MouseEnter:Connect(function() tw(interact, 0.15, {BackgroundColor3 = C.HOVER}) end)
-        interact.MouseLeave:Connect(function() tw(interact, 0.15, {BackgroundColor3 = C.INNER}) end)
-    end
 
-    local function buildSlider()
-        local f = elementFrame(elements, "Slider")
-        local main = mkFrame(f, {Name = "Main"; Size = UDim2.new(1, -5, 0, 26); BackgroundColor3 = C.INNER})
-        mkCorner(main, UDim.new(0, 4)); mkStroke(main, C.STROKE_IN)
-        local progress = mkFrame(main, {Name = "Progress"; Size = UDim2.new(0.75, 0, 1, 0); BackgroundColor3 = C.PROGRESS})
-        mkCorner(progress, UDim.new(0, 4)); mkStroke(progress, C.PROGRESS, 0.5)
-        local info = mkLabel({Name = "Information"; Parent = f; Size = UDim2.new(0, 100, 0, 14); Position = UDim2.new(1, -105, 0, 23);
-            Text = "750 studs"; Font = Enum.Font.GothamMedium; TextSize = 12; TextColor3 = C.TEXT_DIM})
-        local interact = mkBtn({Name = "Interact"; Parent = main; Size = UDim2.new(1, 0, 1, 0); BackgroundColor3 = Color3.new(1, 1, 1)})
-        interact.BackgroundTransparency = 0.99
-        local dragging = false
-        local function updateSlider(pct)
-            pct = math.clamp(pct, 0, 1)
-            progress.Size = UDim2.new(pct, 0, 1, 0)
-            info.Text = tostring(math.floor(pct * 1000)) .. " studs"
-        end
-        updateSlider(0.75)
-        interact.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging = true
-                local absX, absW = main.AbsolutePosition.X, main.AbsoluteSize.X
-                updateSlider(math.clamp((input.Position.X - absX) / absW, 0, 1))
-                tw(main, 0.08, {Size = UDim2.new(1, 6, 1, 4)}, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-            end
-        end)
-        UIS.InputChanged:Connect(function(input)
-            if not dragging then return end
-            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                local absX, absW = main.AbsolutePosition.X, main.AbsoluteSize.X
-                updateSlider(math.clamp((input.Position.X - absX) / absW, 0, 1))
-            end
-        end)
-        UIS.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging = false
-                tw(main, 0.20, {Size = UDim2.new(1, -5, 0, 26)}, Enum.EasingStyle.Back)
-            end
-        end)
-        interact.MouseEnter:Connect(function() tw(main, 0.12, {BackgroundColor3 = C.HOVER}) end)
-        interact.MouseLeave:Connect(function() tw(main, 0.12, {BackgroundColor3 = C.INNER}) end)
-    end
+-- StarterGui.Zyrix.main.elements.Dropdown.List.Template.Title
+G2L["d"] = Instance.new("TextLabel", G2L["c"]);
+G2L["d"]["BorderSizePixel"] = 0;
+G2L["d"]["TextSize"] = 11;
+G2L["d"]["TextXAlignment"] = Enum.TextXAlignment.Left;
+G2L["d"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["d"]["FontFace"] = Font.new([[rbxasset://fonts/families/GothamSSm.json]], Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+G2L["d"]["TextColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["d"]["BackgroundTransparency"] = 1;
+G2L["d"]["AnchorPoint"] = Vector2.new(0.5, 0.5);
+G2L["d"]["Size"] = UDim2.new(1.04226, 0, 0.53675, 0);
+G2L["d"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["d"]["Text"] = [[Option]];
+G2L["d"]["Name"] = [[Title]];
+G2L["d"]["Position"] = UDim2.new(0.53226, 0, 0.49281, 0);
+-- Attributes
+G2L["d"]:SetAttribute([[_lemonadeUniqueId]], [[lRERSqv9lRER]]);
 
-    local function buildToggle()
-        local f = elementFrame(elements, "Toggle")
-        local interact = mkBtn({Name = "Interact"; Parent = f; Size = UDim2.new(1, -5, 0, 30); BackgroundColor3 = C.INNER})
-        mkCorner(interact, UDim.new(0, 3)); mkStroke(interact, C.STROKE_IN)
-        mkLabel({Name = "ToggleLabel"; Parent = interact; Size = UDim2.new(1, -42, 1, 0); Position = UDim2.new(0, 8, 0, 0);
-            Text = "Aimbot"; Font = Enum.Font.GothamMedium; TextSize = 13; TextColor3 = C.TEXT})
-        local switchFrame = mkFrame(interact, {Name = "Switch"; Size = UDim2.new(0, 40, 0, 20);
-            Position = UDim2.new(1, -44, 0.5, -10); BackgroundColor3 = C.OFF})
-        mkCorner(switchFrame, UDim.new(0, 10))
-        local indicator = mkFrame(switchFrame, {Name = "Indicator"; Size = UDim2.new(0, 18, 0, 18);
-            Position = UDim2.new(0, 1, 0.5, -9); BackgroundColor3 = Color3.new(0.7, 0.7, 0.7)})
-        mkCorner(indicator, UDim.new(0, 9))
-        local isOn = false
-        interact.MouseButton1Click:Connect(function()
-            isOn = not isOn
-            if isOn then
-                tw(switchFrame, 0.18, {BackgroundColor3 = C.GREEN1})
-                tw(indicator, 0.18, {Position = UDim2.new(1, -19, 0.5, -9), BackgroundColor3 = C.WHITE})
-            else
-                tw(switchFrame, 0.18, {BackgroundColor3 = C.OFF})
-                tw(indicator, 0.18, {Position = UDim2.new(0, 1, 0.5, -9), BackgroundColor3 = Color3.new(0.7, 0.7, 0.7)})
-            end
-        end)
-        interact.MouseEnter:Connect(function() tw(interact, 0.12, {BackgroundColor3 = C.HOVER}) end)
-        interact.MouseLeave:Connect(function() tw(interact, 0.12, {BackgroundColor3 = C.INNER}) end)
-    end
 
-    local function buildKeybind()
-        local f = elementFrame(elements, "Keybind")
-        local keyFrame = mkFrame(f, {Name = "KeybindFrame"; Size = UDim2.new(1, -5, 0, 30); BackgroundColor3 = C.INNER})
-        mkCorner(keyFrame, UDim.new(0, 4)); mkStroke(keyFrame, C.STROKE_IN)
-        local keyBox = mkBtn({Name = "KeybindBox"; Parent = keyFrame; Size = UDim2.new(0, 70, 0, 22);
-            Position = UDim2.new(1, -76, 0.5, -11); BackgroundColor3 = C.EL})
-        mkCorner(keyBox, UDim.new(0, 4)); mkStroke(keyBox, C.STROKE_IN)
-        local keyLabel = mkLabel({Name = "KeyLabel"; Parent = keyBox; Size = UDim2.new(1, -6, 1, 0); Position = UDim2.new(0, 3, 0, 0);
-            Text = "Q"; Font = Enum.Font.GothamBold; TextSize = 12; TextColor3 = C.TEXT;
-            TextXAlignment = Enum.TextXAlignment.Center; TextYAlignment = Enum.TextYAlignment.Center})
-        mkLabel({Name = "ActionLabel"; Parent = f; Size = UDim2.new(1, -90, 0, 14); Position = UDim2.new(0, 0, 0, 23);
-            Text = "Trigger Aimbot"; Font = Enum.Font.GothamMedium; TextSize = 13; TextColor3 = C.TEXT_DIM})
-        local capturing = false
-        keyBox.MouseButton1Click:Connect(function()
-            capturing = true; keyLabel.Text = "..."
-            tw(keyBox, 0.12, {BackgroundColor3 = C.HOVER})
-        end)
-        UIS.InputBegan:Connect(function(input, gp)
-            if capturing and not gp and input.KeyCode ~= Enum.KeyCode.Escape then
-                keyLabel.Text = input.KeyCode.Name
-                capturing = false
-                tw(keyBox, 0.12, {BackgroundColor3 = C.EL})
-            end
-        end)
-    end
+-- StarterGui.Zyrix.main.elements.Dropdown.List.Template.Interact
+G2L["e"] = Instance.new("TextButton", G2L["c"]);
+G2L["e"]["BorderSizePixel"] = 0;
+G2L["e"]["TextSize"] = 1;
+G2L["e"]["TextColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["e"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["e"]["FontFace"] = Font.new([[rbxasset://fonts/families/SourceSansPro.json]], Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+G2L["e"]["ZIndex"] = 5;
+G2L["e"]["BackgroundTransparency"] = 1;
+G2L["e"]["Size"] = UDim2.new(1, 0, 1, 0);
+G2L["e"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["e"]["Text"] = [[]];
+G2L["e"]["Name"] = [[Interact]];
+-- Attributes
+G2L["e"]:SetAttribute([[_lemonadeUniqueId]], [[cQUdyTBRcQUd]]);
 
-    local function buildButton()
-        local f = elementFrame(elements, "Button")
-        local interact = mkBtn({Name = "Interact"; Parent = f; Size = UDim2.new(1, -5, 0, 32); BackgroundColor3 = C.EL})
-        mkCorner(interact, UDim.new(0, 4)); mkStroke(interact, C.STROKE_IN)
-        local centerImg = mkLabel({Name = "CenterImg"; Parent = interact; Size = UDim2.new(0, 32, 0, 20);
-            Position = UDim2.new(0, 8, 0.5, -10); Text = "★"; Font = Enum.Font.SourceSans; TextSize = 16;
-            TextColor3 = C.TEXT_GREY; TextXAlignment = Enum.TextXAlignment.Center; TextYAlignment = Enum.TextYAlignment.Center})
-        mkLabel({Name = "Title"; Parent = interact; Size = UDim2.new(1, -50, 1, 0); Position = UDim2.new(0, 42, 0, 0);
-            Text = "Execute Action"; Font = Enum.Font.GothamMedium; TextSize = 13; TextColor3 = C.TEXT})
-        interact.MouseButton1Click:Connect(function()
-            tw(interact, 0.10, {BackgroundColor3 = Color3.fromRGB(150, 150, 150)})
-            tw(interact, 0.25, {BackgroundColor3 = C.EL})
-        end)
-        interact.MouseEnter:Connect(function()
-            tw(interact, 0.12, {BackgroundColor3 = C.HOVER})
-            tw(centerImg, 0.12, {TextColor3 = C.WHITE})
-        end)
-        interact.MouseLeave:Connect(function()
-            tw(interact, 0.12, {BackgroundColor3 = C.EL})
-            tw(centerImg, 0.12, {TextColor3 = C.TEXT_GREY})
-        end)
-        interact.MouseButton1Down:Connect(function()
-            tw(interact, 0.06, {Size = UDim2.new(1, -2, 0, 30)}, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-        end)
-        interact.MouseButton1Up:Connect(function()
-            tw(interact, 0.20, {Size = UDim2.new(1, -5, 0, 32)}, Enum.EasingStyle.Back)
-        end)
-    end
 
-    buildDropdown()
-    buildSlider()
-    buildToggle()
-    buildKeybind()
-    buildButton()
+-- StarterGui.Zyrix.main.elements.Dropdown.List.Template.UIStroke
+G2L["f"] = Instance.new("UIStroke", G2L["c"]);
+G2L["f"]["Color"] = Color3.fromRGB(51, 51, 51);
+G2L["f"]["ApplyStrokeMode"] = Enum.ApplyStrokeMode.Border;
+-- Attributes
+G2L["f"]:SetAttribute([[_lemonadeUniqueId]], [[AcMtl7RBAcMt]]);
 
-    local function setActiveTab(name)
-        for _, btn in pairs(tabBtns) do
-            if typeof(btn) == "Instance" then
-                local isAct = btn.Name == name .. "Tab"
-                if isAct then tabBtns._active = btn.Name end
-                local tx, ic = btn:FindFirstChild("Text"), btn:FindFirstChild("Icon")
-                local stroke = btn:FindFirstChildOfClass("UIStroke")
-                tw(btn, 0.25, {BackgroundColor3 = isAct and C.EL or C.TAB})
-                if tx then tw(tx, 0.25, {TextColor3 = isAct and C.WHITE or C.TEXT_DIM}) end
-                if ic then tw(ic, 0.25, {TextColor3 = isAct and C.WHITE or C.TEXT_DIM}) end
-                if stroke then tw(stroke, 0.25, {Transparency = isAct and 0 or 0.5}) end
-            end
-        end
-    end
-    setActiveTab("Combat")
 
-    local _tlOpen = false
+-- StarterGui.Zyrix.main.elements.Dropdown.List.Template.UICorner
+G2L["10"] = Instance.new("UICorner", G2L["c"]);
+G2L["10"]["CornerRadius"] = UDim.new(0, 4);
+-- Attributes
+G2L["10"]:SetAttribute([[_lemonadeUniqueId]], [[yNjVS1eQyNjV]]);
 
-    local function openPanel()
-        _tlOpen = true
-        sg.Enabled = true
-        mainFrame.Size = UDim2.new(0, WIN_W, 0, 0)
-        mainFrame.Position = UDim2.new(0, 0, 0, TAB_H + GAP)
-        mainFrame.Visible = true
-        tw(outer, 0.30, {Size = UDim2.new(0, WIN_W, 0, TOTAL_H)}, Enum.EasingStyle.Back)
-        tw(mainFrame, 0.30, {Size = UDim2.new(0, WIN_W, 0, WIN_H)}, Enum.EasingStyle.Back)
-        tw(logoBtn, 0.18, {BackgroundColor3 = C.TEXT})
-    end
 
-    local function closePanel()
-        _tlOpen = false
-        tw(outer, 0.26, {Size = UDim2.new(0, WIN_W, 0, TAB_H)}, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
-        tw(mainFrame, 0.26, {Size = UDim2.new(0, WIN_W, 0, 0)}, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
-        tw(logoBtn, 0.18, {BackgroundColor3 = C.LOGO_OFF})
-        task.delay(0.28, function()
-            if not _tlOpen then mainFrame.Visible = false end
-        end)
-    end
+-- StarterGui.Zyrix.main.elements.Dropdown.List.UIStroke
+G2L["11"] = Instance.new("UIStroke", G2L["a"]);
+G2L["11"]["Color"] = Color3.fromRGB(41, 41, 41);
+G2L["11"]["ApplyStrokeMode"] = Enum.ApplyStrokeMode.Border;
+-- Attributes
+G2L["11"]:SetAttribute([[_lemonadeUniqueId]], [[cWp29WbhcWp2]]);
 
-    uiOpenPanel = openPanel
-    uiClosePanel = closePanel
 
-    logoBtn.MouseEnter:Connect(function()
-        if not _tlOpen then tw(logoBtn, 0.12, {BackgroundColor3 = C.HOVER})
-        else tw(logoBtn, 0.12, {BackgroundColor3 = C.WHITE}) end
-    end)
-    logoBtn.MouseLeave:Connect(function()
-        if not _tlOpen then tw(logoBtn, 0.12, {BackgroundColor3 = C.LOGO_OFF})
-        else tw(logoBtn, 0.12, {BackgroundColor3 = C.TEXT}) end
-    end)
-    logoBtn.MouseButton1Click:Connect(function()
-        if _tlOpen then closePanel() else openPanel() end
-    end)
-    closeBtn.MouseButton1Click:Connect(closePanel)
+-- StarterGui.Zyrix.main.elements.Dropdown.Selected
+G2L["12"] = Instance.new("TextLabel", G2L["8"]);
+G2L["12"]["BorderSizePixel"] = 0;
+G2L["12"]["TextSize"] = 12;
+G2L["12"]["TextXAlignment"] = Enum.TextXAlignment.Right;
+G2L["12"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["12"]["FontFace"] = Font.new([[rbxasset://fonts/families/GothamSSm.json]], Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+G2L["12"]["TextColor3"] = Color3.fromRGB(181, 181, 181);
+G2L["12"]["BackgroundTransparency"] = 1;
+G2L["12"]["AnchorPoint"] = Vector2.new(0.5, 0.5);
+G2L["12"]["Size"] = UDim2.new(0.83048, 0, 0.02789, 0);
+G2L["12"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["12"]["Text"] = [[Option #1]];
+G2L["12"]["Name"] = [[Selected]];
+G2L["12"]["Position"] = UDim2.new(0.36581, 0, 0.03386, 0);
+-- Attributes
+G2L["12"]:SetAttribute([[_lemonadeUniqueId]], [[tGwndS7ttGwn]]);
 
-    UIS.InputBegan:Connect(function(input, gp)
-        if gp then return end
-        if input.KeyCode == Enum.KeyCode.RightShift then
-            if _tlOpen then closePanel() else openPanel() end
-        end
-    end)
 
-    local drag, ds, dp = false, nil, nil
-    tabFrame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            drag = true; ds = input.Position; dp = outer.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then drag = false end
-            end)
-        end
-    end)
-    hdr.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            drag = true; ds = input.Position; dp = outer.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then drag = false end
-            end)
-        end
-    end)
-    UIS.InputChanged:Connect(function(i)
-        if not drag then return end
-        if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then
-            local d = i.Position - ds
-            outer.Position = UDim2.new(dp.X.Scale, dp.X.Offset + d.X, dp.Y.Scale, dp.Y.Offset + d.Y)
-        end
-    end)
+-- StarterGui.Zyrix.main.elements.Dropdown.Toggle
+G2L["13"] = Instance.new("ImageButton", G2L["8"]);
+G2L["13"]["BorderSizePixel"] = 0;
+G2L["13"]["BackgroundTransparency"] = 1;
+G2L["13"]["ImageColor3"] = Color3.fromRGB(161, 161, 161);
+G2L["13"]["AnchorPoint"] = Vector2.new(0.5, 0.5);
+G2L["13"]["Image"] = [[rbxassetid://3926305904]];
+G2L["13"]["ImageRectSize"] = Vector2.new(36, 36);
+G2L["13"]["Size"] = UDim2.new(0.15819, 0, 0.05577, 0);
+G2L["13"]["LayoutOrder"] = 9;
+G2L["13"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["13"]["Name"] = [[Toggle]];
+G2L["13"]["ImageRectOffset"] = Vector2.new(564, 284);
+G2L["13"]["Position"] = UDim2.new(0.86014, 0, 0.03386, 0);
+-- Attributes
+G2L["13"]:SetAttribute([[_lemonadeUniqueId]], [[UM2wa4rtUM2w]]);
+
+
+-- StarterGui.Zyrix.main.elements.Dropdown.Interact
+G2L["14"] = Instance.new("TextButton", G2L["8"]);
+G2L["14"]["BorderSizePixel"] = 0;
+G2L["14"]["TextTransparency"] = 1;
+G2L["14"]["TextSize"] = 12;
+G2L["14"]["TextColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["14"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["14"]["FontFace"] = Font.new([[rbxasset://fonts/families/GothamSSm.json]], Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+G2L["14"]["ZIndex"] = 5;
+G2L["14"]["AnchorPoint"] = Vector2.new(0.5, 0.5);
+G2L["14"]["BackgroundTransparency"] = 1;
+G2L["14"]["Size"] = UDim2.new(1, 0, 1, 0);
+G2L["14"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["14"]["Text"] = [[]];
+G2L["14"]["Name"] = [[Interact]];
+G2L["14"]["Position"] = UDim2.new(0.5, 0, 0.5, 0);
+-- Attributes
+G2L["14"]:SetAttribute([[_lemonadeUniqueId]], [[2J80AtTZ2J80]]);
+
+
+-- StarterGui.Zyrix.main.elements.Dropdown.UIStroke
+G2L["15"] = Instance.new("UIStroke", G2L["8"]);
+G2L["15"]["Color"] = Color3.fromRGB(41, 41, 41);
+G2L["15"]["ApplyStrokeMode"] = Enum.ApplyStrokeMode.Border;
+-- Attributes
+G2L["15"]:SetAttribute([[_lemonadeUniqueId]], [[QM0XKrR7QM0X]]);
+
+
+-- StarterGui.Zyrix.main.elements.Dropdown.UIPadding
+G2L["16"] = Instance.new("UIPadding", G2L["8"]);
+G2L["16"]["PaddingTop"] = UDim.new(0, 8);
+G2L["16"]["PaddingRight"] = UDim.new(0, 10);
+G2L["16"]["PaddingLeft"] = UDim.new(0, 10);
+G2L["16"]["PaddingBottom"] = UDim.new(0, 8);
+-- Attributes
+G2L["16"]:SetAttribute([[_lemonadeUniqueId]], [[qy7KWpFlqy7K]]);
+
+
+-- StarterGui.Zyrix.main.elements.Button
+G2L["17"] = Instance.new("Frame", G2L["7"]);
+G2L["17"]["BorderSizePixel"] = 0;
+G2L["17"]["BackgroundColor3"] = Color3.fromRGB(23, 23, 23);
+G2L["17"]["Size"] = UDim2.new(0.58737, 0, 0.0535, 0);
+G2L["17"]["Position"] = UDim2.new(0, 0, 0.00187, 0);
+G2L["17"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["17"]["Name"] = [[Button]];
+-- Attributes
+G2L["17"]:SetAttribute([[_lemonadeUniqueId]], [[4zFJ0zMI4zFJ]]);
+
+
+-- StarterGui.Zyrix.main.elements.Button.UIStroke
+G2L["18"] = Instance.new("UIStroke", G2L["17"]);
+G2L["18"]["Color"] = Color3.fromRGB(41, 41, 41);
+G2L["18"]["ApplyStrokeMode"] = Enum.ApplyStrokeMode.Border;
+-- Attributes
+G2L["18"]:SetAttribute([[_lemonadeUniqueId]], [[xvHUqI4wxvHU]]);
+
+
+-- StarterGui.Zyrix.main.elements.Button.Title
+G2L["19"] = Instance.new("TextLabel", G2L["17"]);
+G2L["19"]["BorderSizePixel"] = 0;
+G2L["19"]["TextSize"] = 13;
+G2L["19"]["TextXAlignment"] = Enum.TextXAlignment.Left;
+G2L["19"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["19"]["FontFace"] = Font.new([[rbxasset://fonts/families/GothamSSm.json]], Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+G2L["19"]["TextColor3"] = Color3.fromRGB(231, 231, 231);
+G2L["19"]["BackgroundTransparency"] = 1;
+G2L["19"]["AnchorPoint"] = Vector2.new(0.5, 0.5);
+G2L["19"]["Size"] = UDim2.new(0.98617, 0, 0.19897, 0);
+G2L["19"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["19"]["Text"] = [[Reset Aimbot System]];
+G2L["19"]["Name"] = [[Title]];
+G2L["19"]["Position"] = UDim2.new(0.50604, 0, 0.47561, 0);
+-- Attributes
+G2L["19"]:SetAttribute([[_lemonadeUniqueId]], [[BpaQhYyABpaQ]]);
+
+
+-- StarterGui.Zyrix.main.elements.Button.ElementIndicator
+G2L["1a"] = Instance.new("TextLabel", G2L["17"]);
+G2L["1a"]["BorderSizePixel"] = 0;
+G2L["1a"]["TextSize"] = 11;
+G2L["1a"]["TextXAlignment"] = Enum.TextXAlignment.Right;
+G2L["1a"]["TextTransparency"] = 0.5;
+G2L["1a"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["1a"]["FontFace"] = Font.new([[rbxasset://fonts/families/GothamSSm.json]], Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+G2L["1a"]["TextColor3"] = Color3.fromRGB(131, 131, 131);
+G2L["1a"]["BackgroundTransparency"] = 1;
+G2L["1a"]["AnchorPoint"] = Vector2.new(0.5, 0.5);
+G2L["1a"]["Size"] = UDim2.new(0.34693, 0, 0.18476, 0);
+G2L["1a"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["1a"]["Text"] = [[Button]];
+G2L["1a"]["Name"] = [[ElementIndicator]];
+G2L["1a"]["Position"] = UDim2.new(0.77168, 0, 0.47561, 0);
+-- Attributes
+G2L["1a"]:SetAttribute([[_lemonadeUniqueId]], [[1cDN22F31cDN]]);
+
+
+-- StarterGui.Zyrix.main.elements.Button.Interact
+G2L["1b"] = Instance.new("TextButton", G2L["17"]);
+G2L["1b"]["BorderSizePixel"] = 0;
+G2L["1b"]["TextTransparency"] = 1;
+G2L["1b"]["TextSize"] = 12;
+G2L["1b"]["TextColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["1b"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["1b"]["FontFace"] = Font.new([[rbxasset://fonts/families/GothamSSm.json]], Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+G2L["1b"]["ZIndex"] = 5;
+G2L["1b"]["AnchorPoint"] = Vector2.new(0.5, 0.5);
+G2L["1b"]["BackgroundTransparency"] = 1;
+G2L["1b"]["Size"] = UDim2.new(1, 0, 1, 0);
+G2L["1b"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["1b"]["Text"] = [[]];
+G2L["1b"]["Name"] = [[Interact]];
+G2L["1b"]["Position"] = UDim2.new(0.5, 0, 0.5, 0);
+-- Attributes
+G2L["1b"]:SetAttribute([[_lemonadeUniqueId]], [[0NBNWxJD0NBN]]);
+
+
+-- StarterGui.Zyrix.main.elements.Button.UIPadding
+G2L["1c"] = Instance.new("UIPadding", G2L["17"]);
+G2L["1c"]["PaddingTop"] = UDim.new(0, 8);
+G2L["1c"]["PaddingRight"] = UDim.new(0, 10);
+G2L["1c"]["PaddingLeft"] = UDim.new(0, 10);
+G2L["1c"]["PaddingBottom"] = UDim.new(0, 8);
+-- Attributes
+G2L["1c"]:SetAttribute([[_lemonadeUniqueId]], [[clDflSAsclDf]]);
+
+
+-- StarterGui.Zyrix.main.elements.Slider
+G2L["1d"] = Instance.new("Frame", G2L["7"]);
+G2L["1d"]["BorderSizePixel"] = 0;
+G2L["1d"]["BackgroundColor3"] = Color3.fromRGB(23, 23, 23);
+G2L["1d"]["Size"] = UDim2.new(0.58737, 0, 0.06442, 0);
+G2L["1d"]["Position"] = UDim2.new(0, 0, 0.05505, 0);
+G2L["1d"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["1d"]["Name"] = [[Slider]];
+-- Attributes
+G2L["1d"]:SetAttribute([[_lemonadeUniqueId]], [[0qoDSnqI0qoD]]);
+
+
+-- StarterGui.Zyrix.main.elements.Slider.Title
+G2L["1e"] = Instance.new("TextLabel", G2L["1d"]);
+G2L["1e"]["BorderSizePixel"] = 0;
+G2L["1e"]["TextSize"] = 13;
+G2L["1e"]["TextXAlignment"] = Enum.TextXAlignment.Left;
+G2L["1e"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["1e"]["FontFace"] = Font.new([[rbxasset://fonts/families/GothamSSm.json]], Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+G2L["1e"]["TextColor3"] = Color3.fromRGB(231, 231, 231);
+G2L["1e"]["BackgroundTransparency"] = 1;
+G2L["1e"]["AnchorPoint"] = Vector2.new(0.5, 0.5);
+G2L["1e"]["Size"] = UDim2.new(0.64246, 0, 0.1479, 0);
+G2L["1e"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["1e"]["Text"] = [[ESP Range]];
+G2L["1e"]["Name"] = [[Title]];
+G2L["1e"]["Position"] = UDim2.new(0.32525, 0, 0.5, 0);
+-- Attributes
+G2L["1e"]:SetAttribute([[_lemonadeUniqueId]], [[YNpaKHuSYNpa]]);
+
+
+-- StarterGui.Zyrix.main.elements.Slider.Main
+G2L["1f"] = Instance.new("Frame", G2L["1d"]);
+G2L["1f"]["BorderSizePixel"] = 0;
+G2L["1f"]["BackgroundColor3"] = Color3.fromRGB(31, 31, 31);
+G2L["1f"]["AnchorPoint"] = Vector2.new(0.5, 0.5);
+G2L["1f"]["Size"] = UDim2.new(0.71313, 0, 0.70378, 0);
+G2L["1f"]["Position"] = UDim2.new(0.65419, 0, 0.5, 0);
+G2L["1f"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["1f"]["Name"] = [[Main]];
+-- Attributes
+G2L["1f"]:SetAttribute([[_lemonadeUniqueId]], [[tPS8XST3tPS8]]);
+
+
+-- StarterGui.Zyrix.main.elements.Slider.Main.UIStroke
+G2L["20"] = Instance.new("UIStroke", G2L["1f"]);
+G2L["20"]["Transparency"] = 0.2;
+G2L["20"]["Color"] = Color3.fromRGB(51, 51, 51);
+G2L["20"]["ApplyStrokeMode"] = Enum.ApplyStrokeMode.Border;
+-- Attributes
+G2L["20"]:SetAttribute([[_lemonadeUniqueId]], [[2Y9MNnBV2Y9M]]);
+
+
+-- StarterGui.Zyrix.main.elements.Slider.Main.Progress
+G2L["21"] = Instance.new("Frame", G2L["1f"]);
+G2L["21"]["BorderSizePixel"] = 0;
+G2L["21"]["BackgroundColor3"] = Color3.fromRGB(201, 201, 201);
+G2L["21"]["Size"] = UDim2.new(0.80097, 0, 1, 0);
+G2L["21"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["21"]["Name"] = [[Progress]];
+-- Attributes
+G2L["21"]:SetAttribute([[_lemonadeUniqueId]], [[FPtYg3WqFPtY]]);
+
+
+-- StarterGui.Zyrix.main.elements.Slider.Main.Progress.UIStroke
+G2L["22"] = Instance.new("UIStroke", G2L["21"]);
+G2L["22"]["Transparency"] = 0.2;
+G2L["22"]["Thickness"] = 0.5;
+G2L["22"]["Color"] = Color3.fromRGB(51, 51, 51);
+-- Attributes
+G2L["22"]:SetAttribute([[_lemonadeUniqueId]], [[QgK1hU39QgK1]]);
+
+
+-- StarterGui.Zyrix.main.elements.Slider.Main.Progress.UICorner
+G2L["23"] = Instance.new("UICorner", G2L["21"]);
+
+-- Attributes
+G2L["23"]:SetAttribute([[_lemonadeUniqueId]], [[NAbpCmsqNAbp]]);
+
+
+-- StarterGui.Zyrix.main.elements.Slider.Main.Information
+G2L["24"] = Instance.new("TextLabel", G2L["1f"]);
+G2L["24"]["ZIndex"] = 5;
+G2L["24"]["BorderSizePixel"] = 0;
+G2L["24"]["TextSize"] = 11;
+G2L["24"]["TextXAlignment"] = Enum.TextXAlignment.Left;
+G2L["24"]["TextTransparency"] = 0.3;
+G2L["24"]["BackgroundColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["24"]["FontFace"] = Font.new([[rbxasset://fonts/families/GothamSSm.json]], Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+G2L["24"]["TextColor3"] = Color3.fromRGB(131, 131, 131);
+G2L["24"]["BackgroundTransparency"] = 1;
+G2L["24"]["AnchorPoint"] = Vector2.new(0.5, 0.5);
+G2L["24"]["Size"] = UDim2.new(0.80871, 0, 0.57259, 0);
+G2L["24"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["24"]["Text"] = [[750 studs]];
+G2L["24"]["Name"] = [[Information]];
+G2L["24"]["Position"] = UDim2.new(0.4536, 0, 0.5, 0);
+-- Attributes
+G2L["24"]:SetAttribute([[_lemonadeUniqueId]], [[GVOZyIT1GVOZ]]);
+
+
+-- StarterGui.Zyrix.main.elements.Slider.Main.Interact
+G2L["25"] = Instance.new("TextButton", G2L["1f"]);
+G2L["25"]["BorderSizePixel"] = 0;
+G2L["25"]["TextSize"] = 14;
+G2L["25"]["TextColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["25"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["25"]["FontFace"] = Font.new([[rbxasset://fonts/families/SourceSansPro.json]], Enum.FontWeight.Regular, Enum.FontStyle.Normal);
+G2L["25"]["ZIndex"] = 10;
+G2L["25"]["BackgroundTransparency"] = 1;
+G2L["25"]["Size"] = UDim2.new(1, 0, 1, 0);
+G2L["25"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["25"]["Text"] = [[]];
+G2L["25"]["Name"] = [[Interact]];
+-- Attributes
+G2L["25"]:SetAttribute([[_lemonadeUniqueId]], [[cYvwFsdbcYvw]]);
+
+
+-- StarterGui.Zyrix.main.elements.Slider.Main.UICorner
+G2L["26"] = Instance.new("UICorner", G2L["1f"]);
+G2L["26"]["CornerRadius"] = UDim.new(0, 4);
+-- Attributes
+G2L["26"]:SetAttribute([[_lemonadeUniqueId]], [[6WuNRXEa6WuN]]);
+
+
+-- StarterGui.Zyrix.main.elements.Slider.UIStroke
+G2L["27"] = Instance.new("UIStroke", G2L["1d"]);
+G2L["27"]["Color"] = Color3.fromRGB(41, 41, 41);
+G2L["27"]["ApplyStrokeMode"] = Enum.ApplyStrokeMode.Border;
+-- Attributes
+G2L["27"]:SetAttribute([[_lemonadeUniqueId]], [[Gt8eL1zBGt8e]]);
+
+
+-- StarterGui.Zyrix.main.elements.Slider.UIPadding
+G2L["28"] = Instance.new("UIPadding", G2L["1d"]);
+G2L["28"]["PaddingTop"] = UDim.new(0, 8);
+G2L["28"]["PaddingRight"] = UDim.new(0, 10);
+G2L["28"]["PaddingLeft"] = UDim.new(0, 10);
+G2L["28"]["PaddingBottom"] = UDim.new(0, 8);
+-- Attributes
+G2L["28"]:SetAttribute([[_lemonadeUniqueId]], [[jqZtHlHBjqZt]]);
+
+
+-- StarterGui.Zyrix.main.elements.Toggle
+G2L["29"] = Instance.new("Frame", G2L["7"]);
+G2L["29"]["BorderSizePixel"] = 0;
+G2L["29"]["BackgroundColor3"] = Color3.fromRGB(23, 23, 23);
+G2L["29"]["Size"] = UDim2.new(0.58737, 0, 0.05402, 0);
+G2L["29"]["Position"] = UDim2.new(-0, 0, 0.11702, 0);
+G2L["29"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["29"]["Name"] = [[Toggle]];
+-- Attributes
+G2L["29"]:SetAttribute([[_lemonadeUniqueId]], [[mrwCDpCMmrwC]]);
+
+
+-- StarterGui.Zyrix.main.elements.Toggle.Title
+G2L["2a"] = Instance.new("TextLabel", G2L["29"]);
+G2L["2a"]["BorderSizePixel"] = 0;
+G2L["2a"]["TextSize"] = 13;
+G2L["2a"]["TextXAlignment"] = Enum.TextXAlignment.Left;
+G2L["2a"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["2a"]["FontFace"] = Font.new([[rbxasset://fonts/families/GothamSSm.json]], Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+G2L["2a"]["TextColor3"] = Color3.fromRGB(231, 231, 231);
+G2L["2a"]["BackgroundTransparency"] = 1;
+G2L["2a"]["AnchorPoint"] = Vector2.new(1, 0.5);
+G2L["2a"]["Size"] = UDim2.new(0.80307, 0, 0.18614, 0);
+G2L["2a"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["2a"]["Text"] = [[Aimbot]];
+G2L["2a"]["Name"] = [[Title]];
+G2L["2a"]["Position"] = UDim2.new(0.80346, 0, 0.46816, 0);
+-- Attributes
+G2L["2a"]:SetAttribute([[_lemonadeUniqueId]], [[ZAxaOvJzZAxa]]);
+
+
+-- StarterGui.Zyrix.main.elements.Toggle.Interact
+G2L["2b"] = Instance.new("TextButton", G2L["29"]);
+G2L["2b"]["BorderSizePixel"] = 0;
+G2L["2b"]["TextTransparency"] = 1;
+G2L["2b"]["TextSize"] = 12;
+G2L["2b"]["TextColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["2b"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["2b"]["FontFace"] = Font.new([[rbxasset://fonts/families/GothamSSm.json]], Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+G2L["2b"]["ZIndex"] = 5;
+G2L["2b"]["AnchorPoint"] = Vector2.new(0.5, 0.5);
+G2L["2b"]["BackgroundTransparency"] = 1;
+G2L["2b"]["Size"] = UDim2.new(0.36935, 0, 1, 0);
+G2L["2b"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["2b"]["Text"] = [[]];
+G2L["2b"]["Name"] = [[Interact]];
+G2L["2b"]["Position"] = UDim2.new(0.81532, 0, 0.5, 0);
+-- Attributes
+G2L["2b"]:SetAttribute([[_lemonadeUniqueId]], [[9AihP2Ys9Aih]]);
+
+
+-- StarterGui.Zyrix.main.elements.Toggle.Switch
+G2L["2c"] = Instance.new("Frame", G2L["29"]);
+G2L["2c"]["BorderSizePixel"] = 0;
+G2L["2c"]["BackgroundColor3"] = Color3.fromRGB(31, 31, 31);
+G2L["2c"]["AnchorPoint"] = Vector2.new(1, 0.5);
+G2L["2c"]["Size"] = UDim2.new(0.1768, 0, 0.87772, 0);
+G2L["2c"]["Position"] = UDim2.new(1.01129, 0, 0.46126, 0);
+G2L["2c"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["2c"]["Name"] = [[Switch]];
+-- Attributes
+G2L["2c"]:SetAttribute([[_lemonadeUniqueId]], [[lUrA34QelUrA]]);
+
+
+-- StarterGui.Zyrix.main.elements.Toggle.Switch.Indicator
+G2L["2d"] = Instance.new("Frame", G2L["2c"]);
+G2L["2d"]["BorderSizePixel"] = 0;
+G2L["2d"]["BackgroundColor3"] = Color3.fromRGB(201, 201, 201);
+G2L["2d"]["AnchorPoint"] = Vector2.new(0, 0.5);
+G2L["2d"]["Size"] = UDim2.new(0.42249, 0, 0.9632, 0);
+G2L["2d"]["Position"] = UDim2.new(0.0059, 0, 0.5, 0);
+G2L["2d"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["2d"]["Name"] = [[Indicator]];
+-- Attributes
+G2L["2d"]:SetAttribute([[_lemonadeUniqueId]], [[hWcZIjHJhWcZ]]);
+
+
+-- StarterGui.Zyrix.main.elements.Toggle.Switch.Indicator.UIStroke
+G2L["2e"] = Instance.new("UIStroke", G2L["2d"]);
+G2L["2e"]["Thickness"] = 0.5;
+G2L["2e"]["Color"] = Color3.fromRGB(61, 61, 61);
+-- Attributes
+G2L["2e"]:SetAttribute([[_lemonadeUniqueId]], [[jV8NPv4wjV8N]]);
+
+
+-- StarterGui.Zyrix.main.elements.Toggle.Switch.UIStroke
+G2L["2f"] = Instance.new("UIStroke", G2L["2c"]);
+G2L["2f"]["Color"] = Color3.fromRGB(51, 51, 51);
+G2L["2f"]["ApplyStrokeMode"] = Enum.ApplyStrokeMode.Border;
+-- Attributes
+G2L["2f"]:SetAttribute([[_lemonadeUniqueId]], [[oa9UAC7noa9U]]);
+
+
+-- StarterGui.Zyrix.main.elements.Toggle.UIStroke
+G2L["30"] = Instance.new("UIStroke", G2L["29"]);
+G2L["30"]["Color"] = Color3.fromRGB(41, 41, 41);
+G2L["30"]["ApplyStrokeMode"] = Enum.ApplyStrokeMode.Border;
+-- Attributes
+G2L["30"]:SetAttribute([[_lemonadeUniqueId]], [[lVdMOI9dlVdM]]);
+
+
+-- StarterGui.Zyrix.main.elements.Toggle.UIPadding
+G2L["31"] = Instance.new("UIPadding", G2L["29"]);
+G2L["31"]["PaddingTop"] = UDim.new(0, 8);
+G2L["31"]["PaddingRight"] = UDim.new(0, 10);
+G2L["31"]["PaddingLeft"] = UDim.new(0, 10);
+G2L["31"]["PaddingBottom"] = UDim.new(0, 8);
+-- Attributes
+G2L["31"]:SetAttribute([[_lemonadeUniqueId]], [[pzaGKGxLpzaG]]);
+
+
+-- StarterGui.Zyrix.main.elements.Keybind
+G2L["32"] = Instance.new("Frame", G2L["7"]);
+G2L["32"]["BorderSizePixel"] = 0;
+G2L["32"]["BackgroundColor3"] = Color3.fromRGB(23, 23, 23);
+G2L["32"]["Size"] = UDim2.new(0.58644, 0, 0.04679, 0);
+G2L["32"]["Position"] = UDim2.new(0.00092, 0, 0.17129, 0);
+G2L["32"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["32"]["Name"] = [[Keybind]];
+-- Attributes
+G2L["32"]:SetAttribute([[_lemonadeUniqueId]], [[gNN2k4TxgNN2]]);
+
+
+-- StarterGui.Zyrix.main.elements.Keybind.Title
+G2L["33"] = Instance.new("TextLabel", G2L["32"]);
+G2L["33"]["BorderSizePixel"] = 0;
+G2L["33"]["TextSize"] = 13;
+G2L["33"]["TextXAlignment"] = Enum.TextXAlignment.Left;
+G2L["33"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["33"]["FontFace"] = Font.new([[rbxasset://fonts/families/GothamSSm.json]], Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+G2L["33"]["TextColor3"] = Color3.fromRGB(231, 231, 231);
+G2L["33"]["BackgroundTransparency"] = 1;
+G2L["33"]["AnchorPoint"] = Vector2.new(0.5, 0.5);
+G2L["33"]["Size"] = UDim2.new(0.63935, 0, 0.1815, 0);
+G2L["33"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["33"]["Text"] = [[Target Keybind]];
+G2L["33"]["Name"] = [[Title]];
+G2L["33"]["Position"] = UDim2.new(0.31842, 0, 0.5, 0);
+-- Attributes
+G2L["33"]:SetAttribute([[_lemonadeUniqueId]], [[xFxRyz6wxFxR]]);
+
+
+-- StarterGui.Zyrix.main.elements.Keybind.KeybindFrame
+G2L["34"] = Instance.new("Frame", G2L["32"]);
+G2L["34"]["BorderSizePixel"] = 0;
+G2L["34"]["BackgroundColor3"] = Color3.fromRGB(31, 31, 31);
+G2L["34"]["AnchorPoint"] = Vector2.new(1, 0.5);
+G2L["34"]["Size"] = UDim2.new(0.10436, 0, 1.19994, 0);
+G2L["34"]["Position"] = UDim2.new(1.01366, 0, 0.47826, 0);
+G2L["34"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["34"]["Name"] = [[KeybindFrame]];
+-- Attributes
+G2L["34"]:SetAttribute([[_lemonadeUniqueId]], [[T8TRKl3BT8TR]]);
+
+
+-- StarterGui.Zyrix.main.elements.Keybind.KeybindFrame.KeybindBox
+G2L["35"] = Instance.new("TextBox", G2L["34"]);
+G2L["35"]["Name"] = [[KeybindBox]];
+G2L["35"]["PlaceholderColor3"] = Color3.fromRGB(179, 179, 179);
+G2L["35"]["BorderSizePixel"] = 0;
+G2L["35"]["TextSize"] = 12;
+G2L["35"]["TextColor3"] = Color3.fromRGB(231, 231, 231);
+G2L["35"]["BackgroundColor3"] = Color3.fromRGB(9, 9, 9);
+G2L["35"]["FontFace"] = Font.new([[rbxasset://fonts/families/GothamSSm.json]], Enum.FontWeight.Medium, Enum.FontStyle.Normal);
+G2L["35"]["AnchorPoint"] = Vector2.new(0.5, 0.5);
+G2L["35"]["ClearTextOnFocus"] = false;
+G2L["35"]["PlaceholderText"] = [[Keybind]];
+G2L["35"]["Size"] = UDim2.new(0.30328, 0, 0.78949, 0);
+G2L["35"]["Position"] = UDim2.new(0.5, 0, 0.5, 0);
+G2L["35"]["BorderColor3"] = Color3.fromRGB(28, 43, 54);
+G2L["35"]["Text"] = [[Q]];
+G2L["35"]["BackgroundTransparency"] = 1;
+-- Attributes
+G2L["35"]:SetAttribute([[_lemonadeUniqueId]], [[VA6n2ijTVA6n]]);
+
+
+-- StarterGui.Zyrix.main.elements.Keybind.KeybindFrame.UIStroke
+G2L["36"] = Instance.new("UIStroke", G2L["34"]);
+G2L["36"]["Color"] = Color3.fromRGB(51, 51, 51);
+G2L["36"]["ApplyStrokeMode"] = Enum.ApplyStrokeMode.Border;
+-- Attributes
+G2L["36"]:SetAttribute([[_lemonadeUniqueId]], [[lgYJfpvnlgYJ]]);
+
+
+-- StarterGui.Zyrix.main.elements.Keybind.UIStroke
+G2L["37"] = Instance.new("UIStroke", G2L["32"]);
+G2L["37"]["Color"] = Color3.fromRGB(41, 41, 41);
+G2L["37"]["ApplyStrokeMode"] = Enum.ApplyStrokeMode.Border;
+-- Attributes
+G2L["37"]:SetAttribute([[_lemonadeUniqueId]], [[d64IPcHzd64I]]);
+
+
+-- StarterGui.Zyrix.main.elements.Keybind.UIPadding
+G2L["38"] = Instance.new("UIPadding", G2L["32"]);
+G2L["38"]["PaddingTop"] = UDim.new(0, 8);
+G2L["38"]["PaddingRight"] = UDim.new(0, 10);
+G2L["38"]["PaddingLeft"] = UDim.new(0, 10);
+G2L["38"]["PaddingBottom"] = UDim.new(0, 8);
+-- Attributes
+G2L["38"]:SetAttribute([[_lemonadeUniqueId]], [[lOzoTziqlOzo]]);
+
+
+-- StarterGui.Zyrix.main.elements.UIPadding
+G2L["39"] = Instance.new("UIPadding", G2L["7"]);
+G2L["39"]["PaddingTop"] = UDim.new(0, 8);
+G2L["39"]["PaddingRight"] = UDim.new(0, 5);
+G2L["39"]["PaddingLeft"] = UDim.new(0, 5);
+G2L["39"]["PaddingBottom"] = UDim.new(0, 8);
+-- Attributes
+G2L["39"]:SetAttribute([[_lemonadeUniqueId]], [[dpiwLH7vdpiw]]);
+
+
+-- StarterGui.Zyrix.main.UIStroke
+G2L["3a"] = Instance.new("UIStroke", G2L["2"]);
+G2L["3a"]["Color"] = Color3.fromRGB(46, 46, 46);
+G2L["3a"]["ApplyStrokeMode"] = Enum.ApplyStrokeMode.Border;
+-- Attributes
+G2L["3a"]:SetAttribute([[_lemonadeUniqueId]], [[dDTtG4LddDTt]]);
+
+
+-- StarterGui.Zyrix.main.UICorner
+G2L["3b"] = Instance.new("UICorner", G2L["2"]);
+G2L["3b"]["CornerRadius"] = UDim.new(0, 10);
+-- Attributes
+G2L["3b"]:SetAttribute([[_lemonadeUniqueId]], [[5v778nsk5v77]]);
+
+
+-- StarterGui.Zyrix.main.UIGradient
+G2L["3c"] = Instance.new("UIGradient", G2L["2"]);
+G2L["3c"]["Rotation"] = 90;
+G2L["3c"]["Color"] = ColorSequence.new{ColorSequenceKeypoint.new(0.000, Color3.fromRGB(19, 19, 19)),ColorSequenceKeypoint.new(1.000, Color3.fromRGB(26, 26, 26))};
+-- Attributes
+G2L["3c"]:SetAttribute([[_lemonadeUniqueId]], [[KBKNOTDPU4JA]]);
+
+
+-- StarterGui.Zyrix.main.UISizeConstraint
+G2L["3d"] = Instance.new("UISizeConstraint", G2L["2"]);
+G2L["3d"]["MinSize"] = Vector2.new(280, 220);
+G2L["3d"]["MaxSize"] = Vector2.new(700, 500);
+
+
+-- StarterGui.Zyrix.Frame
+G2L["3e"] = Instance.new("Frame", G2L["1"]);
+G2L["3e"]["BorderSizePixel"] = 0;
+G2L["3e"]["BackgroundColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["3e"]["Size"] = UDim2.new(0.39696, 0, 0.05549, 0);
+G2L["3e"]["Position"] = UDim2.new(0.29841, 0, 0.20243, 0);
+G2L["3e"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+-- Attributes
+G2L["3e"]:SetAttribute([[_lemonadeUniqueId]], [[fVKogxuwfVKo]]);
+
+
+-- StarterGui.Zyrix.Frame.tablist
+G2L["3f"] = Instance.new("ScrollingFrame", G2L["3e"]);
+G2L["3f"]["Active"] = true;
+G2L["3f"]["ScrollingDirection"] = Enum.ScrollingDirection.X;
+G2L["3f"]["BorderSizePixel"] = 0;
+G2L["3f"]["CanvasSize"] = UDim2.new(0, 0, 0, 0);
+G2L["3f"]["VerticalScrollBarInset"] = Enum.ScrollBarInset.Always;
+G2L["3f"]["ElasticBehavior"] = Enum.ElasticBehavior.Always;
+G2L["3f"]["Name"] = [[tablist]];
+G2L["3f"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["3f"]["AutomaticCanvasSize"] = Enum.AutomaticSize.X;
+G2L["3f"]["Size"] = UDim2.new(1, 0, 1, 0);
+G2L["3f"]["ScrollBarImageColor3"] = Color3.fromRGB(141, 141, 141);
+G2L["3f"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["3f"]["ScrollBarThickness"] = 0;
+G2L["3f"]["BackgroundTransparency"] = 1;
+-- Attributes
+G2L["3f"]:SetAttribute([[_lemonadeUniqueId]], [[erzgooPHerzg]]);
+
+
+-- StarterGui.Zyrix.Frame.tablist.UIListLayout
+G2L["40"] = Instance.new("UIListLayout", G2L["3f"]);
+G2L["40"]["Padding"] = UDim.new(0, 6);
+G2L["40"]["VerticalAlignment"] = Enum.VerticalAlignment.Center;
+G2L["40"]["SortOrder"] = Enum.SortOrder.LayoutOrder;
+G2L["40"]["FillDirection"] = Enum.FillDirection.Horizontal;
+
+
+-- StarterGui.Zyrix.Frame.tablist.UIPadding
+G2L["41"] = Instance.new("UIPadding", G2L["3f"]);
+G2L["41"]["PaddingTop"] = UDim.new(0, 5);
+G2L["41"]["PaddingRight"] = UDim.new(0, 5);
+G2L["41"]["PaddingLeft"] = UDim.new(0, 5);
+G2L["41"]["PaddingBottom"] = UDim.new(0, 5);
+
+
+-- StarterGui.Zyrix.Frame.tablist.Combat
+G2L["42"] = Instance.new("TextButton", G2L["3f"]);
+G2L["42"]["BorderSizePixel"] = 0;
+G2L["42"]["TextSize"] = 12;
+G2L["42"]["AutoButtonColor"] = false;
+G2L["42"]["TextColor3"] = Color3.fromRGB(255, 255, 255);
+G2L["42"]["BackgroundColor3"] = Color3.fromRGB(19, 19, 19);
+G2L["42"]["FontFace"] = Font.new([[rbxasset://fonts/families/GothamSSm.json]], Enum.FontWeight.Bold, Enum.FontStyle.Normal);
+G2L["42"]["Size"] = UDim2.new(0.13, 0, 0.98, 0);
+G2L["42"]["LayoutOrder"] = 1;
+G2L["42"]["Text"] = [[Combat]];
+G2L["42"]["Name"] = [[Combat]];
+
+
+-- StarterGui.Zyrix.Frame.tablist.Combat.UICorner
+G2L["43"] = Instance.new("UICorner", G2L["42"]);
+G2L["43"]["CornerRadius"] = UDim.new(0, 1000);
+
+
+-- StarterGui.Zyrix.Frame.tablist.Combat.UIPadding
+G2L["44"] = Instance.new("UIPadding", G2L["42"]);
+G2L["44"]["PaddingTop"] = UDim.new(0, 6);
+G2L["44"]["PaddingRight"] = UDim.new(0, 14);
+G2L["44"]["PaddingLeft"] = UDim.new(0, 14);
+G2L["44"]["PaddingBottom"] = UDim.new(0, 6);
+
+
+-- StarterGui.Zyrix.Frame.tablist.Combat.ActiveIndicator
+G2L["45"] = Instance.new("Frame", G2L["42"]);
+G2L["45"]["BorderSizePixel"] = 0;
+G2L["45"]["BackgroundColor3"] = Color3.fromRGB(68, 68, 68);
+G2L["45"]["Size"] = UDim2.new(0.5, 0, 0, 2);
+G2L["45"]["Position"] = UDim2.new(0.25, 0, 1, -3);
+G2L["45"]["Name"] = [[ActiveIndicator]];
+
+
+-- StarterGui.Zyrix.Frame.tablist.Combat.ActiveIndicator.UICorner
+G2L["46"] = Instance.new("UICorner", G2L["45"]);
+G2L["46"]["CornerRadius"] = UDim.new(0, 1000);
+
+
+-- StarterGui.Zyrix.Frame.tablist.Combat.UIStroke
+G2L["47"] = Instance.new("UIStroke", G2L["42"]);
+G2L["47"]["Color"] = Color3.fromRGB(41, 41, 41);
+G2L["47"]["ApplyStrokeMode"] = Enum.ApplyStrokeMode.Border;
+
+
+-- StarterGui.Zyrix.Frame.tablist.Visuals
+G2L["48"] = Instance.new("TextButton", G2L["3f"]);
+G2L["48"]["BorderSizePixel"] = 0;
+G2L["48"]["TextSize"] = 12;
+G2L["48"]["AutoButtonColor"] = false;
+G2L["48"]["TextColor3"] = Color3.fromRGB(141, 141, 141);
+G2L["48"]["BackgroundColor3"] = Color3.fromRGB(19, 19, 19);
+G2L["48"]["FontFace"] = Font.new([[rbxasset://fonts/families/GothamSSm.json]], Enum.FontWeight.Bold, Enum.FontStyle.Normal);
+G2L["48"]["BackgroundTransparency"] = 0.4;
+G2L["48"]["Size"] = UDim2.new(0.13, 0, 0.98, 0);
+G2L["48"]["LayoutOrder"] = 2;
+G2L["48"]["Text"] = [[Visuals]];
+G2L["48"]["Name"] = [[Visuals]];
+
+
+-- StarterGui.Zyrix.Frame.tablist.Visuals.UICorner
+G2L["49"] = Instance.new("UICorner", G2L["48"]);
+G2L["49"]["CornerRadius"] = UDim.new(0, 1000);
+
+
+-- StarterGui.Zyrix.Frame.tablist.Visuals.UIPadding
+G2L["4a"] = Instance.new("UIPadding", G2L["48"]);
+G2L["4a"]["PaddingTop"] = UDim.new(0, 6);
+G2L["4a"]["PaddingRight"] = UDim.new(0, 14);
+G2L["4a"]["PaddingLeft"] = UDim.new(0, 14);
+G2L["4a"]["PaddingBottom"] = UDim.new(0, 6);
+
+
+-- StarterGui.Zyrix.Frame.tablist.Visuals.UIStroke
+G2L["4b"] = Instance.new("UIStroke", G2L["48"]);
+G2L["4b"]["Thickness"] = 0.8;
+G2L["4b"]["Color"] = Color3.fromRGB(41, 41, 41);
+G2L["4b"]["ApplyStrokeMode"] = Enum.ApplyStrokeMode.Border;
+
+
+-- StarterGui.Zyrix.Frame.tablist.Movement
+G2L["4c"] = Instance.new("TextButton", G2L["3f"]);
+G2L["4c"]["BorderSizePixel"] = 0;
+G2L["4c"]["TextSize"] = 12;
+G2L["4c"]["AutoButtonColor"] = false;
+G2L["4c"]["TextColor3"] = Color3.fromRGB(141, 141, 141);
+G2L["4c"]["BackgroundColor3"] = Color3.fromRGB(19, 19, 19);
+G2L["4c"]["FontFace"] = Font.new([[rbxasset://fonts/families/GothamSSm.json]], Enum.FontWeight.Bold, Enum.FontStyle.Normal);
+G2L["4c"]["BackgroundTransparency"] = 0.4;
+G2L["4c"]["Size"] = UDim2.new(0.13, 0, 0.98, 0);
+G2L["4c"]["LayoutOrder"] = 3;
+G2L["4c"]["Text"] = [[Movement]];
+G2L["4c"]["Name"] = [[Movement]];
+
+
+-- StarterGui.Zyrix.Frame.tablist.Movement.UICorner
+G2L["4d"] = Instance.new("UICorner", G2L["4c"]);
+G2L["4d"]["CornerRadius"] = UDim.new(0, 1000);
+
+
+-- StarterGui.Zyrix.Frame.tablist.Movement.UIPadding
+G2L["4e"] = Instance.new("UIPadding", G2L["4c"]);
+G2L["4e"]["PaddingTop"] = UDim.new(0, 6);
+G2L["4e"]["PaddingRight"] = UDim.new(0, 14);
+G2L["4e"]["PaddingLeft"] = UDim.new(0, 14);
+G2L["4e"]["PaddingBottom"] = UDim.new(0, 6);
+
+
+-- StarterGui.Zyrix.Frame.tablist.Movement.UIStroke
+G2L["4f"] = Instance.new("UIStroke", G2L["4c"]);
+G2L["4f"]["Thickness"] = 0.8;
+G2L["4f"]["Color"] = Color3.fromRGB(41, 41, 41);
+G2L["4f"]["ApplyStrokeMode"] = Enum.ApplyStrokeMode.Border;
+
+
+-- StarterGui.Zyrix.Frame.tablist.Misc
+G2L["50"] = Instance.new("TextButton", G2L["3f"]);
+G2L["50"]["BorderSizePixel"] = 0;
+G2L["50"]["TextSize"] = 12;
+G2L["50"]["AutoButtonColor"] = false;
+G2L["50"]["TextColor3"] = Color3.fromRGB(141, 141, 141);
+G2L["50"]["BackgroundColor3"] = Color3.fromRGB(19, 19, 19);
+G2L["50"]["FontFace"] = Font.new([[rbxasset://fonts/families/GothamSSm.json]], Enum.FontWeight.Bold, Enum.FontStyle.Normal);
+G2L["50"]["BackgroundTransparency"] = 0.4;
+G2L["50"]["Size"] = UDim2.new(0.13, 0, 0.98, 0);
+G2L["50"]["LayoutOrder"] = 4;
+G2L["50"]["Text"] = [[Misc]];
+G2L["50"]["Name"] = [[Misc]];
+
+
+-- StarterGui.Zyrix.Frame.tablist.Misc.UICorner
+G2L["51"] = Instance.new("UICorner", G2L["50"]);
+G2L["51"]["CornerRadius"] = UDim.new(0, 1000);
+
+
+-- StarterGui.Zyrix.Frame.tablist.Misc.UIPadding
+G2L["52"] = Instance.new("UIPadding", G2L["50"]);
+G2L["52"]["PaddingTop"] = UDim.new(0, 6);
+G2L["52"]["PaddingRight"] = UDim.new(0, 14);
+G2L["52"]["PaddingLeft"] = UDim.new(0, 14);
+G2L["52"]["PaddingBottom"] = UDim.new(0, 6);
+
+
+-- StarterGui.Zyrix.Frame.tablist.Misc.UIStroke
+G2L["53"] = Instance.new("UIStroke", G2L["50"]);
+G2L["53"]["Thickness"] = 0.8;
+G2L["53"]["Color"] = Color3.fromRGB(41, 41, 41);
+G2L["53"]["ApplyStrokeMode"] = Enum.ApplyStrokeMode.Border;
+
+
+-- StarterGui.Zyrix.Frame.tablist.ScrollHandler
+G2L["54"] = Instance.new("LocalScript", G2L["3f"]);
+G2L["54"]["Name"] = [[ScrollHandler]];
+
+
+-- StarterGui.Zyrix.Frame.UIStroke
+G2L["55"] = Instance.new("UIStroke", G2L["3e"]);
+G2L["55"]["Color"] = Color3.fromRGB(46, 46, 46);
+G2L["55"]["ApplyStrokeMode"] = Enum.ApplyStrokeMode.Border;
+-- Attributes
+G2L["55"]:SetAttribute([[_lemonadeUniqueId]], [[XhC4OKHnXhC4]]);
+
+
+-- StarterGui.Zyrix.Frame.UICorner
+G2L["56"] = Instance.new("UICorner", G2L["3e"]);
+G2L["56"]["CornerRadius"] = UDim.new(0, 1000);
+-- Attributes
+G2L["56"]:SetAttribute([[_lemonadeUniqueId]], [[H3nALmrRH3nA]]);
+
+
+-- StarterGui.Zyrix.Frame.UIGradient
+G2L["57"] = Instance.new("UIGradient", G2L["3e"]);
+G2L["57"]["Rotation"] = 90;
+G2L["57"]["Color"] = ColorSequence.new{ColorSequenceKeypoint.new(0.000, Color3.fromRGB(19, 19, 19)),ColorSequenceKeypoint.new(1.000, Color3.fromRGB(29, 29, 29))};
+-- Attributes
+G2L["57"]:SetAttribute([[_lemonadeUniqueId]], [[WB6W5VPNLHWF]]);
+
+
+-- StarterGui.Zyrix.ToggleUI
+G2L["58"] = Instance.new("TextButton", G2L["1"]);
+G2L["58"]["TextWrapped"] = true;
+G2L["58"]["BorderSizePixel"] = 0;
+G2L["58"]["TextSize"] = 17;
+G2L["58"]["AutoButtonColor"] = false;
+G2L["58"]["TextScaled"] = true;
+G2L["58"]["TextColor3"] = Color3.fromRGB(231, 231, 231);
+G2L["58"]["BackgroundColor3"] = Color3.fromRGB(0, 0, 0);
+G2L["58"]["FontFace"] = Font.new([[rbxasset://fonts/families/GothamSSm.json]], Enum.FontWeight.Bold, Enum.FontStyle.Normal);
+G2L["58"]["ZIndex"] = 10;
+G2L["58"]["AnchorPoint"] = Vector2.new(0, 0.5);
+G2L["58"]["BackgroundTransparency"] = 0.5;
+G2L["58"]["Size"] = UDim2.new(0, 44, 0, 44);
+G2L["58"]["Text"] = [[OPEN]];
+G2L["58"]["Name"] = [[ToggleUI]];
+G2L["58"]["Position"] = UDim2.new(0.96947, 0, 0.03846, 0);
+
+
+-- StarterGui.Zyrix.ToggleUI.UICorner
+G2L["59"] = Instance.new("UICorner", G2L["58"]);
+G2L["59"]["CornerRadius"] = UDim.new(0, 1000);
+
+
+-- StarterGui.Zyrix.ToggleUI.UIStroke
+G2L["5a"] = Instance.new("UIStroke", G2L["58"]);
+G2L["5a"]["Color"] = Color3.fromRGB(41, 41, 41);
+
+
+-- StarterGui.Zyrix.ToggleUI.ToggleScript
+G2L["5b"] = Instance.new("LocalScript", G2L["58"]);
+G2L["5b"]["Name"] = [[ToggleScript]];
+
+
+-- StarterGui.Zyrix.ToggleUI.UIStroke
+G2L["5c"] = Instance.new("UIStroke", G2L["58"]);
+G2L["5c"]["ApplyStrokeMode"] = Enum.ApplyStrokeMode.Border;
+-- Attributes
+G2L["5c"]:SetAttribute([[_lemonadeUniqueId]], [[d64IPcHzd64I]]);
+
+
+-- StarterGui.Zyrix.Frame.tablist.ScrollHandler
+local function C_54()
+local script = G2L["54"];
+	local tablist = script.Parent
+	local zyrix = tablist.Parent.Parent
+	local userInputService = game:GetService("UserInputService")
+	
+	------------------------------------------------------
+	-- TAB LIST SCROLL (mouse wheel -> horizontal scroll)
+	------------------------------------------------------
+	local isHovering = false
+	
+	tablist.MouseEnter:Connect(function()
+		isHovering = true
+	end)
+	
+	tablist.MouseLeave:Connect(function()
+		isHovering = false
+	end)
+	
+	userInputService.InputChanged:Connect(function(input, gameProcessed)
+		if input.UserInputType == Enum.UserInputType.MouseWheel and isHovering then
+			local scrollDelta = input.Position.Z
+			local scrollAmount = scrollDelta * 60
+	
+			local canvasWidth = tablist.CanvasSize.X.Offset
+			local viewWidth = tablist.AbsoluteSize.X
+			local maxScroll = math.max(0, canvasWidth - viewWidth)
+	
+			local newPos = math.clamp(tablist.CanvasPosition.X - scrollAmount, 0, maxScroll)
+			tablist.CanvasPosition = Vector2.new(newPos, 0)
+		end
+	end)
+	
+	------------------------------------------------------
+	-- AUTO-SCALE: adjusts text sizes based on screen size
+	------------------------------------------------------
+	-- Reference design was made for ~1920x1080 viewport.
+	-- We scale text proportionally so it stays readable on any device.
+	
+	local REFERENCE_WIDTH = 1920
+	local REFERENCE_HEIGHT = 1080
+	
+	-- Original text sizes at reference resolution
+	local originalTextSizes = {}
+	
+	local function collectTextSizes()
+		for _, desc in zyrix:GetDescendants() do
+			if desc:IsA("TextLabel") or desc:IsA("TextButton") or desc:IsA("TextBox") then
+				if not originalTextSizes[desc] then
+					originalTextSizes[desc] = desc.TextSize
+				end
+			end
+		end
+	end
+	
+	local function updateScale()
+		local viewport = workspace.CurrentCamera.ViewportSize
+		-- Use the smaller dimension ratio so nothing gets too big
+		local scaleX = viewport.X / REFERENCE_WIDTH
+		local scaleY = viewport.Y / REFERENCE_HEIGHT
+		local scale = math.min(scaleX, scaleY)
+	
+		for obj, originalSize in originalTextSizes do
+			if obj and obj.Parent then
+				local newSize = math.clamp(math.round(originalSize * scale), 8, originalSize)
+				obj.TextSize = newSize
+			end
+		end
+	end
+	
+	collectTextSizes()
+	updateScale()
+	
+	-- Re-apply when viewport resizes (device rotation, different screen)
+	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+	
+	-- Handle new text elements added later
+	zyrix.DescendantAdded:Connect(function(desc)
+		if desc:IsA("TextLabel") or desc:IsA("TextButton") or desc:IsA("TextBox") then
+			task.defer(function()
+				if not originalTextSizes[desc] then
+					originalTextSizes[desc] = desc.TextSize
+					updateScale()
+				end
+			end)
+		end
+	end)
+end;
+task.spawn(C_54);
+-- StarterGui.Zyrix.ToggleUI.ToggleScript
+local function C_5b()
+local script = G2L["5b"];
+	local zyrix = script.Parent.Parent
+	local toggleBtn = script.Parent
+	local main = zyrix:FindFirstChild("main")
+	local tabFrame = zyrix:FindFirstChild("Frame")
+	
+	local isOpen = false
+	
+	local function updateUI()
+		if main then main.Visible = isOpen end
+		if tabFrame then tabFrame.Visible = isOpen end
+		toggleBtn.Text = isOpen and "✕" or "☰"
+	end
+	
+	toggleBtn.MouseButton1Click:Connect(function()
+		isOpen = not isOpen
+		updateUI()
+	end)
+	
+	uiOpenPanel = function()
+		isOpen = true
+		updateUI()
+	end
+	uiClosePanel = function()
+		isOpen = false
+		updateUI()
+	end
+	
+	updateUI()
+end;
+task.spawn(C_5b);
+
+
+    uiScreenGui = G2L["1"]
 end
 
 function ZyrixUI:Open()
     buildZyrixUI()
+    if uiScreenGui then uiScreenGui.Enabled = true end
     if uiOpenPanel then uiOpenPanel() end
 end
 
 function ZyrixUI:Close()
     if uiClosePanel then uiClosePanel() end
+    if uiScreenGui then uiScreenGui.Enabled = false end
 end
 
 getgenv().ZyrixUI = ZyrixUI
