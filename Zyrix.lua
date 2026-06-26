@@ -29,13 +29,27 @@ local RunService = cloneref(game:GetService("RunService"))
 local Lighting = cloneref(game:GetService("Lighting"))
 local Players = cloneref(game:GetService("Players"))
 
-local hui = gethui()
+local function resolveGuiParent()
+    local ok, parent = pcall(gethui)
+    if ok and parent then return parent end
+    local player = Players.LocalPlayer or Players.PlayerAdded:Wait()
+    return cloneref(player:WaitForChild("PlayerGui"))
+end
 
-if getgenv().ZyrixLoaded and hui:FindFirstChild("ZyrixKeySystem") then
+local function protectGui(gui)
+    if gui and syn and syn.protect_gui then pcall(syn.protect_gui, gui) end
+end
+
+local hui = resolveGuiParent()
+
+if getgenv().ZyrixLoaded and getgenv().Zyrix and hui:FindFirstChild("ZyrixKeySystem") then
     return getgenv().Zyrix
 end
-if getgenv().ZyrixLoaded and hui:FindFirstChild("ZyrixKeylessSystem") then
+if getgenv().ZyrixLoaded and getgenv().Zyrix and hui:FindFirstChild("ZyrixKeylessSystem") then
     return getgenv().Zyrix
+end
+if getgenv().ZyrixLoaded and not hui:FindFirstChild("ZyrixKeySystem") and not hui:FindFirstChild("ZyrixKeylessSystem") and not hui:FindFirstChild("ZyrixMainUI") then
+    getgenv().ZyrixLoaded = false
 end
 getgenv().ZyrixLoaded = true
 getgenv().ZyrixClosed = false
@@ -486,6 +500,8 @@ local function CreateDoorOverlay(parentFrame, width, height)
     return {overlay = overlay, open = openDoors, close = closeDoors}
 end
 
+local loadIconsFast
+
 local function ShowLoadingScreen(onComplete)
     local completed = false
     local oldGui = hui:FindFirstChild("ZyrixLoadingScreen")
@@ -702,6 +718,7 @@ local function ShowLoadingScreen(onComplete)
     end
 
     task.spawn(function()
+        local ok, err = pcall(function()
         TweenService:Create(blurEffect, TweenInfo.new(0.6), {Size = 24}):Play()
         TweenService:Create(loadingScreen, TweenInfo.new(0.5), {BackgroundTransparency = 0.25}):Play()
         task.wait(0.3)
@@ -743,14 +760,37 @@ local function ShowLoadingScreen(onComplete)
         task.wait(0.5)
         gui:Destroy()
         blurEffect:Destroy()
+        end)
+        if not ok then warn("[Zyrix] Loading screen error:", err) end
         if onComplete then onComplete() end
         completed = true
     end)
 
-    while not completed do task.wait(0.05) end
+    local deadline = os.clock() + 45
+    while not completed and os.clock() < deadline do task.wait(0.05) end
+    if not completed then
+        warn("[Zyrix] Loading timed out — continuing with fallback icons")
+        loadIconsFast()
+        if onComplete then onComplete() end
+    end
 end
 
-local function EnsureIconsReady(callback)
+loadIconsFast = function()
+    for name, asset in pairs(FallbackIcons) do
+        if not CachedIcons[name] then CachedIcons[name] = asset end
+    end
+    Internal.IconsLoaded = true
+    task.spawn(function()
+        pcall(loadAllIconsFromCache)
+    end)
+end
+
+local function EnsureIconsReady(callback, fastMode)
+    if fastMode then
+        loadIconsFast()
+        if callback then callback() end
+        return
+    end
     if allIconsCached() then
         loadAllIconsFromCache()
         if callback then callback() end
@@ -760,6 +800,10 @@ local function EnsureIconsReady(callback)
 end
 
 function Zyrix:Notify(title, message, duration, iconType)
+    if type(title) == "table" then
+        local opts = title
+        return Zyrix:Notify(opts.Title, opts.Content, opts.Duration, opts.Image)
+    end
     duration = duration or 5
     iconType = iconType or "info"
     local scale = getScale()
@@ -770,6 +814,7 @@ function Zyrix:Notify(title, message, duration, iconType)
     notifGui.ResetOnSpawn = false
     notifGui.DisplayOrder = 999999
     notifGui.Parent = hui
+    protectGui(notifGui)
 
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(0, width, 0, height)
@@ -863,17 +908,21 @@ function Zyrix:Notify(title, message, duration, iconType)
     end
 
     TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Position = UDim2.new(1, -15, 1, -15)}):Play()
-    task.wait(0.1)
-    restack()
+    task.spawn(function()
+        task.wait(0.1)
+        restack()
+    end)
 
     local function dismiss()
         for i, n in ipairs(Internal.NotificationList) do
             if n.id == id then table.remove(Internal.NotificationList, i) break end
         end
         TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Position = UDim2.new(1, width + 20, frame.Position.Y.Scale, frame.Position.Y.Offset)}):Play()
-        task.wait(0.3)
-        notifGui:Destroy()
-        restack()
+        task.spawn(function()
+            task.wait(0.3)
+            notifGui:Destroy()
+            restack()
+        end)
     end
 
     TweenService:Create(progressBar, TweenInfo.new(duration, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 1, 0)}):Play()
@@ -1422,9 +1471,10 @@ end
 local function handleKeylessSkip()
     getgenv().SCRIPT_KEY = "KEYLESS"
     getgenv().ZyrixLoaded = false
-    Zyrix:Notify("Access Granted", "Keyless access approved!", 3, "success")
-    task.wait(0.3)
-    fireOnSuccess()
+    task.spawn(function()
+        pcall(function() Zyrix:Notify("Access Granted", "Keyless access approved!", 3, "success") end)
+        fireOnSuccess()
+    end)
 end
 
 local function BuildCenteredUI(windowWidth, windowHeight, panelHeight, userPanelWidth, changelogPanelWidth, gap, buildContent)
@@ -2394,18 +2444,40 @@ end
 function Zyrix:Launch()
     Internal.IsJunkieMode = false
     Internal.ValidateFunction = Zyrix.Callbacks.OnVerify
+    local hubOnly = Zyrix.Options.Keyless == true and Zyrix.Options.KeylessUI == false
     local existingKey = getgenv().SCRIPT_KEY
+
+    local function openHub()
+        EnsureIconsReady(function()
+            fireOnSuccess()
+        end, true)
+    end
+
     if existingKey and existingKey ~= "" then
-        if existingKey == "KEYLESS" then
-            Zyrix:Notify("Executed", "Script loaded successfully!", 2, "success")
-            fireOnSuccess() return
+        if existingKey == "KEYLESS" and hubOnly then
+            openHub()
+            return
+        elseif existingKey == "KEYLESS" then
+            EnsureIconsReady(function() fireOnSuccess() end, false)
+            return
         elseif Internal.ValidateFunction and validateKey(existingKey, Internal.ValidateFunction) then
-            Zyrix:Notify("Executed", "Script loaded successfully!", 2, "success")
-            fireOnSuccess() return
+            task.spawn(function()
+                pcall(function() Zyrix:Notify("Executed", "Script loaded successfully!", 2, "success") end)
+                fireOnSuccess()
+            end)
+            return
         end
         getgenv().SCRIPT_KEY = nil
     end
     getgenv().ZyrixClosed = false
+
+    if hubOnly then
+        getgenv().SCRIPT_KEY = "KEYLESS"
+        getgenv().ZyrixLoaded = false
+        openHub()
+        return
+    end
+
     EnsureIconsReady(function()
         if Zyrix.Options.Keyless == true then
             if Zyrix.Options.KeylessUI == false then handleKeylessSkip() return end
@@ -2480,6 +2552,22 @@ end
 
 function Zyrix:GetSavedKey() return loadKey() end
 function Zyrix:ClearSavedKey() return clearKey() end
+
+function Zyrix:Reset()
+    getgenv().ZyrixLoaded = false
+    getgenv().ZyrixClosed = false
+    getgenv().SCRIPT_KEY = nil
+    pcall(function()
+        if getgenv().ZyrixUI and getgenv().ZyrixUI._reset then
+            getgenv().ZyrixUI._reset()
+        end
+    end)
+    disableBlur()
+    for _, guiName in ipairs({"ZyrixKeySystem", "ZyrixKeylessSystem", "ZyrixMainUI", "ZyrixLoadingScreen"}) do
+        local gui = hui:FindFirstChild(guiName)
+        if gui then pcall(function() gui:Destroy() end) end
+    end
+end
 
 getgenv().Zyrix = Zyrix
 
@@ -2599,6 +2687,7 @@ local uiBuilt = false
 local uiScreenGui
 local uiOpenPanel
 local uiClosePanel
+local uiExpandPanel
 
 local function buildZyrixUI()
     if uiBuilt and uiScreenGui and uiScreenGui.Parent then return end
@@ -2688,10 +2777,11 @@ local function buildZyrixUI()
     sg.Name = "ZyrixMainUI"
     sg.ResetOnSpawn = false
     sg.IgnoreGuiInset = true
-    sg.DisplayOrder = 100
+    sg.DisplayOrder = 1000
     sg.Enabled = true
     sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     sg.Parent = uiParent
+    protectGui(sg)
 
     local root = frame({
         Name = "Root",
@@ -2753,6 +2843,7 @@ local function buildZyrixUI()
     local activeTab = tabNames[1] or "Combat"
     local uiExpanded = false
     local uiAnimating = false
+    local firstOpen = true
     local expandPanel, collapsePanel, hideUI, showUI
 
     local main = frame({
@@ -2987,7 +3078,7 @@ local function buildZyrixUI()
         })
     end
 
-    local function addToggle(parent, title, order, defaultOn, callback)
+    local function addToggle(parent, title, order, defaultOn, callback, el)
         local toggleRow = row(parent, "Toggle", 44, order)
         lbl({ Parent = toggleRow, Size = UDim2.new(1, -54, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 13, TextColor3 = C.TEXT })
         local switch = frame({ Parent = toggleRow, Size = UDim2.new(0, 42, 0, 22), Position = UDim2.new(1, -46, 0.5, -11), BackgroundColor3 = C.INNER })
@@ -3000,18 +3091,22 @@ local function buildZyrixUI()
             BackgroundColor3 = defaultOn and C.KNOB_ON or C.KNOB_OFF,
         })
         corner(knob, UDim.new(1, 0))
-        local on = defaultOn
-        btn({ Parent = toggleRow, Size = UDim2.new(1, 0, 1, 0), ZIndex = 2 }).MouseButton1Click:Connect(function()
-            on = not on
+        local on = defaultOn == true
+        local function applyState(state, skipCb)
+            on = state == true
             tw(knob, 0.15, {
                 Position = on and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0, 2, 0.5, -9),
                 BackgroundColor3 = on and C.KNOB_ON or C.KNOB_OFF,
             })
-            if callback then callback(on) end
+            if callback and not skipCb then callback(on) end
+        end
+        if el then el._apply = applyState end
+        btn({ Parent = toggleRow, Size = UDim2.new(1, 0, 1, 0), ZIndex = 2 }).MouseButton1Click:Connect(function()
+            applyState(not on)
         end)
     end
 
-    local function addSlider(parent, title, order, defaultPct, callback, suffix, maxValue)
+    local function addSlider(parent, title, order, defaultPct, callback, suffix, maxValue, el)
         local sliderRow = row(parent, "Slider", 52, order)
         lbl({ Parent = sliderRow, Size = UDim2.new(0.45, 0, 0, 16), Text = title, Font = Enum.Font.GothamMedium, TextSize = 13, TextColor3 = C.TEXT })
         local sliderTrack = frame({ Name = "SliderTrack", Parent = sliderRow, Size = UDim2.new(0.52, 0, 0, 22), Position = UDim2.new(0.46, 0, 0.5, -11), BackgroundColor3 = C.INNER })
@@ -3036,14 +3131,15 @@ local function buildZyrixUI()
             TextTransparency = 0.3,
             ZIndex = 2,
         })
-        local function setSlider(pct)
+        local function setSlider(pct, skipCb)
             pct = math.clamp(pct, 0, 1)
             sliderFill.Size = UDim2.new(pct, 0, 1, 0)
             sliderInfo.Text = formatSlider(pct)
-            if callback then callback(pct) end
+            if callback and not skipCb then callback(pct) end
         end
+        if el then el._apply = function(pct, skipCb) setSlider(pct, skipCb) end end
         sliderRegistry[sliderTrack] = setSlider
-        setSlider(defaultPct)
+        setSlider(defaultPct, true)
         btn({ Parent = sliderTrack, Size = UDim2.new(1, 0, 1, 0), ZIndex = 3 }).InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 sliderDragTrack = sliderTrack
@@ -3216,20 +3312,46 @@ local function buildZyrixUI()
         end)
     end
 
+    local function addInput(parent, title, order, placeholder, callback, el)
+        local inputRow = row(parent, "Input", 44, order)
+        lbl({ Parent = inputRow, Size = UDim2.new(0.45, 0, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 13, TextColor3 = C.TEXT })
+        local box = Instance.new("TextBox")
+        box.Size = UDim2.new(0.5, -8, 0, 26)
+        box.Position = UDim2.new(0.5, 0, 0.5, -13)
+        box.BackgroundColor3 = C.INNER
+        box.TextColor3 = C.TEXT
+        box.PlaceholderText = placeholder or ""
+        box.PlaceholderColor3 = C.TEXT_DIM
+        box.Font = Enum.Font.GothamMedium
+        box.TextSize = 12
+        box.Text = ""
+        box.ClearTextOnFocus = false
+        box.Parent = inputRow
+        corner(box, UDim.new(0, 4))
+        stroke(box, C.STROKE_IN)
+        pad(box, 0, 0, 8, 8)
+        if el then el._box = box end
+        box.FocusLost:Connect(function()
+            if callback then callback(box.Text) end
+        end)
+    end
+
     local function renderHubItem(page, i, item)
         local t = string.lower(item.Type or "")
         if t == "section" then
             sectionLabel(page, item.Text or "Section", i)
         elseif t == "toggle" then
-            addToggle(page, item.Text or "Toggle", i, item.Default == true, item.Callback)
+            addToggle(page, item.Text or "Toggle", i, item.Default == true, item.Callback, item)
         elseif t == "slider" then
-            addSlider(page, item.Text or "Slider", i, item.Default or 0.5, item.Callback, item.Suffix, item.Max)
+            addSlider(page, item.Text or "Slider", i, item.Default or 0.5, item.Callback, item.Suffix, item.Max, item)
         elseif t == "keybind" then
             addKeybind(page, item.Text or "Keybind", i, item.Default or "Q", item.Callback)
         elseif t == "dropdown" then
             addDropdown(page, item.Text or "Dropdown", i, item.Options or {"Option 1"}, item.Default or 1, item.Callback)
         elseif t == "button" then
             addButton(page, item.Text or "Button", i, item.Callback)
+        elseif t == "input" then
+            addInput(page, item.Text or "Input", i, item.Placeholder, item.Callback, item)
         elseif t == "label" then
             lbl({ Parent = page, Size = UDim2.new(1, 0, 0, 24), LayoutOrder = i, Text = item.Text or "", Font = Enum.Font.GothamMedium, TextSize = 12, TextColor3 = C.TEXT_DIM })
         elseif t == "divider" then
@@ -3493,6 +3615,17 @@ local function buildZyrixUI()
 
     uiOpenPanel = function()
         showUI()
+        if firstOpen then
+            firstOpen = false
+            task.defer(function()
+                if expandPanel then task.spawn(expandPanel) end
+            end)
+        end
+    end
+
+    uiExpandPanel = function()
+        if not root.Visible then showUI() end
+        if expandPanel and not uiExpanded then task.spawn(expandPanel) end
     end
 
     uiClosePanel = function()
@@ -3503,8 +3636,11 @@ local function buildZyrixUI()
         if uiAnimating then return end
         if not root.Visible then
             showUI()
-        else
+            task.spawn(expandPanel)
+        elseif uiExpanded then
             hideUI()
+        else
+            task.spawn(expandPanel)
         end
     end
 
@@ -3540,7 +3676,6 @@ local function buildZyrixUI()
     updateCloseBtn()
 
     uiScreenGui = sg
-    if syn and syn.protect_gui then pcall(syn.protect_gui, uiScreenGui) end
     uiBuilt = true
 end
 
@@ -3550,13 +3685,19 @@ function ZyrixUI:Open()
         uiBuilt = false
         uiScreenGui = nil
         warn("[ZyrixUI] Failed to build:", err)
-        if Zyrix and Zyrix.Notify then Zyrix:Notify("UI Error", tostring(err), 5, "error") end
+        if Zyrix and Zyrix.Notify then
+            task.spawn(function() Zyrix:Notify("UI Error", tostring(err), 5, "error") end)
+        end
         return false
     end
     if not uiScreenGui then return false end
     uiScreenGui.Enabled = true
     if uiOpenPanel then uiOpenPanel() end
     return true
+end
+
+function ZyrixUI:Expand()
+    if uiExpandPanel then uiExpandPanel() end
 end
 
 function ZyrixUI:Close()
@@ -3567,6 +3708,7 @@ function ZyrixUI._reset()
     uiBuilt = false
     uiOpenPanel = nil
     uiClosePanel = nil
+    uiExpandPanel = nil
     if uiScreenGui then
         pcall(function() uiScreenGui:Destroy() end)
         uiScreenGui = nil
@@ -3578,17 +3720,22 @@ getgenv().ZyrixUI = ZyrixUI
 
 fireOnSuccess = function()
     task.spawn(function()
-        task.wait(0.2)
         local ui = getgenv().ZyrixUI
         if ui and ui.Open then
             local opened = ui:Open()
-            if opened and Zyrix and Zyrix.Notify then
-                Zyrix:Notify("zyrix", "Interface loaded", 2, "success")
+            if opened and ui.Expand then
+                task.wait(0.35)
+                ui:Expand()
             end
         end
         pcall(function()
             if Zyrix.Callbacks.OnSuccess then
                 Zyrix.Callbacks.OnSuccess()
+            end
+        end)
+        task.spawn(function()
+            if Zyrix and Zyrix.Notify then
+                Zyrix:Notify("zyrix", "Interface loaded — press K to toggle", 3, "success")
             end
         end)
     end)
