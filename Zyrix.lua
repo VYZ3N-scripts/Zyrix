@@ -2803,9 +2803,9 @@ local function buildZyrixUI()
         return f
     end
 
-    local WIN_W, WIN_H, TAB_H, GAP = 580, 269, 42, 8
+    local WIN_W, WIN_H, TAB_H, GAP = 660, 340, 54, 10
     local ROW_H = 44
-    local CONTENT_H = 220
+    local CONTENT_H = 280
     local openDropdown = nil
     local sliderDragTrack = nil
     local sliderRegistry = {}
@@ -2842,8 +2842,8 @@ local function buildZyrixUI()
 
     local tabScroll = Instance.new("ScrollingFrame")
     tabScroll.Name = "tablist"
-    tabScroll.Size = UDim2.new(1, -12, 1, -8)
-    tabScroll.Position = UDim2.new(0, 6, 0, 4)
+    tabScroll.Size = UDim2.new(1, -68, 1, -10)
+    tabScroll.Position = UDim2.new(0, 8, 0, 5)
     tabScroll.BackgroundTransparency = 1
     tabScroll.BorderSizePixel = 0
     tabScroll.ScrollBarThickness = 2
@@ -3755,21 +3755,35 @@ local function buildZyrixUI()
         end
     end)
 
-    local toggleUI = btn({
+    local function updateToggleLabel()
+        if not openBtn then return end
+        openBtn.Text = uiExpanded and "CLOSE" or "OPEN"
+    end
+
+    local openBtn = btn({
         Name = "ToggleUI",
-        Parent = sg,
-        Size = UDim2.new(0, 44, 0, 44),
-        Position = UDim2.new(1, -54, 0, 10),
-        BackgroundColor3 = C.TAB_BAR,
-        BackgroundTransparency = 0.1,
-        Text = "☰",
+        Parent = tabBar,
+        Size = UDim2.new(0, 54, 0, 54),
+        Position = UDim2.new(1, -59, 0.5, -27),
+        BackgroundColor3 = Color3.fromRGB(38, 38, 38),
+        BackgroundTransparency = 0,
+        Text = "OPEN",
         Font = Enum.Font.GothamBold,
-        TextSize = 17,
-        TextColor3 = C.TEXT,
+        TextSize = 11,
+        TextColor3 = C.WHITE,
         ZIndex = 10,
     })
-    corner(toggleUI, UDim.new(1, 0))
-    stroke(toggleUI, C.STROKE)
+    corner(openBtn, UDim.new(1, 0))
+    local toggleStroke = Instance.new("UIStroke", openBtn)
+    toggleStroke.Color = Color3.fromRGB(0, 0, 0)
+    toggleStroke.Thickness = 1.5
+    toggleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    openBtn.MouseEnter:Connect(function()
+        tw(openBtn, 0.12, {BackgroundColor3 = Color3.fromRGB(52, 52, 52)})
+    end)
+    openBtn.MouseLeave:Connect(function()
+        tw(openBtn, 0.12, {BackgroundColor3 = Color3.fromRGB(38, 38, 38)})
+    end)
 
     local TOTAL_H = TAB_H + GAP + WIN_H
     local dragging, dragStart, startPos = false, nil, nil
@@ -3824,6 +3838,10 @@ local function buildZyrixUI()
     tabBar.InputBegan:Connect(function(input)
         if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then return end
         local pos = input.Position
+        local tap, tas = openBtn.AbsolutePosition, openBtn.AbsoluteSize
+        if pos.X >= tap.X and pos.X <= tap.X + tas.X and pos.Y >= tap.Y and pos.Y <= tap.Y + tas.Y then
+            return
+        end
         for _, child in ipairs(tabScroll:GetChildren()) do
             if child:IsA("GuiObject") and child.Visible then
                 local ap, as = child.AbsolutePosition, child.AbsoluteSize
@@ -3848,7 +3866,7 @@ local function buildZyrixUI()
         doorOverlay.Visible = false
         doorOverlay.Active = false
         uiExpanded = false
-        toggleUI.Text = "☰"
+        updateToggleLabel()
     end
 
     expandPanel = function(done)
@@ -3870,7 +3888,7 @@ local function buildZyrixUI()
 
         uiExpanded = true
         uiAnimating = false
-        toggleUI.Text = "✕"
+        updateToggleLabel()
         if done then done() end
     end
 
@@ -3893,7 +3911,7 @@ local function buildZyrixUI()
         mainGroup.GroupTransparency = 0
         uiExpanded = false
         uiAnimating = false
-        toggleUI.Text = "☰"
+        updateToggleLabel()
         if done then done() end
     end
 
@@ -3904,27 +3922,19 @@ local function buildZyrixUI()
 
     uiClosePanel = function()
         if uiExpanded and not uiAnimating then
-            task.spawn(function()
-                collapsePanel(function()
-                    root.Visible = false
-                    setCollapsed(true)
-                end)
-            end)
+            task.spawn(collapsePanel)
         else
-            root.Visible = false
             setCollapsed(true)
+            root.Visible = true
         end
     end
 
-    toggleUI.MouseButton1Click:Connect(function()
+    openBtn.MouseButton1Click:Connect(function()
         if uiAnimating then return end
-        if not root.Visible then
-            root.Visible = true
-            setCollapsed(true)
-            task.spawn(expandPanel)
-        elseif uiExpanded then
+        if uiExpanded then
             task.spawn(collapsePanel)
         else
+            if not root.Visible then root.Visible = true end
             task.spawn(expandPanel)
         end
     end)
