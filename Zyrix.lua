@@ -2734,23 +2734,25 @@ local function buildZyrixUI()
         TAB_BAR = Color3.fromRGB(10, 10, 10),
         TAB_IDLE = Color3.fromRGB(0, 0, 0),
         TAB_ACTIVE = Color3.fromRGB(22, 22, 22),
-        PANEL = Color3.fromRGB(8, 8, 8),
+        PANEL = Color3.fromRGB(18, 18, 18),
         EL = Color3.fromRGB(12, 12, 12),
-        INNER = Color3.fromRGB(18, 18, 18),
-        SLIDER_BOX = Color3.fromRGB(168, 168, 168),
-        SLIDER_TEXT = Color3.fromRGB(28, 28, 28),
-        TOGGLE_TRACK = Color3.fromRGB(42, 42, 42),
+        INNER = Color3.fromRGB(22, 22, 22),
+        SLIDER_TRACK = Color3.fromRGB(28, 28, 28),
+        SLIDER_FILL = Color3.fromRGB(168, 168, 168),
+        SLIDER_TEXT = Color3.fromRGB(55, 55, 55),
+        TOGGLE_TRACK = Color3.fromRGB(32, 32, 32),
         TOGGLE_THUMB = Color3.fromRGB(168, 168, 168),
-        TOGGLE_THUMB_ON = Color3.fromRGB(220, 220, 220),
-        BTN_BADGE = Color3.fromRGB(90, 90, 90),
-        DD_ITEM = Color3.fromRGB(16, 16, 16),
-        DD_BG = Color3.fromRGB(10, 10, 10),
+        TOGGLE_THUMB_ON = Color3.fromRGB(192, 192, 192),
+        BTN_BADGE = Color3.fromRGB(105, 105, 105),
+        DD_BG = Color3.fromRGB(22, 22, 22),
+        DD_LIST = Color3.fromRGB(18, 18, 18),
+        DD_ITEM = Color3.fromRGB(24, 24, 24),
         STROKE = Color3.fromRGB(30, 30, 30),
-        STROKE_IN = Color3.fromRGB(24, 24, 24),
-        DIVIDER = Color3.fromRGB(26, 26, 26),
+        STROKE_IN = Color3.fromRGB(51, 51, 51),
+        DIVIDER = Color3.fromRGB(37, 37, 37),
         TEXT = Color3.fromRGB(255, 255, 255),
-        TEXT_DIM = Color3.fromRGB(175, 175, 175),
-        TEXT_GREY = Color3.fromRGB(115, 115, 115),
+        TEXT_DIM = Color3.fromRGB(180, 180, 180),
+        TEXT_GREY = Color3.fromRGB(120, 120, 120),
         WHITE = Color3.fromRGB(255, 255, 255),
         HOVER = Color3.fromRGB(18, 18, 18),
         DOOR = Color3.fromRGB(0, 0, 0),
@@ -3108,19 +3110,22 @@ local function buildZyrixUI()
 
         local leftCol = frame({
             Name = "LeftCol",
-            Size = UDim2.new(0.56, -6, 1, 0),
+            Size = UDim2.new(0.55, -4, 1, 0),
             Position = UDim2.new(0, 0, 0, 0),
-            BackgroundTransparency = 1,
+            BackgroundColor3 = C.PANEL,
+            ClipsDescendants = true,
             Parent = body,
         })
+        corner(leftCol, UDim.new(0, 2))
+        stroke(leftCol, C.STROKE_IN, 1)
         local leftList = Instance.new("UIListLayout", leftCol)
         leftList.SortOrder = Enum.SortOrder.LayoutOrder
         leftList.Padding = UDim.new(0, 0)
 
         local rightCol = frame({
             Name = "RightCol",
-            Size = UDim2.new(0.44, -6, 1, 0),
-            Position = UDim2.new(0.56, 6, 0, 0),
+            Size = UDim2.new(0.45, -4, 1, 0),
+            Position = UDim2.new(0.55, 4, 0, 0),
             BackgroundTransparency = 1,
             Parent = body,
         })
@@ -3140,13 +3145,15 @@ local function buildZyrixUI()
         return cols.left
     end
 
+    local CTRL_W = 168
+    local CTRL_RIGHT = 14
+
     local function addRowDivider(parent, order)
         frame({
             Name = "Divider",
-            Size = UDim2.new(1, -28, 0, 1),
-            Position = UDim2.new(0, 14, 0, 0),
+            Size = UDim2.new(1, 0, 0, 1),
             BackgroundColor3 = C.DIVIDER,
-            BackgroundTransparency = 0.05,
+            BackgroundTransparency = 0,
             LayoutOrder = order,
             Parent = parent,
         })
@@ -3167,7 +3174,7 @@ local function buildZyrixUI()
     local function rowTitle(row, text)
         return lbl({
             Parent = row,
-            Size = UDim2.new(0.52, 0, 1, 0),
+            Size = UDim2.new(0.55, 0, 1, 0),
             Position = UDim2.new(0, 14, 0, 0),
             Text = text,
             TextYAlignment = Enum.TextYAlignment.Center,
@@ -3195,27 +3202,27 @@ local function buildZyrixUI()
 
         local track = frame({
             Parent = toggleRow,
-            Size = UDim2.new(0, 48, 0, 24),
-            Position = UDim2.new(1, -62, 0.5, 0),
+            Size = UDim2.new(0, 52, 0, 26),
+            Position = UDim2.new(1, -(CTRL_W + CTRL_RIGHT), 0.5, 0),
             AnchorPoint = Vector2.new(0, 0.5),
             BackgroundColor3 = C.TOGGLE_TRACK,
         })
-        corner(track, UDim.new(0, 5))
+        corner(track, UDim.new(0, 3))
 
         local thumb = frame({
             Parent = track,
-            Size = UDim2.new(0, 20, 0, 20),
-            Position = defaultOn and UDim2.new(0, 26, 0.5, 0) or UDim2.new(0, 2, 0.5, 0),
+            Size = UDim2.new(0, 22, 0, 22),
+            Position = defaultOn and UDim2.new(0, 28, 0.5, 0) or UDim2.new(0, 2, 0.5, 0),
             AnchorPoint = Vector2.new(0, 0.5),
             BackgroundColor3 = defaultOn and C.TOGGLE_THUMB_ON or C.TOGGLE_THUMB,
         })
-        corner(thumb, UDim.new(0, 4))
+        corner(thumb, UDim.new(0, 2))
 
         local on = defaultOn == true
         local function applyState(state, skipCb)
             on = state == true
             tw(thumb, 0.18, {
-                Position = on and UDim2.new(0, 26, 0.5, 0) or UDim2.new(0, 2, 0.5, 0),
+                Position = on and UDim2.new(0, 28, 0.5, 0) or UDim2.new(0, 2, 0.5, 0),
                 BackgroundColor3 = on and C.TOGGLE_THUMB_ON or C.TOGGLE_THUMB,
             })
             if callback and not skipCb then callback(on) end
@@ -3234,12 +3241,21 @@ local function buildZyrixUI()
         local sliderTrack = frame({
             Name = "SliderTrack",
             Parent = sliderRow,
-            Size = UDim2.new(0, 130, 0, 28),
-            Position = UDim2.new(1, -144, 0.5, 0),
+            Size = UDim2.new(0, CTRL_W, 0, 28),
+            Position = UDim2.new(1, -(CTRL_W + CTRL_RIGHT), 0.5, 0),
             AnchorPoint = Vector2.new(0, 0.5),
-            BackgroundColor3 = C.SLIDER_BOX,
+            BackgroundColor3 = C.SLIDER_TRACK,
+            ClipsDescendants = true,
         })
         corner(sliderTrack, UDim.new(0, 8))
+
+        local sliderFill = frame({
+            Name = "Fill",
+            Parent = sliderTrack,
+            Size = UDim2.new(defaultPct, 0, 1, 0),
+            BackgroundColor3 = C.SLIDER_FILL,
+        })
+        corner(sliderFill, UDim.new(0, 8))
 
         local minV = el and el.Min or 0
         maxValue = maxValue or (el and el.Max) or (suffix and 1000 or 100)
@@ -3253,7 +3269,7 @@ local function buildZyrixUI()
         end
 
         local sliderInfo = lbl({
-            Parent = sliderTrack,
+            Parent = sliderFill,
             Size = UDim2.new(1, 0, 1, 0),
             Text = formatSlider(defaultPct),
             TextXAlignment = Enum.TextXAlignment.Center,
@@ -3266,6 +3282,7 @@ local function buildZyrixUI()
 
         local function setSlider(pct, skipCb)
             pct = math.clamp(pct, 0, 1)
+            sliderFill.Size = UDim2.new(math.max(pct, 0.08), 0, 1, 0)
             sliderInfo.Text = formatSlider(pct)
             if callback and not skipCb then
                 local val = minV + math.floor(pct * range)
@@ -3292,8 +3309,8 @@ local function buildZyrixUI()
 
         local badge = lbl({
             Parent = btnRow,
-            Size = UDim2.new(0, 64, 0, ROW_H),
-            Position = UDim2.new(1, -78, 0, 0),
+            Size = UDim2.new(0, CTRL_W, 0, ROW_H),
+            Position = UDim2.new(1, -(CTRL_W + CTRL_RIGHT), 0, 0),
             Text = "Button",
             TextXAlignment = Enum.TextXAlignment.Right,
             TextYAlignment = Enum.TextYAlignment.Center,
@@ -3303,7 +3320,7 @@ local function buildZyrixUI()
         })
 
         local hit = btn({ Parent = btnRow, Size = UDim2.new(1, 0, 1, 0), ZIndex = 5 })
-        hit.MouseEnter:Connect(function() tw(badge, 0.12, {TextColor3 = C.TEXT}) end)
+        hit.MouseEnter:Connect(function() tw(badge, 0.12, {TextColor3 = C.TEXT_DIM}) end)
         hit.MouseLeave:Connect(function() tw(badge, 0.12, {TextColor3 = C.BTN_BADGE}) end)
         hit.MouseButton1Click:Connect(function()
             if callback then callback() end
@@ -3312,16 +3329,19 @@ local function buildZyrixUI()
 
     local function addDropdown(parent, title, order, options, defaultIndex, callback, el)
         local isSide = parent.Name == "RightCol"
+        local closedH = ROW_H + 2
+        local openH = isSide and CONTENT_H or math.min(ROW_H + #options * 36 + 12, 200)
+
         local ddContainer = frame({
             Name = "Dropdown",
-            Size = UDim2.new(1, 0, 0, ROW_H + 2),
+            Size = UDim2.new(1, 0, 0, closedH),
             BackgroundColor3 = C.DD_BG,
             LayoutOrder = order * 2,
             ClipsDescendants = true,
             Parent = parent,
         })
-        corner(ddContainer, UDim.new(0, 10))
-        stroke(ddContainer, C.STROKE_IN, 0.7)
+        corner(ddContainer, UDim.new(0, 2))
+        stroke(ddContainer, C.STROKE_IN, 1)
 
         local ddHeader = frame({
             Size = UDim2.new(1, 0, 0, ROW_H),
@@ -3331,7 +3351,7 @@ local function buildZyrixUI()
 
         lbl({
             Parent = ddHeader,
-            Size = UDim2.new(0.38, 0, 1, 0),
+            Size = UDim2.new(0.4, 0, 1, 0),
             Position = UDim2.new(0, 14, 0, 0),
             Text = title,
             TextYAlignment = Enum.TextYAlignment.Center,
@@ -3343,8 +3363,8 @@ local function buildZyrixUI()
         local selectedText = options[defaultIndex or 1] or options[1] or ""
         local ddSelected = lbl({
             Parent = ddHeader,
-            Size = UDim2.new(0.42, 0, 1, 0),
-            Position = UDim2.new(0.38, 0, 0, 0),
+            Size = UDim2.new(0.38, 0, 1, 0),
+            Position = UDim2.new(0.42, 0, 0, 0),
             Text = selectedText,
             TextXAlignment = Enum.TextXAlignment.Right,
             TextYAlignment = Enum.TextYAlignment.Center,
@@ -3355,36 +3375,37 @@ local function buildZyrixUI()
 
         local ddArrow = lbl({
             Parent = ddHeader,
-            Size = UDim2.new(0, 20, 1, 0),
-            Position = UDim2.new(1, -30, 0, 0),
-            Text = "▼",
+            Size = UDim2.new(0, 22, 1, 0),
+            Position = UDim2.new(1, -26, 0, 0),
+            Text = "v",
             TextXAlignment = Enum.TextXAlignment.Center,
             TextYAlignment = Enum.TextYAlignment.Center,
-            Font = Enum.Font.Gotham,
-            TextSize = 9,
+            Font = Enum.Font.GothamBold,
+            TextSize = 14,
             TextColor3 = C.TEXT_DIM,
         })
 
-        frame({
-            Size = UDim2.new(1, -28, 0, 1),
-            Position = UDim2.new(0, 14, 0, ROW_H),
-            BackgroundColor3 = C.DIVIDER,
-            BackgroundTransparency = 0.05,
-            Parent = ddContainer,
-        })
-
-        local ddList = frame({
-            Name = "List",
-            Size = UDim2.new(1, -28, 1, -(ROW_H + 8)),
-            Position = UDim2.new(0, 14, 0, ROW_H + 4),
-            BackgroundTransparency = 1,
+        local ddListWrap = frame({
+            Name = "ListWrap",
+            Size = UDim2.new(1, -2, 1, -(ROW_H + 2)),
+            Position = UDim2.new(0, 1, 0, ROW_H + 1),
+            BackgroundColor3 = C.DD_LIST,
             Visible = false,
             ClipsDescendants = true,
             Parent = ddContainer,
         })
+        stroke(ddListWrap, C.STROKE_IN, 1)
+
+        local ddList = frame({
+            Name = "List",
+            Size = UDim2.new(1, -16, 1, -8),
+            Position = UDim2.new(0, 8, 0, 4),
+            BackgroundTransparency = 1,
+            Parent = ddListWrap,
+        })
 
         local listLayout = Instance.new("UIListLayout", ddList)
-        listLayout.Padding = UDim.new(0, 2)
+        listLayout.Padding = UDim.new(0, 0)
         listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
         local ddOpen = false
@@ -3393,14 +3414,9 @@ local function buildZyrixUI()
                 openDropdown:SetAttribute("ForceClose", true)
             end
             ddOpen = state
-            ddList.Visible = state
+            ddListWrap.Visible = state
             tw(ddArrow, 0.15, {Rotation = state and 180 or 0})
-            if isSide then
-                tw(ddContainer, 0.2, {Size = UDim2.new(1, 0, 0, state and CONTENT_H or ROW_H + 2)})
-            else
-                local listH = math.min(#options * 34 + 6, 140)
-                tw(ddContainer, 0.2, {Size = UDim2.new(1, 0, 0, state and (ROW_H + listH + 6) or ROW_H + 2)})
-            end
+            tw(ddContainer, 0.22, {Size = UDim2.new(1, 0, 0, state and openH or closedH)}, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
             openDropdown = state and ddContainer or (openDropdown == ddContainer and nil or openDropdown)
             refreshScroll()
         end
@@ -3413,20 +3429,37 @@ local function buildZyrixUI()
         end)
 
         for i, opt in ipairs(options) do
+            if i > 1 then
+                frame({
+                    Size = UDim2.new(1, 0, 0, 1),
+                    BackgroundColor3 = C.DIVIDER,
+                    LayoutOrder = i * 2 - 1,
+                    Parent = ddList,
+                })
+            end
             local item = btn({
                 Parent = ddList,
-                Size = UDim2.new(1, 0, 0, 32),
-                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0, 34),
+                BackgroundColor3 = i == 1 and C.DD_ITEM or C.DD_LIST,
+                BackgroundTransparency = i == 1 and 0 or 1,
                 Text = opt,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 Font = Enum.Font.GothamMedium,
                 TextSize = 12,
-                TextColor3 = C.TEXT_DIM,
-                LayoutOrder = i,
+                TextColor3 = C.TEXT,
+                LayoutOrder = i * 2,
             })
-            pad(item, 0, 0, 4, 4)
-            item.MouseEnter:Connect(function() tw(item, 0.1, {TextColor3 = C.TEXT}) end)
-            item.MouseLeave:Connect(function() tw(item, 0.1, {TextColor3 = C.TEXT_DIM}) end)
+            pad(item, 0, 0, 6, 6)
+            if i == 1 then corner(item, UDim.new(0, 0)) end
+            item.MouseEnter:Connect(function()
+                tw(item, 0.1, {BackgroundTransparency = 0, BackgroundColor3 = C.DD_ITEM})
+            end)
+            item.MouseLeave:Connect(function()
+                tw(item, 0.1, {
+                    BackgroundTransparency = i == 1 and 0 or 1,
+                    BackgroundColor3 = i == 1 and C.DD_ITEM or C.DD_LIST,
+                })
+            end)
             item.MouseButton1Click:Connect(function()
                 ddSelected.Text = opt
                 setOpen(false)
@@ -3465,12 +3498,12 @@ local function buildZyrixUI()
         local keyBox = frame({
             Parent = keyRow,
             Size = UDim2.new(0, 30, 0, 28),
-            Position = UDim2.new(1, -44, 0.5, 0),
+            Position = UDim2.new(1, -(30 + CTRL_RIGHT), 0.5, 0),
             AnchorPoint = Vector2.new(0, 0.5),
             BackgroundColor3 = C.INNER,
         })
-        corner(keyBox, UDim.new(0, 5))
-        stroke(keyBox, C.STROKE_IN, 0.6)
+        corner(keyBox, UDim.new(0, 2))
+        stroke(keyBox, C.STROKE_IN, 1)
         local currentKey = resolveKeyCode(defaultKey)
         local keyLabel = lbl({
             Parent = keyBox,
