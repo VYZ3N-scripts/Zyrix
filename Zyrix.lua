@@ -2690,34 +2690,36 @@ local uiClosePanel
 local uiExpandPanel
 
 local function buildZyrixUI()
-    if uiBuilt and uiScreenGui and uiScreenGui.Parent then return end
-
     local uiParent = hui
     local oldGui = uiParent:FindFirstChild("ZyrixMainUI")
     if oldGui then oldGui:Destroy() end
+    uiBuilt = false
 
     local TS = TweenService
     local UIS = UserInputService
 
     local C = {
-        WIN = Color3.fromRGB(18, 18, 18),
-        TAB_BAR = Color3.fromRGB(24, 24, 24),
-        TAB_IDLE = Color3.fromRGB(28, 28, 28),
-        TAB_ACTIVE = Color3.fromRGB(38, 38, 38),
-        EL = Color3.fromRGB(26, 26, 26),
-        INNER = Color3.fromRGB(32, 32, 32),
-        PROGRESS = Color3.fromRGB(52, 52, 52),
-        KNOB_ON = Color3.fromRGB(72, 72, 72),
-        KNOB_OFF = Color3.fromRGB(42, 42, 42),
-        DD_ITEM = Color3.fromRGB(30, 30, 30),
-        STROKE = Color3.fromRGB(42, 42, 42),
-        STROKE_IN = Color3.fromRGB(34, 34, 34),
-        TEXT = Color3.fromRGB(245, 245, 245),
-        TEXT_DIM = Color3.fromRGB(150, 150, 150),
-        TEXT_GREY = Color3.fromRGB(100, 100, 100),
+        WIN = Color3.fromRGB(0, 0, 0),
+        TAB_BAR = Color3.fromRGB(10, 10, 10),
+        TAB_IDLE = Color3.fromRGB(0, 0, 0),
+        TAB_ACTIVE = Color3.fromRGB(22, 22, 22),
+        PANEL = Color3.fromRGB(18, 18, 18),
+        EL = Color3.fromRGB(12, 12, 12),
+        INNER = Color3.fromRGB(22, 22, 22),
+        PROGRESS = Color3.fromRGB(168, 168, 168),
+        KNOB_ON = Color3.fromRGB(192, 192, 192),
+        KNOB_OFF = Color3.fromRGB(168, 168, 168),
+        DD_ITEM = Color3.fromRGB(24, 24, 24),
+        DD_LIST = Color3.fromRGB(18, 18, 18),
+        STROKE = Color3.fromRGB(30, 30, 30),
+        STROKE_IN = Color3.fromRGB(51, 51, 51),
+        DIVIDER = Color3.fromRGB(37, 37, 37),
+        TEXT = Color3.fromRGB(255, 255, 255),
+        TEXT_DIM = Color3.fromRGB(180, 180, 180),
+        TEXT_GREY = Color3.fromRGB(120, 120, 120),
         WHITE = Color3.fromRGB(255, 255, 255),
-        HOVER = Color3.fromRGB(40, 40, 40),
-        DOOR = Color3.fromRGB(16, 16, 16),
+        HOVER = Color3.fromRGB(18, 18, 18),
+        DOOR = Color3.fromRGB(0, 0, 0),
     }
 
     local function tw(obj, t, props, style, dir)
@@ -2766,8 +2768,10 @@ local function buildZyrixUI()
         return f
     end
 
-    local WIN_W, WIN_H, TAB_H, GAP = 520, 360, 44, 8
-    local TAB_INNER = TAB_H - 8
+    local WIN_W, WIN_H, TAB_H, GAP = 660, 340, 54, 10
+    local TAB_INNER = TAB_H - 10
+    local ROW_H = 44
+    local CONTENT_H = 280
     local openDropdown = nil
     local sliderDragTrack = nil
     local sliderRegistry = {}
@@ -2840,6 +2844,7 @@ local function buildZyrixUI()
     end
     local tabButtons = {}
     local tabPages = {}
+    local tabPageCols = {}
     local activeTab = tabNames[1] or "Combat"
     local uiExpanded = false
     local uiAnimating = false
@@ -2855,14 +2860,8 @@ local function buildZyrixUI()
         Active = true,
         Parent = root,
     })
-    corner(main, UDim.new(0, 10))
+    corner(main, UDim.new(0, 16))
     stroke(main, C.STROKE)
-    local mainGrad = Instance.new("UIGradient", main)
-    mainGrad.Rotation = 90
-    mainGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(16, 16, 16)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(24, 24, 24)),
-    })
 
     local function styleTab(name, selected)
         local b = tabButtons[name]
@@ -3007,7 +3006,8 @@ local function buildZyrixUI()
     logoImg.ImageColor3 = C.TEXT
     logoImg.ScaleType = Enum.ScaleType.Fit
     logoImg.Parent = logoBtn
-    lbl({ Parent = header, Size = UDim2.new(1, -50, 1, 0), Position = UDim2.new(0, 42, 0, 0), Text = "zyrix", Font = Enum.Font.GothamBold, TextSize = 15, TextColor3 = C.TEXT })
+    local hubTitle = string.lower((HubRegistry.windowConfig and HubRegistry.windowConfig.Name) or Zyrix.Appearance.Title or "zyrix")
+    lbl({ Parent = header, Size = UDim2.new(1, -50, 1, 0), Position = UDim2.new(0, 42, 0, 0), Text = hubTitle, Font = Enum.Font.GothamBold, TextSize = 17, TextColor3 = C.TEXT })
     frame({ Size = UDim2.new(1, -16, 0, 1), Position = UDim2.new(0, 8, 0, 34), BackgroundColor3 = C.STROKE_IN, BackgroundTransparency = 0.35, Parent = main })
 
     local elements = Instance.new("ScrollingFrame")
@@ -3019,8 +3019,8 @@ local function buildZyrixUI()
     elements.ScrollBarThickness = 3
     elements.ScrollBarImageColor3 = Color3.fromRGB(120, 120, 120)
     elements.ScrollBarImageTransparency = 0.25
-    elements.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    elements.CanvasSize = UDim2.new()
+    elements.AutomaticCanvasSize = Enum.AutomaticSize.None
+    elements.CanvasSize = UDim2.new(0, 0, 0, CONTENT_H)
     elements.ScrollingEnabled = true
     elements.Active = true
     elements.ClipsDescendants = true
@@ -3031,8 +3031,7 @@ local function buildZyrixUI()
 
     local pageHost = frame({
         Name = "PageHost",
-        Size = UDim2.new(1, 0, 0, 0),
-        AutomaticSize = Enum.AutomaticSize.Y,
+        Size = UDim2.new(1, 0, 0, CONTENT_H),
         BackgroundTransparency = 1,
         Parent = elements,
     })
@@ -3040,29 +3039,73 @@ local function buildZyrixUI()
     local function makePage(tabName)
         local page = frame({
             Name = tabName .. "Page",
-            Size = UDim2.new(1, 0, 0, 0),
-            AutomaticSize = Enum.AutomaticSize.Y,
+            Size = UDim2.new(1, 0, 1, 0),
             BackgroundTransparency = 1,
             Visible = tabName == activeTab,
             Parent = pageHost,
         })
-        Instance.new("UIListLayout", page).Padding = UDim.new(0, 8)
-        page:FindFirstChildOfClass("UIListLayout").SortOrder = Enum.SortOrder.LayoutOrder
+
+        local body = frame({
+            Name = "Body",
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            Parent = page,
+        })
+
+        local leftCol = frame({
+            Name = "LeftCol",
+            Size = UDim2.new(0.55, -4, 1, 0),
+            BackgroundColor3 = C.PANEL,
+            ClipsDescendants = true,
+            Parent = body,
+        })
+        corner(leftCol, UDim.new(0, 2))
+        stroke(leftCol, C.STROKE_IN)
+        local leftList = Instance.new("UIListLayout", leftCol)
+        leftList.SortOrder = Enum.SortOrder.LayoutOrder
+        leftList.Padding = UDim.new(0, 0)
+
+        local rightCol = frame({
+            Name = "RightCol",
+            Size = UDim2.new(0.45, -4, 1, 0),
+            Position = UDim2.new(0.55, 4, 0, 0),
+            BackgroundTransparency = 1,
+            Parent = body,
+        })
+        local rightList = Instance.new("UIListLayout", rightCol)
+        rightList.SortOrder = Enum.SortOrder.LayoutOrder
+        rightList.Padding = UDim.new(0, 8)
+
         tabPages[tabName] = page
-        return page
+        tabPageCols[tabName] = { left = leftCol, right = rightCol }
+        return leftCol, rightCol
+    end
+
+    local function getElementParent(tabName, itemType)
+        local cols = tabPageCols[tabName]
+        if not cols then return nil end
+        if string.lower(itemType or "") == "dropdown" then return cols.right end
+        return cols.left
     end
 
     local function row(parent, name, height, order)
+        if order > 1 then
+            frame({
+                Name = "Divider",
+                Size = UDim2.new(1, 0, 0, 1),
+                BackgroundColor3 = C.DIVIDER,
+                LayoutOrder = order * 2 - 1,
+                Parent = parent,
+            })
+        end
         local f = frame({
             Name = name,
-            Size = UDim2.new(1, 0, 0, height or 44),
-            BackgroundColor3 = C.EL,
-            LayoutOrder = order,
+            Size = UDim2.new(1, 0, 0, height or ROW_H),
+            BackgroundTransparency = 1,
+            LayoutOrder = order * 2,
             Parent = parent,
         })
-        corner(f, UDim.new(0, 6))
-        stroke(f, C.STROKE_IN)
-        pad(f, 8, 8, 10, 10)
+        pad(f, 0, 12, 12, 12)
         return f
     end
 
@@ -3164,8 +3207,6 @@ local function buildZyrixUI()
             TextColor3 = C.TEXT_GREY,
         })
         btn({ Parent = btnRow, Size = UDim2.new(1, 0, 1, 0), ZIndex = 2 }).MouseButton1Click:Connect(function()
-            tw(btnRow, 0.08, {BackgroundColor3 = C.HOVER})
-            tw(btnRow, 0.2, {BackgroundColor3 = C.EL})
             if callback then callback() end
         end)
     end
@@ -3211,7 +3252,7 @@ local function buildZyrixUI()
             Size = UDim2.new(1, -16, 0, 0),
             Position = UDim2.new(0, 8, 0, 44),
             AutomaticSize = Enum.AutomaticSize.Y,
-            BackgroundColor3 = C.INNER,
+            BackgroundColor3 = C.DD_LIST,
             Visible = false,
             Parent = ddContainer,
         })
@@ -3250,6 +3291,8 @@ local function buildZyrixUI()
                 TextColor3 = C.TEXT,
             })
             corner(item, UDim.new(0, 4))
+            item.TextXAlignment = Enum.TextXAlignment.Left
+            pad(item, 0, 8, 8, 8)
             item.MouseButton1Click:Connect(function()
                 ddSelected.Text = opt
                 setOpen(false)
@@ -3336,50 +3379,54 @@ local function buildZyrixUI()
         end)
     end
 
-    local function renderHubItem(page, i, item)
+    local function renderHubItem(tabName, i, item)
+        local parent = getElementParent(tabName, item.Type)
+        if not parent then return end
         local t = string.lower(item.Type or "")
         if t == "section" then
-            sectionLabel(page, item.Text or "Section", i)
+            sectionLabel(parent, item.Text or "Section", i)
         elseif t == "toggle" then
-            addToggle(page, item.Text or "Toggle", i, item.Default == true, item.Callback, item)
+            addToggle(parent, item.Text or "Toggle", i, item.Default == true, item.Callback, item)
         elseif t == "slider" then
-            addSlider(page, item.Text or "Slider", i, item.Default or 0.5, item.Callback, item.Suffix, item.Max, item)
+            addSlider(parent, item.Text or "Slider", i, item.Default or 0.5, item.Callback, item.Suffix, item.Max, item)
         elseif t == "keybind" then
-            addKeybind(page, item.Text or "Keybind", i, item.Default or "Q", item.Callback)
+            addKeybind(parent, item.Text or "Keybind", i, item.Default or "Q", item.Callback)
         elseif t == "dropdown" then
-            addDropdown(page, item.Text or "Dropdown", i, item.Options or {"Option 1"}, item.Default or 1, item.Callback)
+            addDropdown(parent, item.Text or "Dropdown", i, item.Options or {"Option 1"}, item.Default or 1, item.Callback)
         elseif t == "button" then
-            addButton(page, item.Text or "Button", i, item.Callback)
+            addButton(parent, item.Text or "Button", i, item.Callback)
         elseif t == "input" then
-            addInput(page, item.Text or "Input", i, item.Placeholder, item.Callback, item)
+            addInput(parent, item.Text or "Input", i, item.Placeholder, item.Callback, item)
         elseif t == "label" then
-            lbl({ Parent = page, Size = UDim2.new(1, 0, 0, 24), LayoutOrder = i, Text = item.Text or "", Font = Enum.Font.GothamMedium, TextSize = 12, TextColor3 = C.TEXT_DIM })
+            lbl({ Parent = parent, Size = UDim2.new(1, 0, 0, 24), LayoutOrder = i, Text = item.Text or "", Font = Enum.Font.GothamMedium, TextSize = 12, TextColor3 = C.TEXT_DIM })
         elseif t == "divider" then
-            frame({ Parent = page, Size = UDim2.new(1, 0, 0, 1), LayoutOrder = i, BackgroundColor3 = C.STROKE_IN, BackgroundTransparency = 0.35 })
+            frame({ Parent = parent, Size = UDim2.new(1, 0, 0, 1), LayoutOrder = i, BackgroundColor3 = C.STROKE_IN, BackgroundTransparency = 0.35 })
         end
     end
 
     local function buildHubElements()
         if #HubRegistry.tabs > 0 then
             for _, tab in ipairs(HubRegistry.tabs) do
-                local page = makePage(tab.Name)
+                makePage(tab.Name)
                 for i, item in ipairs(tab.Elements) do
-                    renderHubItem(page, i, item)
+                    renderHubItem(tab.Name, i, item)
                 end
             end
             return true
         end
         if not elementsByTab then return false end
+        local hasContent = false
         for _, tabName in ipairs(tabNames) do
-            local page = makePage(tabName)
+            makePage(tabName)
             local items = elementsByTab[tabName]
-            if items then
+            if items and #items > 0 then
+                hasContent = true
                 for i, item in ipairs(items) do
-                    renderHubItem(page, i, item)
+                    renderHubItem(tabName, i, item)
                 end
             end
         end
-        return true
+        return hasContent
     end
 
     if not buildHubElements() then
@@ -3390,52 +3437,52 @@ local function buildZyrixUI()
         Demo.TargetPart = Demo.TargetPart or "Head"
         Demo.TargetKey = Demo.TargetKey or Enum.KeyCode.Q
 
-        -- Default demo tabs (used when ZyrixHubConfig is not set)
-        local combatPage = makePage("Combat")
-        addButton(combatPage, "Reset Aimbot System", 1, function()
+        -- Default demo tabs (used when no CreateWindow tabs are registered)
+        local combatLeft, combatRight = makePage("Combat")
+        addButton(combatLeft, "Reset Aimbot System", 1, function()
             Demo.Aimbot = false
             Demo.ESPRange = 750
             Demo.TargetPart = "Head"
             Zyrix:Notify("Combat", "Aimbot reset", 2, "success")
         end)
-        addSlider(combatPage, "ESP Range", 2, Demo.ESPRange / 1000, function(pct)
+        addSlider(combatLeft, "ESP Range", 2, Demo.ESPRange / 1000, function(pct)
             Demo.ESPRange = math.floor(pct * 1000)
         end, " studs", 1000)
-        addToggle(combatPage, "Aimbot", 3, Demo.Aimbot, function(on)
+        addToggle(combatLeft, "Aimbot", 3, Demo.Aimbot, function(on)
             Demo.Aimbot = on
         end)
-        addKeybind(combatPage, "Target Keybind", 4, Demo.TargetKey, function(key)
+        addKeybind(combatLeft, "Target Keybind", 4, Demo.TargetKey, function(key)
             Demo.TargetKey = key
         end)
-        addDropdown(combatPage, "Dropdown", 5, {"Option #1", "Option #2", "Option #3", "Option #4"}, 1, function(opt)
+        addDropdown(combatRight, "Dropdown", 1, {"Option #1", "Option #2", "Option #3", "Option #4"}, 1, function(opt)
             Demo.TargetPart = opt
         end)
 
-        local visualsPage = makePage("Visuals")
-        sectionLabel(visualsPage, "ESP", 1)
-        addToggle(visualsPage, "Player ESP", 2, false, function(on) Demo.ESP = on end)
-        addSlider(visualsPage, "ESP Range", 3, 0.75, function(pct) Demo.ESPRange = math.floor(pct * 1000) end, " studs", 1000)
-        addDropdown(visualsPage, "ESP Style", 4, {"Box", "Corner", "Skeleton", "Highlight"}, 2, function(opt) Demo.ESPStyle = opt end)
+        local visualsLeft, visualsRight = makePage("Visuals")
+        sectionLabel(visualsLeft, "ESP", 1)
+        addToggle(visualsLeft, "Player ESP", 2, false, function(on) Demo.ESP = on end)
+        addSlider(visualsLeft, "ESP Range", 3, 0.75, function(pct) Demo.ESPRange = math.floor(pct * 1000) end, " studs", 1000)
+        addDropdown(visualsRight, "ESP Style", 1, {"Box", "Corner", "Skeleton", "Highlight"}, 2, function(opt) Demo.ESPStyle = opt end)
 
-        local movementPage = makePage("Movement")
-        sectionLabel(movementPage, "Character", 1)
-        addToggle(movementPage, "Speed Boost", 2, false, function(on)
+        local movementLeft = makePage("Movement")
+        sectionLabel(movementLeft, "Character", 1)
+        addToggle(movementLeft, "Speed Boost", 2, false, function(on)
             Demo.SpeedBoost = on
             local hum = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
             if hum then hum.WalkSpeed = on and 50 or 16 end
         end)
-        addSlider(movementPage, "Walk Speed", 3, 0.16, function(pct)
+        addSlider(movementLeft, "Walk Speed", 3, 0.16, function(pct)
             local hum = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
             if hum then hum.WalkSpeed = 16 + math.floor(pct * 84) end
         end, "", 100)
-        addToggle(movementPage, "Infinite Jump", 4, false, function(on) Demo.InfiniteJump = on end)
+        addToggle(movementLeft, "Infinite Jump", 4, false, function(on) Demo.InfiniteJump = on end)
 
-        local miscPage = makePage("Misc")
-        sectionLabel(miscPage, "Utility", 1)
-        addButton(miscPage, "Rejoin Server", 2, function()
+        local miscLeft, miscRight = makePage("Misc")
+        sectionLabel(miscLeft, "Utility", 1)
+        addButton(miscLeft, "Rejoin Server", 2, function()
             Zyrix:Notify("Misc", "Action triggered", 2, "copy")
         end)
-        addDropdown(miscPage, "Theme Accent", 3, {"White", "Blue", "Purple", "Green"}, 1, function(opt) Demo.Theme = opt end)
+        addDropdown(miscRight, "Theme Accent", 1, {"White", "Blue", "Purple", "Green"}, 1, function(opt) Demo.Theme = opt end)
     end
 
     selectTab(activeTab)
@@ -3448,9 +3495,9 @@ local function buildZyrixUI()
         AnchorPoint = Vector2.new(1, 0),
         BackgroundColor3 = C.TAB_BAR,
         BackgroundTransparency = 0.05,
-        Text = "✕",
+        Text = "OPEN",
         Font = Enum.Font.GothamBold,
-        TextSize = 16,
+        TextSize = 9,
         TextColor3 = C.TEXT,
         ZIndex = 20,
     })
@@ -3463,12 +3510,10 @@ local function buildZyrixUI()
     local dragging, dragStart, startPos = false, nil, nil
 
     local function updateCloseBtn()
-        if not root.Visible then
-            closeBtn.Text = "☰"
-        elseif uiExpanded then
-            closeBtn.Text = "✕"
+        if not root.Visible or not uiExpanded then
+            closeBtn.Text = "OPEN"
         else
-            closeBtn.Text = "✕"
+            closeBtn.Text = "CLOSE"
         end
     end
 
