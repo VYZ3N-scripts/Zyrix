@@ -17,8 +17,14 @@
 
 repeat task.wait() until game:IsLoaded()
 
+local genv = (getgenv and getgenv()) or _G
+
 local cloneref = cloneref or function(obj) return obj end
-local gethui = gethui or function() return cloneref(game:GetService("CoreGui")) end
+local gethui = gethui or function()
+    local ok, core = pcall(function() return cloneref(game:GetService("CoreGui")) end)
+    if ok and core then return core end
+    return nil
+end
 
 --services
 local TweenService = cloneref(game:GetService("TweenService"))
@@ -30,29 +36,45 @@ local Lighting = cloneref(game:GetService("Lighting"))
 local Players = cloneref(game:GetService("Players"))
 
 local function resolveGuiParent()
+    local player = Players.LocalPlayer
+    if not player then
+        player = Players.PlayerAdded:Wait()
+    end
+    local playerGui = player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui", 15)
+    if playerGui then
+        return cloneref(playerGui)
+    end
     local ok, parent = pcall(gethui)
     if ok and parent then return parent end
-    local player = Players.LocalPlayer or Players.PlayerAdded:Wait()
-    return cloneref(player:WaitForChild("PlayerGui"))
+    return cloneref(game:GetService("CoreGui"))
 end
 
 local function protectGui(gui)
-    if gui and syn and syn.protect_gui then pcall(syn.protect_gui, gui) end
+    if not gui then return end
+    pcall(function()
+        if syn and syn.protect_gui then syn.protect_gui(gui) end
+    end)
+    pcall(function()
+        if protectgui then protectgui(gui) end
+    end)
 end
 
 local hui = resolveGuiParent()
 
-if getgenv().ZyrixLoaded and getgenv().Zyrix and hui:FindFirstChild("ZyrixKeySystem") then
-    return getgenv().Zyrix
+if genv.ZyrixLibraryOnly and genv.ZyrixLoaded and genv.Zyrix then
+    return genv.Zyrix
 end
-if getgenv().ZyrixLoaded and getgenv().Zyrix and hui:FindFirstChild("ZyrixKeylessSystem") then
-    return getgenv().Zyrix
+if genv.ZyrixLoaded and genv.Zyrix and hui:FindFirstChild("ZyrixKeySystem") and not genv.ZyrixForceReload then
+    return genv.Zyrix
 end
-if getgenv().ZyrixLoaded and not hui:FindFirstChild("ZyrixKeySystem") and not hui:FindFirstChild("ZyrixKeylessSystem") and not hui:FindFirstChild("ZyrixMainUI") then
-    getgenv().ZyrixLoaded = false
+if genv.ZyrixLoaded and genv.Zyrix and hui:FindFirstChild("ZyrixKeylessSystem") and not genv.ZyrixForceReload then
+    return genv.Zyrix
 end
-getgenv().ZyrixLoaded = true
-getgenv().ZyrixClosed = false
+if genv.ZyrixLoaded and not hui:FindFirstChild("ZyrixKeySystem") and not hui:FindFirstChild("ZyrixKeylessSystem") and not hui:FindFirstChild("ZyrixMainUI") then
+    genv.ZyrixLoaded = false
+end
+genv.ZyrixLoaded = true
+genv.ZyrixClosed = false
 
 local Zyrix = {}
 
@@ -2458,7 +2480,7 @@ function Zyrix:Launch()
             openHub()
             return
         elseif existingKey == "KEYLESS" then
-            EnsureIconsReady(function() fireOnSuccess() end, false)
+            EnsureIconsReady(function() fireOnSuccess() end, true)
             return
         elseif Internal.ValidateFunction and validateKey(existingKey, Internal.ValidateFunction) then
             task.spawn(function()
@@ -2498,7 +2520,7 @@ function Zyrix:Launch()
         end
         BuildKeyUI()
         while not getgenv().SCRIPT_KEY do task.wait(0.1) end
-    end)
+    end, true)
 end
 
 function Zyrix:LaunchJunkie(config)
@@ -3158,8 +3180,12 @@ local function buildZyrixUI()
         local sliderFill = frame({ Name = "Progress", Parent = sliderTrack, Size = UDim2.new(defaultPct, 0, 1, 0), BackgroundColor3 = C.PROGRESS })
         corner(sliderFill, UDim.new(0, 4))
         maxValue = maxValue or (suffix and 1000 or 100)
+        local minValue = (el and el.Min) or 0
+        if el and el.Max and el.Min then
+            maxValue = math.max(el.Max - el.Min, 1)
+        end
         local function formatSlider(pct)
-            local val = math.floor(pct * maxValue)
+            local val = math.floor(minValue + pct * maxValue)
             if suffix then return tostring(val) .. suffix end
             return tostring(val) .. "%"
         end
@@ -3178,7 +3204,10 @@ local function buildZyrixUI()
             pct = math.clamp(pct, 0, 1)
             sliderFill.Size = UDim2.new(pct, 0, 1, 0)
             sliderInfo.Text = formatSlider(pct)
-            if callback and not skipCb then callback(pct) end
+            if callback and not skipCb then
+                local val = minValue + pct * maxValue
+                callback(val)
+            end
         end
         if el then el._apply = function(pct, skipCb) setSlider(pct, skipCb) end end
         sliderRegistry[sliderTrack] = setSlider
@@ -3388,7 +3417,11 @@ local function buildZyrixUI()
         elseif t == "toggle" then
             addToggle(parent, item.Text or "Toggle", i, item.Default == true, item.Callback, item)
         elseif t == "slider" then
-            addSlider(parent, item.Text or "Slider", i, item.Default or 0.5, item.Callback, item.Suffix, item.Max, item)
+            local minV = item.Min or 0
+            local maxV = item.Max or 100
+            local span = math.max(maxV - minV, 1)
+            local cb = item.Callback
+            addSlider(parent, item.Text or "Slider", i, item.Default or 0.5, cb, item.Suffix, span, item)
         elseif t == "keybind" then
             addKeybind(parent, item.Text or "Keybind", i, item.Default or "Q", item.Callback)
         elseif t == "dropdown" then
@@ -3445,8 +3478,8 @@ local function buildZyrixUI()
             Demo.TargetPart = "Head"
             Zyrix:Notify("Combat", "Aimbot reset", 2, "success")
         end)
-        addSlider(combatLeft, "ESP Range", 2, Demo.ESPRange / 1000, function(pct)
-            Demo.ESPRange = math.floor(pct * 1000)
+        addSlider(combatLeft, "ESP Range", 2, Demo.ESPRange / 1000, function(v)
+            Demo.ESPRange = math.floor(v)
         end, " studs", 1000)
         addToggle(combatLeft, "Aimbot", 3, Demo.Aimbot, function(on)
             Demo.Aimbot = on
@@ -3461,7 +3494,7 @@ local function buildZyrixUI()
         local visualsLeft, visualsRight = makePage("Visuals")
         sectionLabel(visualsLeft, "ESP", 1)
         addToggle(visualsLeft, "Player ESP", 2, false, function(on) Demo.ESP = on end)
-        addSlider(visualsLeft, "ESP Range", 3, 0.75, function(pct) Demo.ESPRange = math.floor(pct * 1000) end, " studs", 1000)
+        addSlider(visualsLeft, "ESP Range", 3, 0.75, function(v) Demo.ESPRange = math.floor(v) end, " studs", 1000)
         addDropdown(visualsRight, "ESP Style", 1, {"Box", "Corner", "Skeleton", "Highlight"}, 2, function(opt) Demo.ESPStyle = opt end)
 
         local movementLeft = makePage("Movement")
@@ -3471,9 +3504,9 @@ local function buildZyrixUI()
             local hum = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
             if hum then hum.WalkSpeed = on and 50 or 16 end
         end)
-        addSlider(movementLeft, "Walk Speed", 3, 0.16, function(pct)
+        addSlider(movementLeft, "Walk Speed", 3, 0.16, function(v)
             local hum = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if hum then hum.WalkSpeed = 16 + math.floor(pct * 84) end
+            if hum then hum.WalkSpeed = 16 + math.floor(v * 0.84) end
         end, "", 100)
         addToggle(movementLeft, "Infinite Jump", 4, false, function(on) Demo.InfiniteJump = on end)
 
@@ -3786,16 +3819,144 @@ fireOnSuccess = function()
     end)
 end
 
---[[
-========== RAYFIELD-STYLE EXAMPLE ==========
-Zyrix.Options.Keyless = true
-Zyrix.Options.KeylessUI = false
+-- ========== BUILT-IN HUB (Xeno / Notepad) ==========
+-- Matches the default Combat / Visuals / Movement / Misc demo layout.
+-- Set genv.ZyrixSkipDefaultHub = true before loadstring if you use this as a library only.
 
-Zyrix.Callbacks.OnSuccess = function()
-    print("Script ready!")
+if not genv.ZyrixSkipDefaultHub then
+    genv.ZyrixForceReload = true
+    if Zyrix.Reset then pcall(function() Zyrix:Reset() end) end
+    genv.ZyrixLoaded = false
+    genv.SCRIPT_KEY = nil
+
+    local Demo = getgenv().ZyrixDemoState or {}
+    getgenv().ZyrixDemoState = Demo
+    Demo.Aimbot = Demo.Aimbot or false
+    Demo.ESPRange = Demo.ESPRange or 750
+    Demo.TargetPart = Demo.TargetPart or "Head"
+    Demo.TargetKey = Demo.TargetKey or Enum.KeyCode.Q
+
+    local Window = Zyrix:CreateWindow({
+        Name = "zyrix",
+        ToggleUIKeybind = "K",
+        KeySystem = false,
+    })
+
+    local Combat = Window:CreateTab("Combat")
+    local Visuals = Window:CreateTab("Visuals")
+    local Movement = Window:CreateTab("Movement")
+    local Misc = Window:CreateTab("Misc")
+
+    Combat:CreateButton({
+        Name = "Reset Aimbot System",
+        Callback = function()
+            Demo.Aimbot = false
+            Demo.ESPRange = 750
+            Demo.TargetPart = "Head"
+            Zyrix:Notify("Combat", "Aimbot reset", 2, "success")
+        end,
+    })
+
+    Combat:CreateSlider({
+        Name = "ESP Range",
+        Range = {0, 1000},
+        CurrentValue = Demo.ESPRange,
+        Suffix = " studs",
+        Callback = function(v)
+            Demo.ESPRange = math.floor(v)
+        end,
+    })
+
+    Combat:CreateToggle({
+        Name = "Aimbot",
+        CurrentValue = Demo.Aimbot,
+        Callback = function(on)
+            Demo.Aimbot = on
+        end,
+    })
+
+    Combat:CreateKeybind({
+        Name = "Target Keybind",
+        CurrentKeybind = "Q",
+        Callback = function(key)
+            Demo.TargetKey = key
+        end,
+    })
+
+    Combat:CreateDropdown({
+        Name = "Dropdown",
+        Options = {"Option #1", "Option #2", "Option #3", "Option #4"},
+        CurrentOption = {"Option #1"},
+        Callback = function(o)
+            Demo.TargetPart = o[1]
+        end,
+    })
+
+    Visuals:CreateSection("ESP")
+    Visuals:CreateToggle({
+        Name = "Player ESP",
+        CurrentValue = false,
+        Callback = function(on) Demo.ESP = on end,
+    })
+    Visuals:CreateSlider({
+        Name = "ESP Range",
+        Range = {0, 1000},
+        CurrentValue = 750,
+        Suffix = " studs",
+        Callback = function(v) Demo.ESPRange = math.floor(v) end,
+    })
+    Visuals:CreateDropdown({
+        Name = "ESP Style",
+        Options = {"Box", "Corner", "Skeleton", "Highlight"},
+        CurrentOption = {"Corner"},
+        Callback = function(o) Demo.ESPStyle = o[1] end,
+    })
+
+    Movement:CreateSection("Character")
+    Movement:CreateToggle({
+        Name = "Speed Boost",
+        CurrentValue = false,
+        Callback = function(on)
+            Demo.SpeedBoost = on
+            local hum = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.WalkSpeed = on and 50 or 16 end
+        end,
+    })
+    Movement:CreateSlider({
+        Name = "Walk Speed",
+        Range = {16, 100},
+        CurrentValue = 16,
+        Callback = function(v)
+            local hum = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.WalkSpeed = math.floor(v) end
+        end,
+    })
+    Movement:CreateToggle({
+        Name = "Infinite Jump",
+        CurrentValue = false,
+        Callback = function(on) Demo.InfiniteJump = on end,
+    })
+
+    Misc:CreateSection("Utility")
+    Misc:CreateButton({
+        Name = "Rejoin Server",
+        Callback = function()
+            Zyrix:Notify("Misc", "Action triggered", 2, "copy")
+        end,
+    })
+    Misc:CreateDropdown({
+        Name = "Theme Accent",
+        Options = {"White", "Blue", "Purple", "Green"},
+        CurrentOption = {"White"},
+        Callback = function(o) Demo.Theme = o[1] end,
+    })
+
+    Zyrix.Callbacks.OnSuccess = function()
+        print("[Zyrix] Hub loaded! Press K to toggle.")
+    end
+
+    print("[Zyrix] Launching hub...")
+    Zyrix:Launch()
 end
-
-Zyrix:Launch()
-]]
 
 return Zyrix
