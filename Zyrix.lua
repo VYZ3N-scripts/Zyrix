@@ -2792,7 +2792,8 @@ local function buildZyrixUI()
 
     local WIN_W, WIN_H, TAB_H, GAP = 660, 340, 54, 10
     local TAB_INNER = TAB_H - 10
-    local ROW_H = 44
+    local ROW_H = 36
+    local SLIDER_ROW_H = 44
     local CONTENT_H = 280
     local openDropdown = nil
     local sliderDragTrack = nil
@@ -2867,6 +2868,7 @@ local function buildZyrixUI()
     local tabButtons = {}
     local tabPages = {}
     local tabPageCols = {}
+    local syncPageHeight
     local activeTab = tabNames[1] or "Combat"
     local uiExpanded = false
     local uiAnimating = false
@@ -2915,6 +2917,8 @@ local function buildZyrixUI()
             if page then page.Visible = (n == name) end
         end
         if openDropdown then openDropdown:SetAttribute("ForceClose", true) end
+        elements.CanvasPosition = Vector2.new(0, 0)
+        if syncPageHeight then syncPageHeight(name) end
         refreshScroll()
         if shouldExpand and not uiExpanded and not uiAnimating and expandPanel then
             task.spawn(expandPanel)
@@ -3058,10 +3062,34 @@ local function buildZyrixUI()
         Parent = elements,
     })
 
+    syncPageHeight = function(tabName)
+        local cols = tabPageCols[tabName]
+        local page = tabPages[tabName]
+        if not cols or not page then return end
+        local body = page:FindFirstChild("Body")
+        if not body then return end
+        local contentH = math.max(cols.left.AbsoluteSize.Y, cols.right.AbsoluteSize.Y, 1)
+        local h = math.max(contentH, CONTENT_H)
+        body.Size = UDim2.new(1, 0, 0, h)
+        page.Size = UDim2.new(1, 0, 0, h)
+        if tabName == activeTab then
+            pageHost.Size = UDim2.new(1, 0, 0, h)
+            elements.CanvasSize = UDim2.new(0, 0, 0, h)
+            refreshScroll()
+        end
+    end
+
+    local function bindColumnAutoHeight(tabName, col, layout)
+        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            col.Size = UDim2.new(col.Size.X.Scale, col.Size.X.Offset, 0, layout.AbsoluteContentSize.Y)
+            syncPageHeight(tabName)
+        end)
+    end
+
     local function makePage(tabName)
         local page = frame({
             Name = tabName .. "Page",
-            Size = UDim2.new(1, 0, 1, 0),
+            Size = UDim2.new(1, 0, 0, CONTENT_H),
             BackgroundTransparency = 1,
             Visible = tabName == activeTab,
             Parent = pageHost,
@@ -3069,14 +3097,14 @@ local function buildZyrixUI()
 
         local body = frame({
             Name = "Body",
-            Size = UDim2.new(1, 0, 1, 0),
+            Size = UDim2.new(1, 0, 0, CONTENT_H),
             BackgroundTransparency = 1,
             Parent = page,
         })
 
         local leftCol = frame({
             Name = "LeftCol",
-            Size = UDim2.new(0.55, -4, 1, 0),
+            Size = UDim2.new(0.55, -4, 0, 0),
             BackgroundColor3 = C.PANEL,
             ClipsDescendants = true,
             Parent = body,
@@ -3089,14 +3117,17 @@ local function buildZyrixUI()
 
         local rightCol = frame({
             Name = "RightCol",
-            Size = UDim2.new(0.45, -4, 1, 0),
+            Size = UDim2.new(0.45, -4, 0, 0),
             Position = UDim2.new(0.55, 4, 0, 0),
             BackgroundTransparency = 1,
             Parent = body,
         })
         local rightList = Instance.new("UIListLayout", rightCol)
         rightList.SortOrder = Enum.SortOrder.LayoutOrder
-        rightList.Padding = UDim.new(0, 8)
+        rightList.Padding = UDim.new(0, 6)
+
+        bindColumnAutoHeight(tabName, leftCol, leftList)
+        bindColumnAutoHeight(tabName, rightCol, rightList)
 
         tabPages[tabName] = page
         tabPageCols[tabName] = { left = leftCol, right = rightCol }
@@ -3127,32 +3158,32 @@ local function buildZyrixUI()
             LayoutOrder = order * 2,
             Parent = parent,
         })
-        pad(f, 0, 12, 12, 12)
+        pad(f, 6, 6, 10, 10)
         return f
     end
 
     local function sectionLabel(parent, text, order)
         lbl({
             Parent = parent,
-            Size = UDim2.new(1, 0, 0, 20),
+            Size = UDim2.new(1, 0, 0, 16),
             LayoutOrder = order,
             Text = text,
             Font = Enum.Font.GothamBold,
-            TextSize = 13,
+            TextSize = 12,
             TextColor3 = C.TEXT_DIM,
         })
     end
 
     local function addToggle(parent, title, order, defaultOn, callback, el)
-        local toggleRow = row(parent, "Toggle", 44, order)
-        lbl({ Parent = toggleRow, Size = UDim2.new(1, -54, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 13, TextColor3 = C.TEXT })
-        local switch = frame({ Parent = toggleRow, Size = UDim2.new(0, 42, 0, 22), Position = UDim2.new(1, -46, 0.5, -11), BackgroundColor3 = C.INNER })
+        local toggleRow = row(parent, "Toggle", ROW_H, order)
+        lbl({ Parent = toggleRow, Size = UDim2.new(1, -48, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 13, TextColor3 = C.TEXT })
+        local switch = frame({ Parent = toggleRow, Size = UDim2.new(0, 38, 0, 20), Position = UDim2.new(1, -42, 0.5, -10), BackgroundColor3 = C.INNER })
         corner(switch, UDim.new(1, 0))
         stroke(switch, C.STROKE_IN)
         local knob = frame({
             Parent = switch,
-            Size = UDim2.new(0, 18, 0, 18),
-            Position = defaultOn and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0, 2, 0.5, -9),
+            Size = UDim2.new(0, 16, 0, 16),
+            Position = defaultOn and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8),
             BackgroundColor3 = defaultOn and C.KNOB_ON or C.KNOB_OFF,
         })
         corner(knob, UDim.new(1, 0))
@@ -3160,7 +3191,7 @@ local function buildZyrixUI()
         local function applyState(state, skipCb)
             on = state == true
             tw(knob, 0.15, {
-                Position = on and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0, 2, 0.5, -9),
+                Position = on and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8),
                 BackgroundColor3 = on and C.KNOB_ON or C.KNOB_OFF,
             })
             if callback and not skipCb then callback(on) end
@@ -3172,9 +3203,9 @@ local function buildZyrixUI()
     end
 
     local function addSlider(parent, title, order, defaultPct, callback, suffix, maxValue, el)
-        local sliderRow = row(parent, "Slider", 52, order)
-        lbl({ Parent = sliderRow, Size = UDim2.new(0.45, 0, 0, 16), Text = title, Font = Enum.Font.GothamMedium, TextSize = 13, TextColor3 = C.TEXT })
-        local sliderTrack = frame({ Name = "SliderTrack", Parent = sliderRow, Size = UDim2.new(0.52, 0, 0, 22), Position = UDim2.new(0.46, 0, 0.5, -11), BackgroundColor3 = C.INNER })
+        local sliderRow = row(parent, "Slider", SLIDER_ROW_H, order)
+        lbl({ Parent = sliderRow, Size = UDim2.new(0.45, 0, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 13, TextColor3 = C.TEXT })
+        local sliderTrack = frame({ Name = "SliderTrack", Parent = sliderRow, Size = UDim2.new(0.52, 0, 0, 20), Position = UDim2.new(0.46, 0, 0.5, -10), BackgroundColor3 = C.INNER })
         corner(sliderTrack, UDim.new(0, 4))
         stroke(sliderTrack, C.STROKE_IN)
         local sliderFill = frame({ Name = "Progress", Parent = sliderTrack, Size = UDim2.new(defaultPct, 0, 1, 0), BackgroundColor3 = C.PROGRESS })
@@ -3222,7 +3253,7 @@ local function buildZyrixUI()
     end
 
     local function addButton(parent, title, order, callback)
-        local btnRow = row(parent, "Button", 44, order)
+        local btnRow = row(parent, "Button", ROW_H, order)
         lbl({ Parent = btnRow, Size = UDim2.new(0.7, 0, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 13, TextColor3 = C.TEXT })
         lbl({
             Parent = btnRow,
@@ -3252,8 +3283,8 @@ local function buildZyrixUI()
         corner(ddContainer, UDim.new(0, 6))
         stroke(ddContainer, C.STROKE_IN)
 
-        local ddHeader = frame({ Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1, Parent = ddContainer })
-        pad(ddHeader, 8, 8, 10, 10)
+        local ddHeader = frame({ Size = UDim2.new(1, 0, 0, ROW_H), BackgroundTransparency = 1, Parent = ddContainer })
+        pad(ddHeader, 6, 6, 10, 10)
         lbl({ Parent = ddHeader, Size = UDim2.new(0.35, 0, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 13, TextColor3 = C.TEXT })
         local ddSelected = lbl({
             Parent = ddHeader,
@@ -3279,7 +3310,7 @@ local function buildZyrixUI()
         local ddList = frame({
             Name = "List",
             Size = UDim2.new(1, -16, 0, 0),
-            Position = UDim2.new(0, 8, 0, 44),
+            Position = UDim2.new(0, 8, 0, ROW_H),
             AutomaticSize = Enum.AutomaticSize.Y,
             BackgroundColor3 = C.DD_LIST,
             Visible = false,
@@ -3343,12 +3374,12 @@ local function buildZyrixUI()
     end
 
     local function addKeybind(parent, title, order, defaultKey, callback)
-        local keyRow = row(parent, "Keybind", 44, order)
-        lbl({ Parent = keyRow, Size = UDim2.new(1, -60, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 13, TextColor3 = C.TEXT })
+        local keyRow = row(parent, "Keybind", ROW_H, order)
+        lbl({ Parent = keyRow, Size = UDim2.new(1, -52, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 13, TextColor3 = C.TEXT })
         local keyBox = frame({
             Parent = keyRow,
-            Size = UDim2.new(0, 36, 0, 24),
-            Position = UDim2.new(1, -40, 0.5, -12),
+            Size = UDim2.new(0, 32, 0, 22),
+            Position = UDim2.new(1, -36, 0.5, -11),
             BackgroundColor3 = C.INNER,
         })
         corner(keyBox, UDim.new(0, 4))
@@ -3385,11 +3416,11 @@ local function buildZyrixUI()
     end
 
     local function addInput(parent, title, order, placeholder, callback, el)
-        local inputRow = row(parent, "Input", 44, order)
+        local inputRow = row(parent, "Input", ROW_H, order)
         lbl({ Parent = inputRow, Size = UDim2.new(0.45, 0, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 13, TextColor3 = C.TEXT })
         local box = Instance.new("TextBox")
-        box.Size = UDim2.new(0.5, -8, 0, 26)
-        box.Position = UDim2.new(0.5, 0, 0.5, -13)
+        box.Size = UDim2.new(0.5, -8, 0, 22)
+        box.Position = UDim2.new(0.5, 0, 0.5, -11)
         box.BackgroundColor3 = C.INNER
         box.TextColor3 = C.TEXT
         box.PlaceholderText = placeholder or ""
@@ -3431,7 +3462,7 @@ local function buildZyrixUI()
         elseif t == "input" then
             addInput(parent, item.Text or "Input", i, item.Placeholder, item.Callback, item)
         elseif t == "label" then
-            lbl({ Parent = parent, Size = UDim2.new(1, 0, 0, 24), LayoutOrder = i, Text = item.Text or "", Font = Enum.Font.GothamMedium, TextSize = 12, TextColor3 = C.TEXT_DIM })
+            lbl({ Parent = parent, Size = UDim2.new(1, 0, 0, 18), LayoutOrder = i, Text = item.Text or "", Font = Enum.Font.GothamMedium, TextSize = 12, TextColor3 = C.TEXT_DIM })
         elseif t == "divider" then
             frame({ Parent = parent, Size = UDim2.new(1, 0, 0, 1), LayoutOrder = i, BackgroundColor3 = C.STROKE_IN, BackgroundTransparency = 0.35 })
         end
@@ -3518,6 +3549,10 @@ local function buildZyrixUI()
         addDropdown(miscRight, "Theme Accent", 1, {"White", "Blue", "Purple", "Green"}, 1, function(opt) Demo.Theme = opt end)
     end
 
+    for _, tabName in ipairs(tabNames) do
+        task.defer(function() syncPageHeight(tabName) end)
+    end
+
     selectTab(activeTab)
 
     local closeBtn = btn({
@@ -3561,6 +3596,15 @@ local function buildZyrixUI()
             if setSlider then setSlider(pct) end
         elseif input.UserInputType == Enum.UserInputType.MouseWheel then
             local mouse = UIS:GetMouseLocation()
+            local elemAp, elemAs = elements.AbsolutePosition, elements.AbsoluteSize
+            if mouse.X >= elemAp.X and mouse.X <= elemAp.X + elemAs.X and mouse.Y >= elemAp.Y and mouse.Y <= elemAp.Y + elemAs.Y then
+                local maxScroll = math.max(0, elements.AbsoluteCanvasSize.Y - elemAs.Y)
+                if maxScroll > 0 then
+                    local scrollDelta = input.Position.Z
+                    if scrollDelta == 0 then scrollDelta = 1 end
+                    elements.CanvasPosition = Vector2.new(0, math.clamp(elements.CanvasPosition.Y - scrollDelta * 28, 0, maxScroll))
+                end
+            else
             local ap, as = tabScroll.AbsolutePosition, tabScroll.AbsoluteSize
             if mouse.X >= ap.X and mouse.X <= ap.X + as.X and mouse.Y >= ap.Y and mouse.Y <= ap.Y + as.Y then
                 local maxScroll = math.max(0, tabScroll.AbsoluteCanvasSize.X - as.X)
@@ -3569,6 +3613,7 @@ local function buildZyrixUI()
                     if scrollDelta == 0 then scrollDelta = 1 end
                     tabScroll.CanvasPosition = Vector2.new(math.clamp(tabScroll.CanvasPosition.X - scrollDelta * 48, 0, maxScroll), 0)
                 end
+            end
             end
         end
     end)
