@@ -29,33 +29,44 @@ local Workspace = cloneref(game:GetService("Workspace"))
 local RunService = cloneref(game:GetService("RunService"))
 local Lighting = cloneref(game:GetService("Lighting"))
 local Players = cloneref(game:GetService("Players"))
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
 
+-- Robust function to find the best parent for the UI
 local function resolveGuiParent()
-	local player = Players.LocalPlayer
-	if not player then
-		player = Players.PlayerAdded:Wait()
-	end
-	local playerGui = player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui", 15)
-	if playerGui then
-		return cloneref(playerGui)
-	end
-	local ok, parent = pcall(gethui)
-	if ok and parent then return parent end
-	return cloneref(game:GetService("CoreGui"))
+    -- 1. Try gethui() first (standard across most modern executors)
+    local success, hui = pcall(function()
+        return gethui()
+    end)
+    if success and hui then
+        return hui
+    end
+
+    -- 2. Fallback to PlayerGui with proper cloning
+    local player = Players.LocalPlayer
+    local playerGui = player and player:FindFirstChildOfClass("PlayerGui")
+    if playerGui then
+        return cloneref and cloneref(playerGui) or playerGui
+    end
+
+    -- 3. Final fallback to CoreGui
+    return cloneref and cloneref(CoreGui) or CoreGui
 end
 
+-- Improved protection function
 local function protectGui(gui)
-	if not gui then return end
-	pcall(function()
-		if syn and syn.protect_gui then syn.protect_gui(gui) end
-	end)
-	pcall(function()
-		if protectgui then protectgui(gui) end
-	end)
+    if not gui then return end
+    
+    -- Protect using syn (Synapse) or fluxus/other environment methods
+    if syn and syn.protect_gui then
+        pcall(function() syn.protect_gui(gui) end)
+    elseif protect_gui then
+        pcall(function() protect_gui(gui) end)
+    end
 end
 
+-- Initialize
 local hui = resolveGuiParent()
-
 if genv.ZyrixLibraryOnly and genv.ZyrixLoaded and genv.Zyrix then
 	return genv.Zyrix
 end
