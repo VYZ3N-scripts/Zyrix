@@ -1,18 +1,13 @@
 --[[
- ________   ________   ________   _______    ___        ___  ___   ___     
-|\   __  \ |\   __  \ |\   __  \ |\  ___ \  |\  \      |\  \|\  \ |\  \    
-\ \  \|\  \\ \  \|\  \\ \  \|\  \\ \   __/| \ \  \     \ \  \\\  \\ \  \   
- \ \   __  \\ \   _  _\\ \  \\\  \\ \  \_|/__\ \  \     \ \  \\\  \\ \  \  
-  \ \  \ \  \\ \  \\  \|\ \  \\\  \\ \  \_|\ \\ \  \____ \ \  \\\  \\ \  \ 
-   \ \__\ \__\\ \__\\ _\ \ \_____  \\ \_______\\ \_______\\ \_______\\ \__\
-    \|__|\|__| \|__|\|__| \|___| \__\\|_______| \|_______| \|_______| \|__|
-                                \|__|                                      
-                                                                           
 
-     Github - https://github.com/Cobruhehe/expert-octo-doodle
-     Author: Cobru (Cobruhehe, .cobru)
-     License: MIT
-                                                                           
+███████╗██╗   ██╗██████╗ ██╗██╗  ██╗
+╚══███╔╝╚██╗ ██╔╝██╔══██╗██║╚██╗██╔╝
+  ███╔╝  ╚████╔╝ ██████╔╝██║ ╚███╔╝
+ ███╔╝    ╚██╔╝  ██╔══██╗██║ ██╔██╗
+███████╗   ██║   ██║  ██║██║██╔╝ ██╗
+╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝
+
+    maker: Z4ITH
 ]]
 
 repeat task.wait() until game:IsLoaded()
@@ -2796,8 +2791,8 @@ local function buildZyrixUI()
 		return f
 	end
 
-	local WIN_W, WIN_H, TAB_H, GAP = 660, 340, 54, 10
-	local TAB_INNER = TAB_H - 10
+	local WIN_W, WIN_H, TAB_H, GAP = 660, 340, 34, 8
+	local TAB_INNER = TAB_H - 6
 	local ROW_H = 36
 	local SLIDER_ROW_H = 44
 	local CONTENT_H = 280
@@ -2806,57 +2801,103 @@ local function buildZyrixUI()
 	local sliderRegistry = {}
 	local keybindCapture = nil
 
-	local sg = Instance.new("ScreenGui")
-	sg.Name = "ZyrixMainUI"
-	sg.ResetOnSpawn = false
-	sg.IgnoreGuiInset = true
-	sg.DisplayOrder = 1000
-	sg.Enabled = true
-	sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	sg.Parent = uiParent
-	protectGui(sg)
+	-- Clone static template from StarterGui instead of creating from scratch
+	local starterGui = cloneref(game:GetService("StarterGui"))
+	local template = starterGui and starterGui:FindFirstChild("ZyrixMainUI")
+	local sg
+	if template then
+		sg = template:Clone()
+		parent = uiParent
+		sg.Parent = uiParent
+		protectGui(sg)
+	else
+		sg = Instance.new("ScreenGui")
+		sg.Name = "ZyrixMainUI"
+		sg.ResetOnSpawn = false
+		sg.IgnoreGuiInset = true
+		sg.DisplayOrder = 1000
+		sg.Enabled = true
+		sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+		sg.Parent = uiParent
+		protectGui(sg)
+	end
 
-	local root = frame({
-		Name = "Root",
-		Size = UDim2.new(0, WIN_W, 0, TAB_H + GAP + WIN_H),
-		Position = UDim2.new(0.5, -WIN_W / 2, 0.5, -(TAB_H + GAP + WIN_H) / 2),
-		BackgroundTransparency = 1,
-		Parent = sg,
-	})
+	local root = sg:FindFirstChild("Root")
 
-	local tabBar = frame({
-		Name = "TabBar",
-		Size = UDim2.new(0, WIN_W, 0, TAB_H),
-		BackgroundColor3 = C.TAB_BAR,
-		Active = true,
-		Parent = root,
-	})
-	corner(tabBar, UDim.new(1, 0))
-	stroke(tabBar, C.STROKE)
+	-- If using a template, read the tab bar height from it so the user can resize tabs
+	local templateTabBar = root and root:FindFirstChild("TabBar")
+	if templateTabBar then
+		TAB_H = templateTabBar.Size.Y.Offset
+		TAB_INNER = TAB_H - 6
+	end
 
-	local tabScroll = Instance.new("ScrollingFrame")
-	tabScroll.Name = "tablist"
-	tabScroll.Size = UDim2.new(1, -12, 1, -8)
-	tabScroll.Position = UDim2.new(0, 6, 0, 4)
-	tabScroll.BackgroundTransparency = 1
-	tabScroll.BorderSizePixel = 0
-	tabScroll.ScrollBarThickness = 2
-	tabScroll.ScrollBarImageColor3 = Color3.fromRGB(90, 90, 90)
-	tabScroll.ScrollBarImageTransparency = 0.4
-	tabScroll.ScrollingDirection = Enum.ScrollingDirection.X
-	tabScroll.AutomaticCanvasSize = Enum.AutomaticSize.X
+	if not root then
+		root = frame({
+			Name = "Root",
+			Size = UDim2.new(0, WIN_W, 0, TAB_H + GAP + WIN_H),
+			Position = UDim2.new(0.5, -WIN_W / 2, 0.5, -(TAB_H + GAP + WIN_H) / 2),
+			BackgroundTransparency = 1,
+			ClipsDescendants = true,
+			Parent = sg,
+		})
+	else
+		root.Size = UDim2.new(0, WIN_W, 0, TAB_H + GAP + WIN_H)
+		root.Position = UDim2.new(0.5, -WIN_W / 2, 0.5, -(TAB_H + GAP + WIN_H) / 2)
+		root.BackgroundTransparency = 1
+		root.ClipsDescendants = true -- re-enable at runtime for door animation
+	end
+
+	local tabBar = root:FindFirstChild("TabBar")
+	if not tabBar then
+		tabBar = frame({
+			Name = "TabBar",
+			Size = UDim2.new(0, WIN_W, 0, TAB_H),
+			BackgroundColor3 = C.TAB_BAR,
+			Active = true,
+			Parent = root,
+		})
+		corner(tabBar, UDim.new(1, 0))
+		stroke(tabBar, C.STROKE)
+	else
+		-- Preserve template's tab bar size (user can customize it)
+		-- Only update background, stroke color, and ensure position is at top
+		tabBar.Position = UDim2.new(0, 0, 0, 0)
+		tabBar.BackgroundColor3 = C.TAB_BAR
+		tabBar.Active = true
+		local ts = tabBar:FindFirstChildOfClass("UIStroke")
+		if ts then ts.Color = C.STROKE end
+	end
+	tabBar.ZIndex = 10
+
+	local tabScroll = tabBar:FindFirstChild("tablist")
+	if not tabScroll then
+		tabScroll = Instance.new("ScrollingFrame")
+		tabScroll.Name = "tablist"
+		tabScroll.Size = UDim2.new(1, -12, 1, -8)
+		tabScroll.Position = UDim2.new(0, 6, 0, 4)
+		tabScroll.BackgroundTransparency = 1
+		tabScroll.BorderSizePixel = 0
+		tabScroll.ScrollBarThickness = 2
+		tabScroll.ScrollBarImageColor3 = Color3.fromRGB(90, 90, 90)
+		tabScroll.ScrollBarImageTransparency = 0.4
+		tabScroll.ScrollingDirection = Enum.ScrollingDirection.X
+		tabScroll.AutomaticCanvasSize = Enum.AutomaticSize.X
+		tabScroll.ElasticBehavior = Enum.ElasticBehavior.WhenScrollable
+		tabScroll.ScrollingEnabled = true
+		tabScroll.Active = true
+		tabScroll.Parent = tabBar
+		pad(tabScroll, 0, 0, 2, 2)
+	end
 	tabScroll.CanvasSize = UDim2.new()
-	tabScroll.ElasticBehavior = Enum.ElasticBehavior.WhenScrollable
-	tabScroll.ScrollingEnabled = true
-	tabScroll.Active = true
-	tabScroll.Parent = tabBar
-	pad(tabScroll, 0, 0, 2, 2)
 
-	local tabLayout = Instance.new("UIListLayout", tabScroll)
-	tabLayout.FillDirection = Enum.FillDirection.Horizontal
-	tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	tabLayout.Padding = UDim.new(0, 6)
-	tabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	local tabLayout = tabScroll:FindFirstChildOfClass("UIListLayout")
+	if not tabLayout then
+		tabLayout = Instance.new("UIListLayout", tabScroll)
+		tabLayout.FillDirection = Enum.FillDirection.Horizontal
+		tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		tabLayout.Padding = UDim.new(0, 6)
+		tabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	end
 
 	local hubConfig = genv.ZyrixHubConfig
 	local tabNames = {}
@@ -2881,24 +2922,42 @@ local function buildZyrixUI()
 	local firstOpen = true
 	local expandPanel, collapsePanel, hideUI, showUI
 
-	local main = frame({
-		Name = "main",
-		Size = UDim2.new(0, WIN_W, 0, WIN_H),
-		Position = UDim2.new(0, 0, 0, TAB_H + GAP),
-		BackgroundColor3 = C.WIN,
-		ClipsDescendants = true,
-		Active = true,
-		Parent = root,
-	})
-	corner(main, UDim.new(0, 16))
-	stroke(main, C.STROKE)
+	local main = root:FindFirstChild("main")
+	if not main then
+		main = frame({
+			Name = "main",
+			Size = UDim2.new(0, WIN_W, 0, WIN_H),
+			Position = UDim2.new(0, 0, 0, TAB_H + GAP),
+			BackgroundColor3 = C.WIN,
+			ClipsDescendants = true,
+			Active = true,
+			Parent = root,
+		})
+		corner(main, UDim.new(0, 16))
+		stroke(main, C.STROKE)
+	else
+		main.Size = UDim2.new(0, WIN_W, 0, WIN_H)
+		-- Don't set Position when UIListLayout is in Root (it handles positioning)
+		if not root:FindFirstChildOfClass("UIListLayout") then
+			main.Position = UDim2.new(0, 0, 0, TAB_H + GAP)
+		end
+		main.BackgroundColor3 = C.WIN
+		main.ClipsDescendants = true
+		main.Active = true
+		local ms = main:FindFirstChildOfClass("UIStroke")
+		if ms then ms.Color = C.STROKE end
+	end
 
 	local function styleTab(name, selected)
 		local b = tabButtons[name]
 		if not b then return end
+		local activeCol = b:GetAttribute("ActiveColor") or C.TAB_ACTIVE
+		local idleCol = b:GetAttribute("IdleColor") or C.TAB_IDLE
+		local activeText = b:GetAttribute("ActiveTextColor") or C.WHITE
+		local idleText = b:GetAttribute("IdleTextColor") or C.TEXT_DIM
 		tw(b, 0.18, {
-			BackgroundColor3 = selected and C.TAB_ACTIVE or C.TAB_IDLE,
-			TextColor3 = selected and C.WHITE or C.TEXT_DIM,
+			BackgroundColor3 = selected and activeCol or idleCol,
+			TextColor3 = selected and activeText or idleText,
 		})
 		local ind = b:FindFirstChild("ActiveIndicator")
 		if ind then
@@ -2906,6 +2965,8 @@ local function buildZyrixUI()
 			tw(ind, 0.18, {BackgroundTransparency = selected and 0 or 1})
 		end
 	end
+
+	local elements
 
 	local function refreshScroll()
 		if elements and elements.Parent then
@@ -2936,63 +2997,100 @@ local function buildZyrixUI()
 	end
 
 	for i, name in ipairs(tabNames) do
-		local t = btn({
-			Name = name,
-			Parent = tabScroll,
-			Size = UDim2.new(0, 0, 0, TAB_INNER),
-			AutomaticSize = Enum.AutomaticSize.X,
-			BackgroundColor3 = name == activeTab and C.TAB_ACTIVE or C.TAB_IDLE,
-			BackgroundTransparency = 0,
-			LayoutOrder = i,
-			Font = Enum.Font.GothamMedium,
-			TextSize = 12,
-			Text = name,
-			TextColor3 = name == activeTab and C.WHITE or C.TEXT_DIM,
-		})
-		corner(t, UDim.new(1, 0))
-		stroke(t, C.STROKE_IN, 0.8)
-		pad(t, 0, 0, 14, 14)
-		local ind = frame({
-			Name = "ActiveIndicator",
-			Size = UDim2.new(0.55, 0, 0, 2),
-			Position = UDim2.new(0.225, 0, 1, -4),
-			BackgroundColor3 = C.WHITE,
-			BackgroundTransparency = name == activeTab and 0 or 1,
-			Visible = name == activeTab,
-			Parent = t,
-		})
-		corner(ind, UDim.new(1, 0))
+		-- Use existing template tab button if present, otherwise create one
+		local t = tabScroll:FindFirstChild(name)
+		if t and t:IsA("TextButton") then
+			-- Existing template button: only set ordering and initial active/inactive state
+			-- All visual properties (Size, Font, TextSize, padding, stroke, etc.) are preserved from the template
+			t.LayoutOrder = i
+			local activeCol = t:GetAttribute("ActiveColor") or C.TAB_ACTIVE
+			local idleCol = t:GetAttribute("IdleColor") or C.TAB_IDLE
+			local activeText = t:GetAttribute("ActiveTextColor") or C.WHITE
+			local idleText = t:GetAttribute("IdleTextColor") or C.TEXT_DIM
+			t.BackgroundColor3 = name == activeTab and activeCol or idleCol
+			t.TextColor3 = name == activeTab and activeText or idleText
+		else
+			t = btn({
+				Name = name,
+				Parent = tabScroll,
+				Size = UDim2.new(0, 0, 0, TAB_INNER),
+				AutomaticSize = Enum.AutomaticSize.X,
+				BackgroundColor3 = name == activeTab and C.TAB_ACTIVE or C.TAB_IDLE,
+				BackgroundTransparency = 0,
+				LayoutOrder = i,
+				Font = Enum.Font.GothamMedium,
+				TextSize = 12,
+				Text = name,
+				TextColor3 = name == activeTab and C.WHITE or C.TEXT_DIM,
+			})
+			corner(t, UDim.new(1, 0))
+			stroke(t, C.STROKE_IN, 0.8)
+			pad(t, 0, 0, 10, 10)
+			local ind = frame({
+				Name = "ActiveIndicator",
+				Size = UDim2.new(0.55, 0, 0, 2),
+				Position = UDim2.new(0.225, 0, 1, -4),
+				BackgroundColor3 = C.WHITE,
+				BackgroundTransparency = name == activeTab and 0 or 1,
+				Visible = name == activeTab,
+				Parent = t,
+			})
+			corner(ind, UDim.new(1, 0))
+		end
 		t.MouseButton1Click:Connect(function() selectTab(name, true) end)
 		t.MouseEnter:Connect(function()
-			if activeTab ~= name then tw(t, 0.12, {BackgroundColor3 = C.HOVER}) end
+			if activeTab ~= name then
+				local hoverCol = t:GetAttribute("HoverColor") or C.HOVER
+				tw(t, 0.12, {BackgroundColor3 = hoverCol})
+			end
 		end)
 		t.MouseLeave:Connect(function()
-			if activeTab ~= name then tw(t, 0.12, {BackgroundColor3 = C.TAB_IDLE}) end
+			if activeTab ~= name then
+				local idleCol = t:GetAttribute("IdleColor") or C.TAB_IDLE
+				tw(t, 0.12, {BackgroundColor3 = idleCol})
+			end
 		end)
 		tabButtons[name] = t
 	end
 
-	local doorOverlay = frame({
-		Name = "DoorOverlay",
-		Size = UDim2.new(1, 0, 1, 0),
-		BackgroundTransparency = 1,
-		ClipsDescendants = true,
-		ZIndex = 50,
-		Active = false,
-		Parent = main,
-	})
-	local leftDoor = frame({ Name = "LeftDoor", Size = UDim2.new(0.5, 0, 1, 0), BackgroundColor3 = C.DOOR, ZIndex = 51, Parent = doorOverlay })
-	local rightDoor = frame({ Name = "RightDoor", Size = UDim2.new(0.5, 0, 1, 0), Position = UDim2.new(0.5, 0, 0, 0), BackgroundColor3 = C.DOOR, ZIndex = 51, Parent = doorOverlay })
-	local doorLogo = Instance.new("ImageLabel")
-	doorLogo.Size = UDim2.new(0, 72, 0, 72)
-	doorLogo.Position = UDim2.new(0.5, 0, 0.5, 0)
-	doorLogo.AnchorPoint = Vector2.new(0.5, 0.5)
-	doorLogo.BackgroundTransparency = 1
+	local doorOverlay = main:FindFirstChild("DoorOverlay")
+	if not doorOverlay then
+		doorOverlay = frame({
+			Name = "DoorOverlay",
+			Size = UDim2.new(1, 0, 1, 0),
+			BackgroundTransparency = 1,
+			ClipsDescendants = true,
+			ZIndex = 50,
+			Active = false,
+			Parent = main,
+		})
+	end
+	local leftDoor = doorOverlay:FindFirstChild("LeftDoor")
+	if not leftDoor then
+		leftDoor = frame({ Name = "LeftDoor", Size = UDim2.new(0.5, 0, 1, 0), BackgroundColor3 = C.DOOR, ZIndex = 51, Parent = doorOverlay })
+	else
+		leftDoor.BackgroundColor3 = C.DOOR
+	end
+	local rightDoor = doorOverlay:FindFirstChild("RightDoor")
+	if not rightDoor then
+		rightDoor = frame({ Name = "RightDoor", Size = UDim2.new(0.5, 0, 1, 0), Position = UDim2.new(0.5, 0, 0, 0), BackgroundColor3 = C.DOOR, ZIndex = 51, Parent = doorOverlay })
+	else
+		rightDoor.BackgroundColor3 = C.DOOR
+	end
+	local doorLogo = doorOverlay:FindFirstChild("DoorLogo")
+	if not doorLogo then
+		doorLogo = Instance.new("ImageLabel")
+		doorLogo.Name = "DoorLogo"
+		doorLogo.Size = UDim2.new(0, 72, 0, 72)
+		doorLogo.Position = UDim2.new(0.5, 0, 0.5, 0)
+		doorLogo.AnchorPoint = Vector2.new(0.5, 0.5)
+		doorLogo.BackgroundTransparency = 1
+		doorLogo.ScaleType = Enum.ScaleType.Fit
+		doorLogo.ZIndex = 54
+		doorLogo.Parent = doorOverlay
+	end
 	doorLogo.Image = Zyrix.Appearance.Icon
 	doorLogo.ImageColor3 = C.WHITE
-	doorLogo.ScaleType = Enum.ScaleType.Fit
-	doorLogo.ZIndex = 54
-	doorLogo.Parent = doorOverlay
 	local halfW = math.ceil(WIN_W / 2)
 
 	local function resetDoorsClosed()
@@ -3033,44 +3131,77 @@ local function buildZyrixUI()
 	end
 	resetDoorsClosed()
 
-	local header = frame({ Name = "Header", Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1, Active = true, Parent = main })
-	local logoBtn = btn({ Name = "openTab", Parent = header, Size = UDim2.new(0, 28, 0, 28), Position = UDim2.new(0, 8, 0.5, -14), BackgroundTransparency = 1 })
-	local logoImg = Instance.new("ImageLabel")
-	logoImg.Size = UDim2.new(1, 0, 1, 0)
-	logoImg.BackgroundTransparency = 1
+	local header = main:FindFirstChild("Header")
+	if not header then
+		header = frame({ Name = "Header", Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1, Active = true, Parent = main })
+	else
+		header.Active = true
+	end
+	local logoBtn = header:FindFirstChild("openTab")
+	if not logoBtn then
+		logoBtn = btn({ Name = "openTab", Parent = header, Size = UDim2.new(0, 28, 0, 28), Position = UDim2.new(0, 8, 0.5, -14), BackgroundTransparency = 1 })
+	end
+	local logoImg = logoBtn:FindFirstChildOfClass("ImageLabel")
+	if not logoImg then
+		logoImg = Instance.new("ImageLabel")
+		logoImg.Size = UDim2.new(1, 0, 1, 0)
+		logoImg.BackgroundTransparency = 1
+		logoImg.ScaleType = Enum.ScaleType.Fit
+		logoImg.Parent = logoBtn
+	end
 	logoImg.Image = Zyrix.Appearance.Icon
 	logoImg.ImageColor3 = C.TEXT
-	logoImg.ScaleType = Enum.ScaleType.Fit
-	logoImg.Parent = logoBtn
 	local hubTitle = string.lower((HubRegistry.windowConfig and HubRegistry.windowConfig.Name) or Zyrix.Appearance.Title or "zyrix")
-	lbl({ Parent = header, Size = UDim2.new(1, -50, 1, 0), Position = UDim2.new(0, 42, 0, 0), Text = hubTitle, Font = Enum.Font.GothamBold, TextSize = 17, TextColor3 = C.TEXT })
-	frame({ Size = UDim2.new(1, -16, 0, 1), Position = UDim2.new(0, 8, 0, 34), BackgroundColor3 = C.STROKE_IN, BackgroundTransparency = 0.35, Parent = main })
+	local titleLabel = header:FindFirstChild("Title")
+	if not titleLabel then
+		titleLabel = lbl({ Parent = header, Name = "Title", Size = UDim2.new(1, -50, 1, 0), Position = UDim2.new(0, 42, 0, 0), Text = hubTitle, Font = Enum.Font.GothamBold, TextSize = 17, TextColor3 = C.TEXT })
+	else
+		titleLabel.Text = hubTitle
+		titleLabel.TextColor3 = C.TEXT
+	end
+	local headerDivider = main:FindFirstChild("HeaderDivider")
+	if not headerDivider then
+		headerDivider = frame({ Name = "HeaderDivider", Size = UDim2.new(1, -16, 0, 1), Position = UDim2.new(0, 8, 0, 34), BackgroundColor3 = C.STROKE_IN, BackgroundTransparency = 0.35, Parent = main })
+	else
+		headerDivider.BackgroundColor3 = C.STROKE_IN
+		headerDivider.BackgroundTransparency = 0.35
+	end
 
-	local elements = Instance.new("ScrollingFrame")
-	elements.Name = "elements"
-	elements.Size = UDim2.new(1, -16, 1, -42)
-	elements.Position = UDim2.new(0, 8, 0, 38)
-	elements.BackgroundTransparency = 1
-	elements.BorderSizePixel = 0
-	elements.ScrollBarThickness = 3
-	elements.ScrollBarImageColor3 = Color3.fromRGB(120, 120, 120)
-	elements.ScrollBarImageTransparency = 0.25
-	elements.AutomaticCanvasSize = Enum.AutomaticSize.None
+	elements = main:FindFirstChild("elements")
+	if not elements then
+		elements = Instance.new("ScrollingFrame")
+		elements.Name = "elements"
+		elements.Size = UDim2.new(1, -16, 1, -42)
+		elements.Position = UDim2.new(0, 8, 0, 38)
+		elements.BackgroundTransparency = 1
+		elements.BorderSizePixel = 0
+		elements.ScrollBarThickness = 3
+		elements.ScrollBarImageColor3 = Color3.fromRGB(120, 120, 120)
+		elements.ScrollBarImageTransparency = 0.25
+		elements.AutomaticCanvasSize = Enum.AutomaticSize.None
+		elements.ScrollingEnabled = true
+		elements.Active = true
+		elements.ClipsDescendants = true
+		elements.ElasticBehavior = Enum.ElasticBehavior.WhenScrollable
+		elements.ScrollingDirection = Enum.ScrollingDirection.Y
+		elements.Parent = main
+		pad(elements, 4, 8, 2, 2)
+	end
 	elements.CanvasSize = UDim2.new(0, 0, 0, CONTENT_H)
-	elements.ScrollingEnabled = true
-	elements.Active = true
-	elements.ClipsDescendants = true
-	elements.ElasticBehavior = Enum.ElasticBehavior.WhenScrollable
-	elements.ScrollingDirection = Enum.ScrollingDirection.Y
-	elements.Parent = main
-	pad(elements, 4, 8, 2, 2)
 
-	local pageHost = frame({
-		Name = "PageHost",
-		Size = UDim2.new(1, 0, 0, CONTENT_H),
-		BackgroundTransparency = 1,
-		Parent = elements,
-	})
+	local pageHost = elements:FindFirstChild("PageHost")
+	if not pageHost then
+		pageHost = frame({
+			Name = "PageHost",
+			Size = UDim2.new(1, 0, 0, CONTENT_H),
+			BackgroundTransparency = 1,
+			Parent = elements,
+		})
+	else
+		pageHost:ClearAllChildren()
+	end
+	pageHost.Size = UDim2.new(1, 0, 0, CONTENT_H)
+	pageHost.BackgroundTransparency = 1
 
 	syncPageHeight = function(tabName)
 		local cols = tabPageCols[tabName]
@@ -3292,44 +3423,67 @@ local function buildZyrixUI()
 		})
 		corner(ddContainer, UDim.new(0, 6))
 		stroke(ddContainer, C.STROKE_IN)
+		pad(ddContainer, 8, 8, 10, 10)
 
+		-- Header: Title (left) + Selected (right) + Toggle (chevron image) + Interact (full hitbox)
 		local ddHeader = frame({ Size = UDim2.new(1, 0, 0, ROW_H), BackgroundTransparency = 1, Parent = ddContainer })
-		pad(ddHeader, 6, 6, 10, 10)
-		lbl({ Parent = ddHeader, Size = UDim2.new(0.35, 0, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 13, TextColor3 = C.TEXT })
+		lbl({ Parent = ddHeader, Size = UDim2.new(0.5, -22, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 13, TextColor3 = C.TEXT })
 		local ddSelected = lbl({
 			Parent = ddHeader,
-			Size = UDim2.new(0.45, 0, 1, 0),
-			Position = UDim2.new(0.35, 0, 0, 0),
+			Size = UDim2.new(0.4, 0, 1, 0),
+			Position = UDim2.new(0.5, -22, 0, 0),
 			Text = options[defaultIndex or 1] or options[1],
 			TextXAlignment = Enum.TextXAlignment.Right,
 			Font = Enum.Font.GothamMedium,
 			TextSize = 12,
 			TextColor3 = C.TEXT_DIM,
 		})
-		local ddArrow = btn({
+		-- Chevron image button (matching StarterGui dropdown template)
+		local ddArrow = Instance.new("ImageButton")
+		ddArrow.Name = "Toggle"
+		ddArrow.Parent = ddHeader
+		ddArrow.Size = UDim2.new(0, 20, 0, 20)
+		ddArrow.Position = UDim2.new(1, 0, 0.5, 0)
+		ddArrow.AnchorPoint = Vector2.new(1, 0.5)
+		ddArrow.BackgroundTransparency = 1
+		ddArrow.Image = "rbxassetid://3926305904"
+		ddArrow.ImageRectOffset = Vector2.new(564, 284)
+		ddArrow.ImageRectSize = Vector2.new(36, 36)
+		ddArrow.ImageColor3 = C.TEXT_DIM
+		ddArrow.ScaleType = Enum.ScaleType.Fit
+		ddArrow.AutoButtonColor = false
+
+		-- Full-header interact hitbox (matching template Interact at ZIndex 5)
+		local ddInteract = btn({
 			Parent = ddHeader,
-			Size = UDim2.new(0, 22, 0, 22),
-			Position = UDim2.new(1, -26, 0.5, -11),
+			Size = UDim2.new(1, 0, 1, 0),
+			ZIndex = 5,
 			BackgroundTransparency = 1,
-			Text = "▼",
-			Font = Enum.Font.Gotham,
-			TextSize = 10,
-			TextColor3 = C.TEXT_DIM,
+			Text = "",
 		})
 
-		local ddList = frame({
-			Name = "List",
-			Size = UDim2.new(1, -16, 0, 0),
-			Position = UDim2.new(0, 8, 0, ROW_H),
-			AutomaticSize = Enum.AutomaticSize.Y,
-			BackgroundColor3 = C.DD_LIST,
-			Visible = false,
-			Parent = ddContainer,
-		})
-		corner(ddList, UDim.new(0, 4))
-		stroke(ddList, C.STROKE_IN)
-		pad(ddList, 4, 6, 4, 4)
-		Instance.new("UIListLayout", ddList).Padding = UDim.new(0, 4)
+		-- List: Frame with AutomaticSize.Y (reliable for dropdown lists)
+		local ddList = Instance.new("Frame")
+		ddList.Name = "List"
+		ddList.Size = UDim2.new(1, 0, 0, 0)
+		ddList.Position = UDim2.new(0, 0, 0, ROW_H)
+		ddList.AutomaticSize = Enum.AutomaticSize.Y
+		ddList.BackgroundColor3 = C.DD_LIST
+		ddList.BackgroundTransparency = 1
+		ddList.BorderSizePixel = 0
+		ddList.ClipsDescendants = true
+		ddList.Visible = false
+		ddList.Parent = ddContainer
+		local listStroke = Instance.new("UIStroke")
+		listStroke.Color = C.STROKE_IN
+		listStroke.Thickness = 1
+		listStroke.Transparency = 1
+		listStroke.Parent = ddList
+		local listLayout = Instance.new("UIListLayout")
+		listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		listLayout.Padding = UDim.new(0, 4)
+		listLayout.Parent = ddList
+		pad(ddList, 4, 4, 4, 4)
 
 		local ddOpen = false
 		local function setOpen(state)
@@ -3350,30 +3504,50 @@ local function buildZyrixUI()
 			end
 		end)
 
-		for _, opt in ipairs(options) do
-			local item = btn({
+		-- Option items: Frame + Title + Interact + UIStroke + UICorner (matching template structure)
+		for i, opt in ipairs(options) do
+			local item = frame({
+				Name = "Option" .. i,
+				Size = UDim2.new(1, 0, 0, 28),
+				BackgroundColor3 = C.HOVER,
+				BackgroundTransparency = 1,
+				LayoutOrder = i,
 				Parent = ddList,
-				Size = UDim2.new(1, 0, 0, 30),
-				BackgroundColor3 = C.DD_ITEM,
-				Text = opt,
-				Font = Enum.Font.GothamMedium,
-				TextSize = 12,
-				TextColor3 = C.TEXT,
 			})
 			corner(item, UDim.new(0, 4))
-			item.TextXAlignment = Enum.TextXAlignment.Left
-			pad(item, 0, 8, 8, 8)
-			item.MouseButton1Click:Connect(function()
+			local itemStroke = Instance.new("UIStroke")
+			itemStroke.Color = Color3.fromRGB(50, 50, 50)
+			itemStroke.Thickness = 1
+			itemStroke.Transparency = 1
+			itemStroke.Parent = item
+			lbl({
+				Parent = item,
+				Size = UDim2.new(1, -12, 1, 0),
+				Position = UDim2.new(0, 6, 0, 0),
+				Text = opt,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				Font = Enum.Font.GothamMedium,
+				TextSize = 11,
+				TextColor3 = C.WHITE,
+			})
+			local itemInteract = btn({
+				Parent = item,
+				Size = UDim2.new(1, 0, 1, 0),
+				BackgroundTransparency = 1,
+				Text = "",
+				ZIndex = 2,
+			})
+			itemInteract.MouseButton1Click:Connect(function()
 				ddSelected.Text = opt
 				setOpen(false)
 				if callback then callback(opt) end
 			end)
-			item.MouseEnter:Connect(function() tw(item, 0.1, {BackgroundColor3 = C.HOVER}) end)
-			item.MouseLeave:Connect(function() tw(item, 0.1, {BackgroundColor3 = C.DD_ITEM}) end)
+			itemInteract.MouseEnter:Connect(function() tw(item, 0.1, {BackgroundTransparency = 0.6}) end)
+			itemInteract.MouseLeave:Connect(function() tw(item, 0.1, {BackgroundTransparency = 1}) end)
 		end
 
 		local function toggleDropdown() setOpen(not ddOpen) end
-		btn({ Parent = ddHeader, Size = UDim2.new(1, 0, 1, 0), ZIndex = 2 }).MouseButton1Click:Connect(toggleDropdown)
+		ddInteract.MouseButton1Click:Connect(toggleDropdown)
 		ddArrow.MouseButton1Click:Connect(toggleDropdown)
 	end
 
@@ -3565,22 +3739,37 @@ local function buildZyrixUI()
 
 	selectTab(activeTab)
 
-	local closeBtn = btn({
-		Name = "CloseToggle",
-		Parent = sg,
-		Size = UDim2.new(0, 40, 0, 40),
-		Position = UDim2.new(1, -14, 0, 14),
-		AnchorPoint = Vector2.new(1, 0),
-		BackgroundColor3 = C.TAB_BAR,
-		BackgroundTransparency = 0.05,
-		Text = "OPEN",
-		Font = Enum.Font.GothamBold,
-		TextSize = 9,
-		TextColor3 = C.TEXT,
-		ZIndex = 20,
-	})
-	corner(closeBtn, UDim.new(1, 0))
-	stroke(closeBtn, C.STROKE)
+	local closeBtn = sg:FindFirstChild("CloseToggle")
+	if not closeBtn then
+		closeBtn = btn({
+			Name = "CloseToggle",
+			Parent = sg,
+			Size = UDim2.new(0, 40, 0, 40),
+			Position = UDim2.new(1, -14, 0, 14),
+			AnchorPoint = Vector2.new(1, 0),
+			BackgroundColor3 = C.TAB_BAR,
+			BackgroundTransparency = 0.05,
+			Text = "OPEN",
+			Font = Enum.Font.GothamBold,
+			TextSize = 9,
+			TextColor3 = C.TEXT,
+			ZIndex = 20,
+		})
+		corner(closeBtn, UDim.new(1, 0))
+		stroke(closeBtn, C.STROKE)
+	else
+		closeBtn.Size = UDim2.new(0, 40, 0, 40)
+		closeBtn.Position = UDim2.new(1, -14, 0, 14)
+		closeBtn.AnchorPoint = Vector2.new(1, 0)
+		closeBtn.BackgroundColor3 = C.TAB_BAR
+		closeBtn.BackgroundTransparency = 0.05
+		closeBtn.Font = Enum.Font.GothamBold
+		closeBtn.TextSize = 9
+		closeBtn.TextColor3 = C.TEXT
+		closeBtn.ZIndex = 20
+		local cs = closeBtn:FindFirstChildOfClass("UIStroke")
+		if cs then cs.Color = C.STROKE end
+	end
 	closeBtn.MouseEnter:Connect(function() tw(closeBtn, 0.12, {BackgroundColor3 = C.HOVER}) end)
 	closeBtn.MouseLeave:Connect(function() tw(closeBtn, 0.12, {BackgroundColor3 = C.TAB_BAR}) end)
 
@@ -3670,7 +3859,8 @@ local function buildZyrixUI()
 
 	local function setCollapsed()
 		root.Size = UDim2.new(0, WIN_W, 0, TAB_H)
-		main.Size = UDim2.new(0, WIN_W, 0, 0)
+		main.Size = UDim2.new(0, WIN_W, 0, WIN_H)
+		main.Position = UDim2.new(0, 0, 0, TAB_H + GAP)
 		main.Visible = false
 		doorOverlay.Visible = false
 		doorOverlay.Active = false
@@ -3684,15 +3874,17 @@ local function buildZyrixUI()
 		uiAnimating = true
 		task.spawn(function()
 			root.Visible = true
+			root.Size = UDim2.new(0, WIN_W, 0, TOTAL_H)
 			main.Visible = true
 			main.Size = UDim2.new(0, WIN_W, 0, WIN_H)
+			main.Position = UDim2.new(0, 0, 0, TAB_H + GAP - WIN_H)
 			doorOverlay.Visible = true
 			doorOverlay.Active = true
 			leftDoor.Position = UDim2.new(0, 0, 0, 0)
 			rightDoor.Position = UDim2.new(0.5, 0, 0, 0)
 			doorLogo.ImageTransparency = 0
-			tw(root, 0.3, {Size = UDim2.new(0, WIN_W, 0, TOTAL_H)})
-			task.wait(0.32)
+			tw(main, 0.4, {Position = UDim2.new(0, 0, 0, TAB_H + GAP)}, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+			task.wait(0.42)
 			playOpenDoors(function()
 				uiExpanded = true
 				uiAnimating = false
@@ -3713,10 +3905,11 @@ local function buildZyrixUI()
 		if openDropdown then openDropdown:SetAttribute("ForceClose", true) end
 		task.spawn(function()
 			playCloseDoors(function()
-				tw(root, 0.28, {Size = UDim2.new(0, WIN_W, 0, TAB_H)})
-				tw(main, 0.28, {Size = UDim2.new(0, WIN_W, 0, 0)})
-				task.wait(0.3)
+				tw(main, 0.3, {Position = UDim2.new(0, 0, 0, TAB_H + GAP - WIN_H)}, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+				task.wait(0.32)
 				main.Visible = false
+				main.Position = UDim2.new(0, 0, 0, TAB_H + GAP)
+				root.Size = UDim2.new(0, WIN_W, 0, TAB_H)
 				uiExpanded = false
 				uiAnimating = false
 				updateCloseBtn()
