@@ -216,7 +216,8 @@ local function hasFileSystem()
 	local ok3, r3 = pcall(function() return type(isfile) == "function" end)
 	local ok4, r4 = pcall(function() return type(makefolder) == "function" end)
 	local ok5, r5 = pcall(function() return type(isfolder) == "function" end)
-	return ok1 and r1 and ok2 and r2 and ok3 and r3 and ok4 and r4 and ok5 and r5
+	local ok6, r6 = pcall(function() return type(delfile) == "function" end)
+	return ok1 and r1 and ok2 and r2 and ok3 and r3 and ok4 and r4 and ok5 and r5 and ok6 and r6
 end
 
 local fileSystemSupported = hasFileSystem()
@@ -344,7 +345,7 @@ end
 local function getHWID()
 	local hwid = nil
 	pcall(function() if gethwid then hwid = gethwid() end end)
-	if not hwid then pcall(function() if getgenv().HWID then hwid = getgenv().HWID end end) end
+	if not hwid then pcall(function() if genv.HWID then hwid = genv.HWID end end) end
 	if not hwid then pcall(function() if game.RobloxHWID then hwid = tostring(game.RobloxHWID) end end) end
 	if not hwid then
 		local player = cloneref(Players.LocalPlayer)
@@ -404,8 +405,8 @@ local function disableBlur()
 end
 
 local function fullCleanup()
-	getgenv().ZyrixLoaded = false
-	getgenv().ZyrixClosed = true
+	genv.ZyrixLoaded = false
+	genv.ZyrixClosed = true
 	disableBlur()
 	local gui1 = hui:FindFirstChild("ZyrixKeySystem")
 	local gui2 = hui:FindFirstChild("ZyrixKeylessSystem")
@@ -542,6 +543,7 @@ local function ShowLoadingScreen(onComplete)
 	gui.IgnoreGuiInset = true
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = hui
+	protectGui(gui)
 
 	local mobile = isMobile()
 
@@ -1491,8 +1493,8 @@ local function CreateUserInfoPanel(parent, windowWidth, panelHeight, panelWidth,
 end
 
 local function handleKeylessSkip()
-	getgenv().SCRIPT_KEY = "KEYLESS"
-	getgenv().ZyrixLoaded = false
+	genv.SCRIPT_KEY = "KEYLESS"
+	genv.ZyrixLoaded = false
 	task.spawn(function()
 		pcall(function() Zyrix:Notify("Access Granted", "Keyless access approved!", 3, "success") end)
 		fireOnSuccess()
@@ -1592,6 +1594,7 @@ local function BuildKeylessUI()
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.Parent = hui
+	protectGui(gui)
 
 	local ui = BuildCenteredUI(windowWidth, windowHeight, windowHeight, userPanelWidth, changelogPanelWidth, gap, {gui = gui})
 	local container = ui.container
@@ -1862,8 +1865,8 @@ local function BuildKeylessUI()
 
 	launchBtn.MouseButton1Click:Connect(function()
 		Zyrix:Notify("Launching", "Script loaded successfully!", 2, "success")
-		getgenv().SCRIPT_KEY = "KEYLESS"
-		getgenv().ZyrixLoaded = false
+		genv.SCRIPT_KEY = "KEYLESS"
+		genv.ZyrixLoaded = false
 		closeDoorsThenExit(function()
 			disableBlur()
 			TweenService:Create(container, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Position = UDim2.new(0.5, 0, -0.5, 0)}):Play()
@@ -1921,6 +1924,7 @@ local function BuildKeyUI()
 	screenGui.ResetOnSpawn = false
 	screenGui.IgnoreGuiInset = true
 	screenGui.Parent = hui
+	protectGui(screenGui)
 
 	local ui = BuildCenteredUI(windowWidth, windowHeight, baseWindowHeight, userPanelWidth, changelogPanelWidth, gap, {gui = screenGui})
 	local container = ui.container
@@ -2421,7 +2425,7 @@ local function BuildKeyUI()
 		end
 		redeemBtn.Active = true
 		if valid then
-			saveKey(key) getgenv().SCRIPT_KEY = key getgenv().ZyrixLoaded = false
+			saveKey(key) genv.SCRIPT_KEY = key genv.ZyrixLoaded = false
 			setStatus("success") Zyrix:Notify("Success", "Key validated successfully!", 2, "success") task.wait(1)
 			closeDoorsThenExit(function()
 				disableBlur()
@@ -2467,7 +2471,7 @@ function Zyrix:Launch()
 	Internal.IsJunkieMode = false
 	Internal.ValidateFunction = Zyrix.Callbacks.OnVerify
 	local hubOnly = Zyrix.Options.Keyless == true and Zyrix.Options.KeylessUI == false
-	local existingKey = getgenv().SCRIPT_KEY
+	local existingKey = genv.SCRIPT_KEY
 
 	local function openHub()
 		EnsureIconsReady(function()
@@ -2489,13 +2493,13 @@ function Zyrix:Launch()
 			end)
 			return
 		end
-		getgenv().SCRIPT_KEY = nil
+		genv.SCRIPT_KEY = nil
 	end
-	getgenv().ZyrixClosed = false
+	genv.ZyrixClosed = false
 
 	if hubOnly then
-		getgenv().SCRIPT_KEY = "KEYLESS"
-		getgenv().ZyrixLoaded = false
+		genv.SCRIPT_KEY = "KEYLESS"
+		genv.ZyrixLoaded = false
 		openHub()
 		return
 	end
@@ -2504,7 +2508,7 @@ function Zyrix:Launch()
 		if Zyrix.Options.Keyless == true then
 			if Zyrix.Options.KeylessUI == false then handleKeylessSkip() return end
 			BuildKeylessUI()
-			while not getgenv().SCRIPT_KEY do task.wait(0.1) end
+			while not genv.SCRIPT_KEY do task.wait(0.1) end
 			return
 		end
 		if Zyrix.Storage.AutoLoad and Internal.ValidateFunction then
@@ -2512,26 +2516,26 @@ function Zyrix:Launch()
 			if savedKey and savedKey ~= "" then
 				Zyrix:Notify("Checking", "Validating saved key...", 2, "shield") task.wait(0.5)
 				if validateKey(savedKey, Internal.ValidateFunction) then
-					getgenv().SCRIPT_KEY = savedKey
+					genv.SCRIPT_KEY = savedKey
 					Zyrix:Notify("Welcome Back", "Key validated!", 2, "success")
 					fireOnSuccess() return
 				else clearKey() Zyrix:Notify("Expired", "Saved key is no longer valid", 3, "warning") task.wait(1) end
 			end
 		end
 		BuildKeyUI()
-		while not getgenv().SCRIPT_KEY do task.wait(0.1) end
+		while not genv.SCRIPT_KEY do task.wait(0.1) end
 	end, true)
 end
 
 function Zyrix:LaunchJunkie(config)
 	assert(config and config.Service and config.Identifier and config.Provider, "Config required: Service, Identifier, Provider")
 	Internal.IsJunkieMode = true
-	local existingKey = getgenv().SCRIPT_KEY
+	local existingKey = genv.SCRIPT_KEY
 	if existingKey and existingKey ~= "" then
 		Zyrix:Notify("Executed", "Script loaded successfully!", 2, "success")
 		fireOnSuccess() return
 	end
-	getgenv().ZyrixClosed = false
+	genv.ZyrixClosed = false
 	EnsureIconsReady(function()
 		local success, Junkie = pcall(function() return loadstring(game:HttpGet("https://jnkie.com/sdk/library.lua"))() end)
 		if not success or not Junkie then Zyrix:Notify("Error", "Failed to load Junkie SDK", 5, "error") return end
@@ -2546,13 +2550,13 @@ function Zyrix:LaunchJunkie(config)
 			if ks and kr and type(kr) == "table" and kr.valid then
 				if Zyrix.Options.KeylessUI == false then handleKeylessSkip() return end
 				BuildKeylessUI()
-				while not getgenv().SCRIPT_KEY do task.wait(0.1) end
+				while not genv.SCRIPT_KEY do task.wait(0.1) end
 				return
 			end
 		elseif Zyrix.Options.Keyless == true then
 			if Zyrix.Options.KeylessUI == false then handleKeylessSkip() return end
 			BuildKeylessUI()
-			while not getgenv().SCRIPT_KEY do task.wait(0.1) end
+			while not genv.SCRIPT_KEY do task.wait(0.1) end
 			return
 		end
 		if Zyrix.Storage.AutoLoad then
@@ -2561,14 +2565,14 @@ function Zyrix:LaunchJunkie(config)
 				Zyrix:Notify("Checking", "Validating saved key...", 2, "shield") task.wait(0.5)
 				local vs, vr = pcall(function() return Junkie.check_key(savedKey) end)
 				if vs and vr and type(vr) == "table" and vr.valid then
-					getgenv().SCRIPT_KEY = savedKey
+					genv.SCRIPT_KEY = savedKey
 					Zyrix:Notify("Welcome Back", "Key validated!", 2, "success")
 					fireOnSuccess() return
 				else clearKey() Zyrix:Notify("Expired", "Saved key is no longer valid", 3, "warning") task.wait(1) end
 			end
 		end
 		BuildKeyUI()
-		while not getgenv().SCRIPT_KEY do task.wait(0.1) end
+		while not genv.SCRIPT_KEY do task.wait(0.1) end
 	end)
 end
 
@@ -2576,22 +2580,24 @@ function Zyrix:GetSavedKey() return loadKey() end
 function Zyrix:ClearSavedKey() return clearKey() end
 
 function Zyrix:Reset()
-	getgenv().ZyrixLoaded = false
-	getgenv().ZyrixClosed = false
-	getgenv().SCRIPT_KEY = nil
+	genv.ZyrixLoaded = false
+	genv.ZyrixClosed = false
+	genv.SCRIPT_KEY = nil
 	pcall(function()
-		if getgenv().ZyrixUI and getgenv().ZyrixUI._reset then
-			getgenv().ZyrixUI._reset()
+		if genv.ZyrixUI and genv.ZyrixUI._reset then
+			genv.ZyrixUI._reset()
 		end
 	end)
 	disableBlur()
+	local loadingBlur = Lighting:FindFirstChild("ZyrixLoadingBlur")
+	if loadingBlur then pcall(function() loadingBlur:Destroy() end) end
 	for _, guiName in ipairs({"ZyrixKeySystem", "ZyrixKeylessSystem", "ZyrixMainUI", "ZyrixLoadingScreen"}) do
 		local gui = hui:FindFirstChild(guiName)
 		if gui then pcall(function() gui:Destroy() end) end
 	end
 end
 
-getgenv().Zyrix = Zyrix
+genv.Zyrix = Zyrix
 
 local HubRegistry = {
 	tabs = {},
@@ -2634,8 +2640,8 @@ function Zyrix:CreateWindow(config)
 	HubRegistry.tabs = {}
 	HubRegistry.windowConfig = config or {}
 	applyWindowConfig(config)
-	if getgenv().ZyrixUI and getgenv().ZyrixUI._reset then
-		getgenv().ZyrixUI._reset()
+	if genv.ZyrixUI and genv.ZyrixUI._reset then
+		genv.ZyrixUI._reset()
 	end
 
 	local window = {}
@@ -2852,7 +2858,7 @@ local function buildZyrixUI()
 	tabLayout.Padding = UDim.new(0, 6)
 	tabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 
-	local hubConfig = getgenv().ZyrixHubConfig
+	local hubConfig = genv.ZyrixHubConfig
 	local tabNames = {}
 	local elementsByTab = nil
 	if #HubRegistry.tabs > 0 then
@@ -2902,13 +2908,15 @@ local function buildZyrixUI()
 	end
 
 	local function refreshScroll()
-		task.defer(function()
-			if elements and elements.Parent then
-				local saved = elements.CanvasPosition
-				elements.CanvasPosition = Vector2.new(0, 0)
-				elements.CanvasPosition = saved
-			end
-		end)
+		if elements and elements.Parent then
+			local saved = elements.CanvasPosition
+			elements.CanvasPosition = Vector2.new(0, 0)
+			task.defer(function()
+				if elements and elements.Parent then
+					elements.CanvasPosition = saved
+				end
+			end)
+		end
 	end
 
 	local function selectTab(name, shouldExpand)
@@ -3496,8 +3504,8 @@ local function buildZyrixUI()
 	end
 
 	if not buildHubElements() then
-		local Demo = getgenv().ZyrixDemoState or {}
-		getgenv().ZyrixDemoState = Demo
+		local Demo = genv.ZyrixDemoState or {}
+		genv.ZyrixDemoState = Demo
 		Demo.Aimbot = Demo.Aimbot or false
 		Demo.ESPRange = Demo.ESPRange or 750
 		Demo.TargetPart = Demo.TargetPart or "Head"
@@ -3840,12 +3848,12 @@ function ZyrixUI._reset()
 	end
 end
 
-getgenv().ZyrixUI = ZyrixUI
+genv.ZyrixUI = ZyrixUI
 
 
 fireOnSuccess = function()
 	task.spawn(function()
-		local ui = getgenv().ZyrixUI
+		local ui = genv.ZyrixUI
 		if ui and ui.Open then
 			local opened = ui:Open()
 			if opened and ui.Expand then
@@ -3871,14 +3879,15 @@ end
 -- Set genv.ZyrixSkipDefaultHub = true before loadstring if you use this as a library only.
 
 if not genv.ZyrixSkipDefaultHub then
+	local prevForceReload = genv.ZyrixForceReload
 	genv.ZyrixForceReload = true
 	if Zyrix.Reset then pcall(function() Zyrix:Reset() end) end
 	genv.ZyrixLoaded = false
 	genv.SCRIPT_KEY = nil
-	genv.ZyrixForceReload = false
+	genv.ZyrixForceReload = prevForceReload or false
 
-	local Demo = getgenv().ZyrixDemoState or {}
-	getgenv().ZyrixDemoState = Demo
+	local Demo = genv.ZyrixDemoState or {}
+	genv.ZyrixDemoState = Demo
 	Demo.Aimbot = Demo.Aimbot or false
 	Demo.ESPRange = Demo.ESPRange or 750
 	Demo.TargetPart = Demo.TargetPart or "Head"
