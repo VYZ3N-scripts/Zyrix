@@ -1,13 +1,18 @@
 --[[
+ ________   ________   ________   _______    ___        ___  ___   ___     
+|\   __  \ |\   __  \ |\   __  \ |\  ___ \  |\  \      |\  \|\  \ |\  \    
+\ \  \|\  \\ \  \|\  \\ \  \|\  \\ \   __/| \ \  \     \ \  \\\  \\ \  \   
+ \ \   __  \\ \   _  _\\ \  \\\  \\ \  \_|/__\ \  \     \ \  \\\  \\ \  \  
+  \ \  \ \  \\ \  \\  \|\ \  \\\  \\ \  \_|\ \\ \  \____ \ \  \\\  \\ \  \ 
+   \ \__\ \__\\ \__\\ _\ \ \_____  \\ \_______\\ \_______\\ \_______\\ \__\
+    \|__|\|__| \|__|\|__| \|___| \__\\|_______| \|_______| \|_______| \|__|
+                                \|__|                                      
+                                                                           
 
-███████╗██╗   ██╗██████╗ ██╗██╗  ██╗
-╚══███╔╝╚██╗ ██╔╝██╔══██╗██║╚██╗██╔╝
-  ███╔╝  ╚████╔╝ ██████╔╝██║ ╚███╔╝
- ███╔╝    ╚██╔╝  ██╔══██╗██║ ██╔██╗
-███████╗   ██║   ██║  ██║██║██╔╝ ██╗
-╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝
-
-    maker: Z4ITH
+     Github - https://github.com/Cobruhehe/expert-octo-doodle
+     Author: Cobru (Cobruhehe, .cobru)
+     License: MIT
+                                                                           
 ]]
 
 repeat task.wait() until game:IsLoaded()
@@ -29,44 +34,33 @@ local Workspace = cloneref(game:GetService("Workspace"))
 local RunService = cloneref(game:GetService("RunService"))
 local Lighting = cloneref(game:GetService("Lighting"))
 local Players = cloneref(game:GetService("Players"))
-local Players = game:GetService("Players")
-local CoreGui = game:GetService("CoreGui")
 
--- Robust function to find the best parent for the UI
 local function resolveGuiParent()
-    -- 1. Try gethui() first (standard across most modern executors)
-    local success, hui = pcall(function()
-        return gethui()
-    end)
-    if success and hui then
-        return hui
-    end
-
-    -- 2. Fallback to PlayerGui with proper cloning
-    local player = Players.LocalPlayer
-    local playerGui = player and player:FindFirstChildOfClass("PlayerGui")
-    if playerGui then
-        return cloneref and cloneref(playerGui) or playerGui
-    end
-
-    -- 3. Final fallback to CoreGui
-    return cloneref and cloneref(CoreGui) or CoreGui
+	local player = Players.LocalPlayer
+	if not player then
+		player = Players.PlayerAdded:Wait()
+	end
+	local playerGui = player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui", 15)
+	if playerGui then
+		return cloneref(playerGui)
+	end
+	local ok, parent = pcall(gethui)
+	if ok and parent then return parent end
+	return cloneref(game:GetService("CoreGui"))
 end
 
--- Improved protection function
 local function protectGui(gui)
-    if not gui then return end
-    
-    -- Protect using syn (Synapse) or fluxus/other environment methods
-    if syn and syn.protect_gui then
-        pcall(function() syn.protect_gui(gui) end)
-    elseif protect_gui then
-        pcall(function() protect_gui(gui) end)
-    end
+	if not gui then return end
+	pcall(function()
+		if syn and syn.protect_gui then syn.protect_gui(gui) end
+	end)
+	pcall(function()
+		if protectgui then protectgui(gui) end
+	end)
 end
 
--- Initialize
 local hui = resolveGuiParent()
+
 if genv.ZyrixLibraryOnly and genv.ZyrixLoaded and genv.Zyrix then
 	return genv.Zyrix
 end
@@ -2585,6 +2579,13 @@ end
 function Zyrix:GetSavedKey() return loadKey() end
 function Zyrix:ClearSavedKey() return clearKey() end
 
+function Zyrix:Refresh()
+	if genv.ZyrixUI and genv.ZyrixUI.Refresh then
+		return genv.ZyrixUI:Refresh()
+	end
+	return false
+end
+
 function Zyrix:Reset()
 	genv.ZyrixLoaded = false
 	genv.ZyrixClosed = false
@@ -2601,6 +2602,17 @@ function Zyrix:Reset()
 		local gui = hui:FindFirstChild(guiName)
 		if gui then pcall(function() gui:Destroy() end) end
 	end
+	-- Also search CoreGui and gethui() in case protectGui moved the GUI
+	pcall(function()
+		local parents = {game:GetService("CoreGui")}
+		if gethui then pcall(function() table.insert(parents, gethui()) end) end
+		for _, parent in ipairs(parents) do
+			for _, guiName in ipairs({"ZyrixKeySystem", "ZyrixKeylessSystem", "ZyrixMainUI", "ZyrixLoadingScreen"}) do
+				local gui = parent:FindFirstChild(guiName)
+				if gui then pcall(function() gui:Destroy() end) end
+			end
+		end
+	end)
 end
 
 genv.Zyrix = Zyrix
@@ -2691,7 +2703,10 @@ function Zyrix:CreateWindow(config)
 			end
 			local el = { Type = "dropdown", Text = opts.Name, Options = options, Default = defaultIndex, Callback = function(opt) if opts.Callback then opts.Callback({opt}) end end }
 			table.insert(tabData.Elements, el)
-			return { Set = function(_, val) local pick = type(val) == "table" and val[1] or val; if el._apply then el._apply(pick) end end }
+			return {
+				Set = function(_, val) local pick = type(val) == "table" and val[1] or val; if el._apply then el._apply(pick) end end,
+				SetOptions = function(_, newOptions) if el._setOptions then el._setOptions(newOptions) end end,
+			}
 		end
 		function tab:CreateKeybind(opts)
 			local el = { Type = "keybind", Text = opts.Name, Default = opts.CurrentKeybind or "Q", Callback = opts.Callback }
@@ -3007,10 +3022,23 @@ local function buildZyrixUI()
 		end
 	end
 
+	-- Remove stale template tab buttons that aren't in the current tabNames
+	for _, child in ipairs(tabScroll:GetChildren()) do
+		if child:IsA("TextButton") then
+			local found = false
+			for _, name in ipairs(tabNames) do
+				if child.Name == name then found = true break end
+			end
+			if not found then
+				child:Destroy()
+			end
+		end
+	end
+
 	for i, name in ipairs(tabNames) do
 		-- Use existing template tab button if present, otherwise create one
 		local t = tabScroll:FindFirstChild(name)
-		if t and t:IsA("TextButton") then
+		if t and t:IsA("TextButton") and not t:GetAttribute("_zyrixConnected") then
 			-- Existing template button: only set ordering and initial active/inactive state
 			-- All visual properties (Size, Font, TextSize, padding, stroke, etc.) are preserved from the template
 			t.LayoutOrder = i
@@ -3061,6 +3089,7 @@ local function buildZyrixUI()
 				tw(t, 0.12, {BackgroundColor3 = idleCol})
 			end
 		end)
+		t:SetAttribute("_zyrixConnected", true)
 		tabButtons[name] = t
 	end
 
@@ -3082,12 +3111,26 @@ local function buildZyrixUI()
 	else
 		leftDoor.BackgroundColor3 = C.DOOR
 	end
+	local mainCornerRadius = (main:FindFirstChildOfClass("UICorner") and main:FindFirstChildOfClass("UICorner").CornerRadius.Offset) or 16
+	local ldc = leftDoor:FindFirstChildOfClass("UICorner") or Instance.new("UICorner", leftDoor)
+	ldc.CornerRadius = UDim.new(0, 0)
+	ldc.TopLeftRadius = UDim.new(0, mainCornerRadius)
+	ldc.BottomLeftRadius = UDim.new(0, mainCornerRadius)
+	ldc.TopRightRadius = UDim.new(0, 0)
+	ldc.BottomRightRadius = UDim.new(0, 0)
+
 	local rightDoor = doorOverlay:FindFirstChild("RightDoor")
 	if not rightDoor then
 		rightDoor = frame({ Name = "RightDoor", Size = UDim2.new(0.5, 0, 1, 0), Position = UDim2.new(0.5, 0, 0, 0), BackgroundColor3 = C.DOOR, ZIndex = 51, Parent = doorOverlay })
 	else
 		rightDoor.BackgroundColor3 = C.DOOR
 	end
+	local rdc = rightDoor:FindFirstChildOfClass("UICorner") or Instance.new("UICorner", rightDoor)
+	rdc.CornerRadius = UDim.new(0, 0)
+	rdc.TopRightRadius = UDim.new(0, mainCornerRadius)
+	rdc.BottomRightRadius = UDim.new(0, mainCornerRadius)
+	rdc.TopLeftRadius = UDim.new(0, 0)
+	rdc.BottomLeftRadius = UDim.new(0, 0)
 	local doorLogo = doorOverlay:FindFirstChild("DoorLogo")
 	if not doorLogo then
 		doorLogo = Instance.new("ImageLabel")
@@ -3199,6 +3242,14 @@ local function buildZyrixUI()
 		pad(elements, 4, 8, 2, 2)
 	end
 	elements.CanvasSize = UDim2.new(0, 0, 0, CONTENT_H)
+
+	-- Clean up stale children in elements (keep only PageHost, UIPadding, UIListLayout)
+	for _, child in ipairs(elements:GetChildren()) do
+		local n = child.Name
+		if n ~= "PageHost" and not child:IsA("UIPadding") and not child:IsA("UIListLayout") then
+			child:Destroy()
+		end
+	end
 
 	local pageHost = elements:FindFirstChild("PageHost")
 	if not pageHost then
@@ -3423,7 +3474,7 @@ local function buildZyrixUI()
 		end)
 	end
 
-	local function addDropdown(parent, title, order, options, defaultIndex, callback)
+	local function addDropdown(parent, title, order, options, defaultIndex, callback, el)
 		local ddContainer = frame({
 			Name = "Dropdown",
 			Size = UDim2.new(1, 0, 0, 0),
@@ -3516,7 +3567,7 @@ local function buildZyrixUI()
 		end)
 
 		-- Option items: Frame + Title + Interact + UIStroke + UICorner (matching template structure)
-		for i, opt in ipairs(options) do
+		local function createOptionItem(i, opt)
 			local item = frame({
 				Name = "Option" .. i,
 				Size = UDim2.new(1, 0, 0, 28),
@@ -3555,6 +3606,31 @@ local function buildZyrixUI()
 			end)
 			itemInteract.MouseEnter:Connect(function() tw(item, 0.1, {BackgroundTransparency = 0.6}) end)
 			itemInteract.MouseLeave:Connect(function() tw(item, 0.1, {BackgroundTransparency = 1}) end)
+		end
+
+		for i, opt in ipairs(options) do
+			createOptionItem(i, opt)
+		end
+
+		-- Allow runtime option updates
+		local function setOptions(newOptions)
+			for _, child in ipairs(ddList:GetChildren()) do
+				if child:IsA("Frame") and child.Name:match("^Option") then
+					child:Destroy()
+				end
+			end
+			for i, opt in ipairs(newOptions) do
+				createOptionItem(i, opt)
+			end
+			ddSelected.Text = newOptions[1] or options[defaultIndex or 1] or ""
+		end
+
+		if el then
+			el._apply = function(opt)
+				ddSelected.Text = tostring(opt)
+				if callback then callback(opt) end
+			end
+			el._setOptions = setOptions
 		end
 
 		local function toggleDropdown() setOpen(not ddOpen) end
@@ -3651,7 +3727,7 @@ local function buildZyrixUI()
 		elseif t == "keybind" then
 			addKeybind(parent, item.Text or "Keybind", i, item.Default or "Q", item.Callback)
 		elseif t == "dropdown" then
-			addDropdown(parent, item.Text or "Dropdown", i, item.Options or {"Option 1"}, item.Default or 1, item.Callback)
+			addDropdown(parent, item.Text or "Dropdown", i, item.Options or {"Option 1"}, item.Default or 1, item.Callback, item)
 		elseif t == "button" then
 			addButton(parent, item.Text or "Button", i, item.Callback)
 		elseif t == "input" then
@@ -4039,6 +4115,11 @@ end
 
 function ZyrixUI:Close()
 	if uiClosePanel then uiClosePanel() end
+end
+
+function ZyrixUI:Refresh()
+	ZyrixUI._reset()
+	return ZyrixUI:Open()
 end
 
 function ZyrixUI._reset()
