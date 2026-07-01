@@ -171,7 +171,7 @@ local IconFiles = {
 	loading = "nonicons--loading-16.png",
 	close = "material-symbols--dangerous-outline.png",
 	changelog = "ant-design--sync-outlined.png",
-	logo = "cf3bbcac-5bf5-46fc-bf29-acb988ba1362.png",
+	logo = "rrjlGmac.png",
 	user = "U.png",
 	clock = "Clock.png",
 	cart = "Cart.png",
@@ -199,7 +199,7 @@ local FallbackIcons = {
 local CachedIcons = {}
 local FolderName = "Zyrix"
 local IconsFolder = "Icons"
-local DefaultLogoAsset = "rbxassetid://105436073524298"
+local DefaultLogoAsset = "rbxassetid://94718337725407"
 
 local function isMobile()
 	return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
@@ -2104,7 +2104,7 @@ local function BuildKeyUI()
 		iconImg.Size = UDim2.new(0, 18, 0, 18)
 		iconImg.BackgroundTransparency = 1
 		iconImg.Image = getIcon(iconKey)
-		iconImg.ImageColor3 = Zyrix.Theme.Text
+		iconImg.ImageColor3 = isPrimary and Zyrix.Theme.Background or Zyrix.Theme.Text
 		iconImg.ScaleType = Enum.ScaleType.Fit
 		iconImg.LayoutOrder = 1
 		iconImg.Parent = content
@@ -2114,7 +2114,7 @@ local function BuildKeyUI()
 		label.AutomaticSize = Enum.AutomaticSize.X
 		label.BackgroundTransparency = 1
 		label.Text = text
-		label.TextColor3 = Zyrix.Theme.Text
+		label.TextColor3 = isPrimary and Zyrix.Theme.Background or Zyrix.Theme.Text
 		label.TextSize = mobile and 14 or 15
 		label.Font = Enum.Font.ArimoBold
 		label.LayoutOrder = 2
