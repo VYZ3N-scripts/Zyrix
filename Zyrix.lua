@@ -3385,7 +3385,7 @@ local function buildZyrixUI()
 	end
 	doorLogo.Image = Zyrix.Appearance.Icon
 	-- Preserve template's door logo color if user customized it
-	if not _templateRoot:GetAttribute("Color_WHITE") then
+	if not (_templateRoot and _templateRoot:GetAttribute("Color_WHITE")) then
 		doorLogo.ImageColor3 = C.WHITE
 	end
 	local halfW = math.ceil(WIN_W / 2)
@@ -3448,7 +3448,7 @@ local function buildZyrixUI()
 	end
 	logoImg.Image = Zyrix.Appearance.Icon
 	-- Preserve template's logo color if user customized it
-	if not _templateRoot:GetAttribute("Color_TEXT") then
+	if not (_templateRoot and _templateRoot:GetAttribute("Color_TEXT")) then
 		logoImg.ImageColor3 = C.TEXT
 	end
 	local hubTitle = string.lower((HubRegistry.windowConfig and HubRegistry.windowConfig.Name) or Zyrix.Appearance.Title or "zyrix")
@@ -3733,7 +3733,7 @@ local function buildZyrixUI()
 		-- Build dropdown using Instance.new (matching dropdownn_11409 template)
 		ddContainer = Instance.new("Frame")
 		ddContainer.Name = "Dropdown"
-		ddContainer.Size = UDim2.new(1, 0, 0, 50)
+		ddContainer.Size = UDim2.new(1, 0, 0, 0)
 		ddContainer.AutomaticSize = Enum.AutomaticSize.Y
 		ddContainer.BackgroundColor3 = Color3.fromRGB(23, 23, 23)
 		ddContainer.BorderSizePixel = 0
@@ -3766,7 +3766,7 @@ local function buildZyrixUI()
 		ddTitle.Size = UDim2.new(0, 100, 0, 24)
 		ddTitle.BorderColor3 = Color3.fromRGB(28, 43, 54)
 		ddTitle.Text = title
-		ddTitle.Position = UDim2.new(-0.00725, 0, 0.14706, 0)
+		ddTitle.Position = UDim2.new(0, 0, 0, 0)
 		ddTitle.Parent = ddContainer
 
 		ddSelected = Instance.new("TextLabel")
@@ -3783,7 +3783,7 @@ local function buildZyrixUI()
 		ddSelected.Size = UDim2.new(0, 70, 0, 24)
 		ddSelected.BorderColor3 = Color3.fromRGB(28, 43, 54)
 		ddSelected.Text = options[defaultIndex or 1] or options[1] or ""
-		ddSelected.Position = UDim2.new(0.99638, -32, 0.14706, 0)
+		ddSelected.Position = UDim2.new(1, -32, 0, 0)
 		ddSelected.Parent = ddContainer
 
 		ddArrow = Instance.new("ImageButton")
@@ -3799,7 +3799,7 @@ local function buildZyrixUI()
 		ddArrow.LayoutOrder = 9
 		ddArrow.BorderColor3 = Color3.fromRGB(28, 43, 54)
 		ddArrow.ImageRectOffset = Vector2.new(564, 284)
-		ddArrow.Position = UDim2.new(0.94928, -4, 0.5, -10)
+		ddArrow.Position = UDim2.new(1, -24, 0, 2)
 		ddArrow.Parent = ddContainer
 
 		ddInteract = Instance.new("TextButton")
@@ -3813,7 +3813,7 @@ local function buildZyrixUI()
 		ddInteract.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium, Enum.FontStyle.Normal)
 		ddInteract.ZIndex = 5
 		ddInteract.BackgroundTransparency = 1
-		ddInteract.Size = UDim2.new(1, 0, 1, 0)
+		ddInteract.Size = UDim2.new(1, 0, 0, 24)
 		ddInteract.BorderColor3 = Color3.fromRGB(28, 43, 54)
 		ddInteract.Text = ""
 		ddInteract.Parent = ddContainer
@@ -3827,9 +3827,9 @@ local function buildZyrixUI()
 		ddList.ScrollBarImageTransparency = 0.7
 		ddList.BackgroundColor3 = Color3.fromRGB(19, 19, 19)
 		ddList.AutomaticCanvasSize = Enum.AutomaticSize.Y
-		ddList.Size = UDim2.new(1.08696, 0, 0, 0)
+		ddList.Size = UDim2.new(1, 0, 0, 0)
 		ddList.ScrollBarImageColor3 = Color3.fromRGB(141, 141, 141)
-		ddList.Position = UDim2.new(-0.04348, 0, 1.11765, 4)
+		ddList.Position = UDim2.new(0, 0, 0, 24)
 		ddList.BorderColor3 = Color3.fromRGB(28, 43, 54)
 		ddList.ScrollBarThickness = 2
 		ddList.ClipsDescendants = true
@@ -3871,7 +3871,7 @@ local function buildZyrixUI()
 				local dp = ddList:FindFirstChildOfClass("UIPadding")
 				if dp then padH = dp.PaddingTop.Offset + dp.PaddingBottom.Offset end
 				local maxH = 150
-				ddList.Size = UDim2.new(1.08696, 0, 0, math.min(contentH + padH, maxH))
+				ddList.Size = UDim2.new(1, 0, 0, math.min(contentH + padH, maxH))
 				ddList.CanvasSize = UDim2.new(0, 0, 0, contentH + padH)
 			end
 			if ddArrow then tw(ddArrow, 0.12, {Rotation = state and 180 or 0}) end
