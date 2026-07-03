@@ -398,6 +398,8 @@ local function CreateDoorOverlay(parentFrame, width, height)
 	overlay.ClipsDescendants = true
 	overlay.ZIndex = 50
 	overlay.Parent = parentFrame
+	local parentCorner = parentFrame:FindFirstChildOfClass("UICorner")
+	local parentRadius = (parentCorner and parentCorner.CornerRadius.Offset) or 16
 	local leftDoor = Instance.new("Frame")
 	leftDoor.Name = "LeftDoor"
 	leftDoor.Size = UDim2.new(0.5, 0, 1, 0)
@@ -406,6 +408,12 @@ local function CreateDoorOverlay(parentFrame, width, height)
 	leftDoor.BorderSizePixel = 0
 	leftDoor.ZIndex = 51
 	leftDoor.Parent = overlay
+	local ldc = Instance.new("UICorner", leftDoor)
+	ldc.CornerRadius = UDim.new(0, 0)
+	ldc.TopLeftRadius = UDim.new(0, parentRadius)
+	ldc.BottomLeftRadius = UDim.new(0, parentRadius)
+	ldc.TopRightRadius = UDim.new(0, 0)
+	ldc.BottomRightRadius = UDim.new(0, 0)
 	local rightDoor = Instance.new("Frame")
 	rightDoor.Name = "RightDoor"
 	rightDoor.Size = UDim2.new(0.5, 0, 1, 0)
@@ -414,6 +422,12 @@ local function CreateDoorOverlay(parentFrame, width, height)
 	rightDoor.BorderSizePixel = 0
 	rightDoor.ZIndex = 51
 	rightDoor.Parent = overlay
+	local rdc = Instance.new("UICorner", rightDoor)
+	rdc.CornerRadius = UDim.new(0, 0)
+	rdc.TopRightRadius = UDim.new(0, parentRadius)
+	rdc.BottomRightRadius = UDim.new(0, parentRadius)
+	rdc.TopLeftRadius = UDim.new(0, 0)
+	rdc.BottomLeftRadius = UDim.new(0, 0)
 	local logoSize = math.min(width, height) * 0.28
 	local logoImage = Instance.new("ImageLabel")
 	logoImage.Name = "DoorLogo"
@@ -2360,24 +2374,24 @@ function Zyrix:CreateWindow(config)
 			table.insert(tabData.Elements, { Type = "section", Text = title })
 		end
 		function tab:CreateButton(opts)
-			local el = { Type = "button", Text = opts.Name, Callback = opts.Callback }
+			local el = { Type = "button", Text = opts.Name, Callback = opts.Callback, Side = opts.Side }
 			table.insert(tabData.Elements, el)
 			return { Set = function(_, val) el.Text = val end }
 		end
 		function tab:CreateToggle(opts)
-			local el = { Type = "toggle", Text = opts.Name, Default = opts.CurrentValue == true, Callback = opts.Callback }
+			local el = { Type = "toggle", Text = opts.Name, Default = opts.CurrentValue == true, Callback = opts.Callback, Side = opts.Side }
 			table.insert(tabData.Elements, el)
 			return { Set = function(_, val) el.Default = val == true; if el._apply then el._apply(el.Default, true) end end }
 		end
 		function tab:CreateSlider(opts)
 			local range = opts.Range or {0, 100}
 			local minV, maxV = range[1], range[2]
-			local el = { Type = "slider", Text = opts.Name, Min = minV, Max = maxV, Default = (opts.CurrentValue - minV) / math.max(maxV - minV, 1), Callback = opts.Callback, Suffix = opts.Suffix }
+			local el = { Type = "slider", Text = opts.Name, Min = minV, Max = maxV, Default = (opts.CurrentValue - minV) / math.max(maxV - minV, 1), Callback = opts.Callback, Suffix = opts.Suffix, Side = opts.Side }
 			table.insert(tabData.Elements, el)
 			return { Set = function(_, val) el.Default = (val - minV) / math.max(maxV - minV, 1); if el._apply then el._apply(el.Default, true) end end }
 		end
 		function tab:CreateInput(opts)
-			local el = { Type = "input", Text = opts.Name, Placeholder = opts.PlaceholderText or "", Callback = opts.Callback }
+			local el = { Type = "input", Text = opts.Name, Placeholder = opts.PlaceholderText or "", Callback = opts.Callback, Side = opts.Side }
 			table.insert(tabData.Elements, el)
 			return { Set = function(_, val) if el._box then el._box.Text = tostring(val) end end }
 		end
@@ -2388,7 +2402,7 @@ function Zyrix:CreateWindow(config)
 			if type(current) == "table" and current[1] then
 				for i, opt in ipairs(options) do if opt == current[1] then defaultIndex = i break end end
 			end
-			local el = { Type = "dropdown", Text = opts.Name, Options = options, Default = defaultIndex, Callback = function(opt) if opts.Callback then opts.Callback({opt}) end end }
+			local el = { Type = "dropdown", Text = opts.Name, Options = options, Default = defaultIndex, Callback = function(opt) if opts.Callback then opts.Callback({opt}) end end, Side = opts.Side }
 			table.insert(tabData.Elements, el)
 			return {
 				Set = function(_, val) local pick = type(val) == "table" and val[1] or val; if el._apply then el._apply(pick) end end,
@@ -2396,12 +2410,12 @@ function Zyrix:CreateWindow(config)
 			}
 		end
 		function tab:CreateKeybind(opts)
-			local el = { Type = "keybind", Text = opts.Name, Default = opts.CurrentKeybind or "Q", Callback = opts.Callback }
+			local el = { Type = "keybind", Text = opts.Name, Default = opts.CurrentKeybind or "Q", Callback = opts.Callback, Side = opts.Side }
 			table.insert(tabData.Elements, el)
 			return { Set = function(_, val) if el._apply then el._apply(val) end end }
 		end
 		function tab:CreateLabel(text)
-			table.insert(tabData.Elements, { Type = "label", Text = text })
+			table.insert(tabData.Elements, { Type = "label", Text = text, Side = nil })
 			return { Set = function(_, val) end }
 		end
 		function tab:CreateDivider()
@@ -2533,7 +2547,7 @@ local function buildZyrixUI()
 	end
 	local WIN_W = readNum("Size_WIN_W", 660)
 	local WIN_H = readNum("Size_WIN_H", 440)
-	local TAB_H = readNum("Size_TAB_H", 50)
+	local TAB_H = readNum("Size_TAB_H", 44)
 	local GAP = readNum("Size_GAP", 10)
 	local ROW_H = readNum("Size_ROW_H", 44)
 	local SLIDER_ROW_H = readNum("Size_SLIDER_ROW_H", 52)
@@ -2899,6 +2913,12 @@ local function buildZyrixUI()
 		local t = tabScroll:FindFirstChild(name)
 		if t and t:IsA("TextButton") and not t:GetAttribute("_zyrixConnected") then
 			t.LayoutOrder = i
+			t.Size = UDim2.new(0, 91, 0, 33)
+			t.AutomaticSize = Enum.AutomaticSize.None
+			t.TextSize = 13
+			t.Font = Enum.Font.GothamMedium
+			t.TextXAlignment = Enum.TextXAlignment.Center
+			t.TextYAlignment = Enum.TextYAlignment.Center
 			local activeCol = t:GetAttribute("ActiveColor") or C.TAB_ACTIVE
 			local idleCol = t:GetAttribute("IdleColor") or C.TAB_IDLE
 			local activeText = t:GetAttribute("ActiveTextColor") or C.WHITE
@@ -2909,8 +2929,8 @@ local function buildZyrixUI()
 			t = btn({
 				Name = name,
 				Parent = tabScroll,
-				Size = UDim2.new(0, 0, 0, TAB_INNER),
-				AutomaticSize = Enum.AutomaticSize.X,
+				Size = UDim2.new(0, 91, 0, 33),
+				AutomaticSize = Enum.AutomaticSize.None,
 				BackgroundColor3 = name == activeTab and C.TAB_ACTIVE or C.TAB_IDLE,
 				BackgroundTransparency = 0,
 				LayoutOrder = i,
@@ -2950,16 +2970,17 @@ local function buildZyrixUI()
 		tabButtons[name] = t
 	end
 	local doorOverlay = main:FindFirstChild("DoorOverlay")
-	if not doorOverlay then
-		doorOverlay = frame({
-			Name = "DoorOverlay",
-			Size = UDim2.new(1, 0, 1, 0),
-			BackgroundTransparency = 1,
-			ClipsDescendants = true,
-			ZIndex = 50,
-			Active = false,
-			Parent = main,
-		})
+	if not doorOverlay or doorOverlay.ClassName ~= "Frame" then
+		if doorOverlay then doorOverlay:Destroy() end
+		doorOverlay = Instance.new("Frame")
+		doorOverlay.Name = "DoorOverlay"
+		doorOverlay.BorderSizePixel = 0
+		doorOverlay.Size = UDim2.new(1, 0, 1, 0)
+		doorOverlay.BackgroundTransparency = 1
+		doorOverlay.ClipsDescendants = true
+		doorOverlay.ZIndex = 50
+		doorOverlay.Active = false
+		doorOverlay.Parent = main
 	end
 	local leftDoor = doorOverlay:FindFirstChild("LeftDoor")
 	if not leftDoor then
@@ -2970,6 +2991,8 @@ local function buildZyrixUI()
 		end
 	end
 	local mainCornerRadius = (main:FindFirstChildOfClass("UICorner") and main:FindFirstChildOfClass("UICorner").CornerRadius.Offset) or 16
+	local doc = doorOverlay:FindFirstChildOfClass("UICorner") or Instance.new("UICorner", doorOverlay)
+	doc.CornerRadius = UDim.new(0, mainCornerRadius)
 	local ldc = leftDoor:FindFirstChildOfClass("UICorner") or Instance.new("UICorner", leftDoor)
 	ldc.CornerRadius = UDim.new(0, 0)
 	ldc.TopLeftRadius = UDim.new(0, mainCornerRadius)
@@ -3179,21 +3202,31 @@ local function buildZyrixUI()
 		})
 		local rightList = Instance.new("UIListLayout", rightCol)
 		rightList.SortOrder = Enum.SortOrder.LayoutOrder
-		rightList.Padding = UDim.new(0, 8)
+		rightList.Padding = UDim.new(0, 2)
 		bindColumnAutoHeight(tabName, leftCol, leftList)
 		bindColumnAutoHeight(tabName, rightCol, rightList)
 		tabPages[tabName] = page
 		tabPageCols[tabName] = { left = leftCol, right = rightCol }
 		return leftCol, rightCol
 	end
-	local function getElementParent(tabName, itemType)
+	local function getElementParent(tabName, itemType, side)
 		local cols = tabPageCols[tabName]
 		if not cols then return nil end
+		local s = string.lower(side or "")
+		if s == "right" then return cols.right end
+		if s == "left" then return cols.left end
 		if string.lower(itemType or "") == "dropdown" then return cols.right end
 		return cols.left
 	end
 	local function row(parent, name, height, order)
-		if order > 1 then
+		local hasContent = false
+		for _, child in ipairs(parent:GetChildren()) do
+			if child:IsA("GuiObject") and not child:IsA("UIPadding") and not child:IsA("UIListLayout") then
+				hasContent = true
+				break
+			end
+		end
+		if hasContent then
 			frame({
 				Name = "Divider",
 				Size = UDim2.new(1, 0, 0, 2),
@@ -3228,7 +3261,7 @@ local function buildZyrixUI()
 	local function addToggle(parent, title, order, defaultOn, callback, el)
 		local toggleRow = row(parent, "Toggle", ROW_H, order)
 		lbl({ Parent = toggleRow, Size = UDim2.new(1, -56, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 14, TextColor3 = C.TEXT })
-		local switch = frame({ Parent = toggleRow, Size = UDim2.new(0, 42, 0, 22), Position = UDim2.new(1, -48, 0.5, -11), BackgroundColor3 = C.INNER })
+		local switch = frame({ Parent = toggleRow, Size = UDim2.new(0, 42, 0, 22), Position = UDim2.new(1, -48, 0.5, -11), BackgroundColor3 = defaultOn and C.STROKE_IN or C.INNER })
 		corner(switch, UDim.new(1, 0))
 		stroke(switch, C.STROKE_IN)
 		local knob = frame({
@@ -3245,10 +3278,16 @@ local function buildZyrixUI()
 				Position = on and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0, 2, 0.5, -9),
 				BackgroundColor3 = on and C.KNOB_ON or C.KNOB_OFF,
 			})
+			tw(switch, 0.15, {
+				BackgroundColor3 = on and C.STROKE_IN or C.INNER,
+			})
 			if callback and not skipCb then callback(on) end
 		end
 		if el then el._apply = applyState end
-		btn({ Parent = toggleRow, Size = UDim2.new(1, 0, 1, 0), ZIndex = 2 }).MouseButton1Click:Connect(function()
+		local toggleBtn = btn({ Parent = toggleRow, Size = UDim2.new(1, 0, 1, 0), ZIndex = 2 })
+		toggleBtn.MouseEnter:Connect(function() tw(toggleRow, 0.12, {BackgroundColor3 = C.INNER}) end)
+		toggleBtn.MouseLeave:Connect(function() tw(toggleRow, 0.12, {BackgroundColor3 = C.PANEL}) end)
+		toggleBtn.MouseButton1Click:Connect(function()
 			applyState(not on)
 		end)
 	end
@@ -3281,9 +3320,13 @@ local function buildZyrixUI()
 			TextTransparency = 0.3,
 			ZIndex = 2,
 		})
-		local function setSlider(pct, skipCb)
+		local function setSlider(pct, skipCb, instant)
 			pct = math.clamp(pct, 0, 1)
-			sliderFill.Size = UDim2.new(pct, 0, 1, 0)
+			if instant then
+				sliderFill.Size = UDim2.new(pct, 0, 1, 0)
+			else
+				tw(sliderFill, 0.12, {Size = UDim2.new(pct, 0, 1, 0)})
+			end
 			sliderInfo.Text = formatSlider(pct)
 			if callback and not skipCb then
 				local val = minValue + pct * maxValue
@@ -3292,19 +3335,19 @@ local function buildZyrixUI()
 		end
 		if el then el._apply = function(pct, skipCb) setSlider(pct, skipCb) end end
 		sliderRegistry[sliderTrack] = setSlider
-		setSlider(defaultPct, true)
+		setSlider(defaultPct, true, true)
 		btn({ Parent = sliderTrack, Size = UDim2.new(1, 0, 1, 0), ZIndex = 3 }).InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 				sliderDragTrack = sliderTrack
 				local ax, aw = sliderTrack.AbsolutePosition.X, sliderTrack.AbsoluteSize.X
-				setSlider((input.Position.X - ax) / aw)
+				setSlider((input.Position.X - ax) / aw, nil, true)
 			end
 		end)
 	end
 	local function addButton(parent, title, order, callback)
 		local btnRow = row(parent, "Button", ROW_H, order)
 		lbl({ Parent = btnRow, Size = UDim2.new(0.7, 0, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 14, TextColor3 = C.TEXT })
-		lbl({
+		local btnHint = lbl({
 			Parent = btnRow,
 			Size = UDim2.new(0.3, 0, 1, 0),
 			Position = UDim2.new(0.7, 0, 0, 0),
@@ -3315,7 +3358,16 @@ local function buildZyrixUI()
 			TextSize = 12,
 			TextColor3 = C.TEXT_GREY,
 		})
-		btn({ Parent = btnRow, Size = UDim2.new(1, 0, 1, 0), ZIndex = 2 }).MouseButton1Click:Connect(function()
+		local hoverBtn = btn({ Parent = btnRow, Size = UDim2.new(1, 0, 1, 0), ZIndex = 2 })
+		hoverBtn.MouseEnter:Connect(function()
+			tw(btnRow, 0.12, {BackgroundColor3 = C.INNER})
+			tw(btnHint, 0.12, {TextTransparency = 0})
+		end)
+		hoverBtn.MouseLeave:Connect(function()
+			tw(btnRow, 0.12, {BackgroundColor3 = C.PANEL})
+			tw(btnHint, 0.12, {TextTransparency = 0.5})
+		end)
+		hoverBtn.MouseButton1Click:Connect(function()
 			if callback then callback() end
 		end)
 	end
@@ -3325,19 +3377,36 @@ local function buildZyrixUI()
 		ddContainer.Name = "Dropdown"
 		ddContainer.Size = UDim2.new(1, 0, 0, 0)
 		ddContainer.AutomaticSize = Enum.AutomaticSize.Y
-		ddContainer.BackgroundColor3 = Color3.fromRGB(23, 23, 23)
+		ddContainer.BackgroundColor3 = C.PANEL
 		ddContainer.BorderSizePixel = 0
 		ddContainer.BorderColor3 = Color3.fromRGB(28, 43, 54)
-		ddContainer.LayoutOrder = order
+		ddContainer.LayoutOrder = order * 2
 		ddContainer.Parent = parent
+		local hasContent = false
+		for _, child in ipairs(parent:GetChildren()) do
+			if child:IsA("GuiObject") and not child:IsA("UIPadding") and not child:IsA("UIListLayout") and child ~= ddContainer then
+				hasContent = true
+				break
+			end
+		end
+		if hasContent then
+			frame({
+				Name = "Divider",
+				Size = UDim2.new(1, 0, 0, 2),
+				BackgroundColor3 = C.DIVIDER,
+				BackgroundTransparency = 0.3,
+				LayoutOrder = order * 2 - 1,
+				Parent = parent,
+			})
+		end
 		local ddStroke = Instance.new("UIStroke")
-		ddStroke.Color = Color3.fromRGB(41, 41, 41)
+		ddStroke.Color = C.STROKE
 		ddStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 		ddStroke.Parent = ddContainer
 		local ddPad = Instance.new("UIPadding")
 		ddPad.PaddingTop = UDim.new(0, 8)
-		ddPad.PaddingRight = UDim.new(0, 12)
-		ddPad.PaddingLeft = UDim.new(0, 12)
+		ddPad.PaddingRight = UDim.new(0, 14)
+		ddPad.PaddingLeft = UDim.new(0, 14)
 		ddPad.PaddingBottom = UDim.new(0, 8)
 		ddPad.Parent = ddContainer
 		ddTitle = Instance.new("TextLabel")
@@ -3401,6 +3470,24 @@ local function buildZyrixUI()
 		ddInteract.BorderColor3 = Color3.fromRGB(28, 43, 54)
 		ddInteract.Text = ""
 		ddInteract.Parent = ddContainer
+		local clipFrame = Instance.new("Frame")
+		clipFrame.Name = "Clip"
+		clipFrame.ZIndex = 2
+		clipFrame.BorderSizePixel = 0
+		clipFrame.BackgroundTransparency = 0
+		clipFrame.BackgroundColor3 = C.DD_LIST
+		clipFrame.Size = UDim2.new(1, 0, 0, 0)
+		clipFrame.Position = UDim2.new(0, 0, 0, 24)
+		clipFrame.ClipsDescendants = true
+		clipFrame.Visible = false
+		clipFrame.Parent = ddContainer
+		local clipCorner = Instance.new("UICorner")
+		clipCorner.CornerRadius = UDim.new(0, 6)
+		clipCorner.Parent = clipFrame
+		local clipStroke = Instance.new("UIStroke")
+		clipStroke.Color = C.STROKE
+		clipStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		clipStroke.Parent = clipFrame
 		ddList = Instance.new("ScrollingFrame")
 		ddList.Name = "List"
 		ddList.Active = true
@@ -3408,23 +3495,22 @@ local function buildZyrixUI()
 		ddList.BorderSizePixel = 0
 		ddList.CanvasSize = UDim2.new(0, 0, 0, 0)
 		ddList.ScrollBarImageTransparency = 0.7
-		ddList.BackgroundColor3 = Color3.fromRGB(19, 19, 19)
+		ddList.BackgroundColor3 = C.DD_LIST
 		ddList.AutomaticCanvasSize = Enum.AutomaticSize.Y
 		ddList.Size = UDim2.new(1, 0, 0, 0)
 		ddList.ScrollBarImageColor3 = Color3.fromRGB(141, 141, 141)
-		ddList.Position = UDim2.new(0, 0, 0, 24)
+		ddList.Position = UDim2.new(0, 0, 0, 0)
 		ddList.BorderColor3 = Color3.fromRGB(28, 43, 54)
 		ddList.ScrollBarThickness = 2
 		ddList.ClipsDescendants = true
-		ddList.Visible = false
+		ddList.Visible = true
 		ddList.ScrollingEnabled = true
 		ddList.ScrollingDirection = Enum.ScrollingDirection.Y
 		ddList.ElasticBehavior = Enum.ElasticBehavior.WhenScrollable
-		ddList.Parent = ddContainer
-		local listStroke = Instance.new("UIStroke")
-		listStroke.Color = Color3.fromRGB(41, 41, 41)
-		listStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-		listStroke.Parent = ddList
+		ddList.Parent = clipFrame
+		local ddListCorner = Instance.new("UICorner")
+		ddListCorner.CornerRadius = UDim.new(0, 6)
+		ddListCorner.Parent = ddList
 		local listLayout = Instance.new("UIListLayout")
 		listLayout.Padding = UDim.new(0, 4)
 		listLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -3441,8 +3527,9 @@ local function buildZyrixUI()
 				openDropdown:SetAttribute("ForceClose", true)
 			end
 			ddOpen = state
-			ddList.Visible = state
-			if state and ddList:IsA("ScrollingFrame") then
+			if elements then elements.ScrollingEnabled = not state end
+			if state then
+				clipFrame.Visible = true
 				local contentH = 0
 				local ll = ddList:FindFirstChildOfClass("UIListLayout")
 				if ll then contentH = ll.AbsoluteContentSize.Y end
@@ -3450,8 +3537,16 @@ local function buildZyrixUI()
 				local dp = ddList:FindFirstChildOfClass("UIPadding")
 				if dp then padH = dp.PaddingTop.Offset + dp.PaddingBottom.Offset end
 				local maxH = 150
-				ddList.Size = UDim2.new(1, 0, 0, math.min(contentH + padH, maxH))
+				local targetH = math.min(contentH + padH, maxH)
+				ddList.Size = UDim2.new(1, 0, 0, targetH)
 				ddList.CanvasSize = UDim2.new(0, 0, 0, contentH + padH)
+				clipFrame.Size = UDim2.new(1, 0, 0, 0)
+				tw(clipFrame, 0.18, {Size = UDim2.new(1, 0, 0, targetH)})
+			else
+				tw(clipFrame, 0.15, {Size = UDim2.new(1, 0, 0, 0)})
+				task.delay(0.15, function()
+					if not ddOpen then clipFrame.Visible = false end
+				end)
 			end
 			if ddArrow then tw(ddArrow, 0.12, {Rotation = state and 180 or 0}) end
 			openDropdown = state and ddContainer or (openDropdown == ddContainer and nil or openDropdown)
@@ -3468,13 +3563,13 @@ local function buildZyrixUI()
 			item.Name = "Option" .. i
 			item.ZIndex = 3
 			item.BorderSizePixel = 0
-			item.BackgroundColor3 = Color3.fromRGB(27, 27, 27)
+			item.BackgroundColor3 = C.DD_ITEM
 			item.Size = UDim2.new(1, 0, 0, 36)
 			item.BorderColor3 = Color3.fromRGB(28, 43, 54)
 			item.LayoutOrder = i
 			item.Parent = ddList
 			local itemStroke = Instance.new("UIStroke")
-			itemStroke.Color = Color3.fromRGB(51, 51, 51)
+			itemStroke.Color = C.STROKE_IN
 			itemStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 			itemStroke.Parent = item
 			local itemCorner = Instance.new("UICorner")
@@ -3514,8 +3609,8 @@ local function buildZyrixUI()
 				setOpen(false)
 				if callback then callback(opt) end
 			end)
-			itemInteract.MouseEnter:Connect(function() tw(item, 0.1, {BackgroundTransparency = 0.8}) end)
-			itemInteract.MouseLeave:Connect(function() tw(item, 0.1, {BackgroundTransparency = 0}) end)
+			itemInteract.MouseEnter:Connect(function() tw(item, 0.1, {BackgroundColor3 = C.STROKE}) end)
+			itemInteract.MouseLeave:Connect(function() tw(item, 0.1, {BackgroundColor3 = C.DD_ITEM}) end)
 		end
 		for i, opt in ipairs(options) do
 			createOptionItem(i, opt)
@@ -3612,7 +3707,7 @@ local function buildZyrixUI()
 		end)
 	end
 	local function renderHubItem(tabName, i, item)
-		local parent = getElementParent(tabName, item.Type)
+		local parent = getElementParent(tabName, item.Type, item.Side)
 		if not parent then return end
 		local t = string.lower(item.Type or "")
 		if t == "section" then
@@ -3767,7 +3862,7 @@ local function buildZyrixUI()
 			local ax, aw = sliderDragTrack.AbsolutePosition.X, sliderDragTrack.AbsoluteSize.X
 			local pct = math.clamp((input.Position.X - ax) / aw, 0, 1)
 			local setSlider = sliderRegistry[sliderDragTrack]
-			if setSlider then setSlider(pct) end
+			if setSlider then setSlider(pct, nil, true) end
 		elseif input.UserInputType == Enum.UserInputType.MouseWheel then
 			local mouse = UIS:GetMouseLocation()
 			local elemAp, elemAs = elements.AbsolutePosition, elements.AbsoluteSize
@@ -3843,7 +3938,7 @@ local function buildZyrixUI()
 		uiAnimating = true
 		task.spawn(function()
 			root.Visible = true
-			root.Size = UDim2.new(0, WIN_W, 0, TOTAL_H)
+			root.Size = UDim2.new(0, WIN_W, 0, TAB_H)
 			main.Visible = true
 			main.Size = UDim2.new(0, WIN_W, 0, WIN_H)
 			main.Position = UDim2.new(0, 0, 0, TAB_H + GAP - WIN_H)
@@ -3852,6 +3947,7 @@ local function buildZyrixUI()
 			leftDoor.Position = UDim2.new(0, 0, 0, 0)
 			rightDoor.Position = UDim2.new(0.5, 0, 0, 0)
 			doorLogo.ImageTransparency = 0
+			tw(root, 0.4, {Size = UDim2.new(0, WIN_W, 0, TOTAL_H)}, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 			tw(main, 0.4, {Position = UDim2.new(0, 0, 0, TAB_H + GAP)}, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 			task.wait(0.42)
 			playOpenDoors(function()
@@ -3874,6 +3970,7 @@ local function buildZyrixUI()
 		task.spawn(function()
 			playCloseDoors(function()
 				tw(main, 0.3, {Position = UDim2.new(0, 0, 0, TAB_H + GAP - WIN_H)}, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+				tw(root, 0.3, {Size = UDim2.new(0, WIN_W, 0, TAB_H)}, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
 				task.wait(0.32)
 				main.Visible = false
 				main.Position = UDim2.new(0, 0, 0, TAB_H + GAP)
@@ -4044,6 +4141,7 @@ if not genv.ZyrixSkipDefaultHub then
 	local Misc = Window:CreateTab("Misc")
 	Combat:CreateButton({
 		Name = "Reset Aimbot System",
+		Side = "Right",
 		Callback = function()
 			Demo.Aimbot = false
 			Demo.ESPRange = 750
@@ -4056,6 +4154,7 @@ if not genv.ZyrixSkipDefaultHub then
 		Range = {0, 1000},
 		CurrentValue = Demo.ESPRange,
 		Suffix = " studs",
+		Side = "Right",
 		Callback = function(v)
 			Demo.ESPRange = math.floor(v)
 		end,
@@ -4063,6 +4162,7 @@ if not genv.ZyrixSkipDefaultHub then
 	Combat:CreateToggle({
 		Name = "Aimbot",
 		CurrentValue = Demo.Aimbot,
+		Side = "Right",
 		Callback = function(on)
 			Demo.Aimbot = on
 		end,
@@ -4123,6 +4223,7 @@ if not genv.ZyrixSkipDefaultHub then
 	Movement:CreateToggle({
 		Name = "Infinite Jump",
 		CurrentValue = false,
+		Side = "Right",
 		Callback = function(on) Demo.InfiniteJump = on end,
 	})
 	Misc:CreateSection("Utility")
