@@ -67,7 +67,7 @@ local Zyrix = {}
 Zyrix.Appearance = {
 	Title = "B4TMAN // Interface",
 	Subtitle = "TACTICAL OPERATING SYSTEM",
-	Icon = "rbxassetid://80824524630289",
+	Icon = "rbxassetid://120000763572538",
 	IconSize = UDim2.new(0, 30, 0, 30)
 }
 Zyrix.Links = {
@@ -179,7 +179,7 @@ local FallbackIcons = {
 	loading = "rbxassetid://116535712789945",
 	close = "rbxassetid://6022668916",
 	changelog = "rbxassetid://138133190015277",
-	logo = "rbxassetid://80824524630289",
+	logo = "rbxassetid://120000763572538",
 	user = "rbxassetid://77400125196692",
 	clock = "rbxassetid://87505349362628",
 	cart = "rbxassetid://114754518183872",
@@ -200,7 +200,7 @@ local function disconnectAllTracked()
 end
 local FolderName = "Zyrix"
 local IconsFolder = "Icons"
-local DefaultLogoAsset = "rbxassetid://80824524630289"
+local DefaultLogoAsset = "rbxassetid://120000763572538"
 local function isMobile()
 	return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 end
