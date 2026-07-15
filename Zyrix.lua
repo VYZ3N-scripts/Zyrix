@@ -444,11 +444,11 @@ local function CreateDoorOverlay(parentFrame, width, height)
 	leftDoor.ZIndex = 51
 	leftDoor.Parent = overlay
 	local ldc = Instance.new("UICorner", leftDoor)
-	ldc.CornerRadius = UDim.new(0, 0)
+	ldc.CornerRadius = UDim.new(0, 15)
 	ldc.TopLeftRadius = UDim.new(0, parentRadius)
 	ldc.BottomLeftRadius = UDim.new(0, parentRadius)
-	ldc.TopRightRadius = UDim.new(0, 0)
-	ldc.BottomRightRadius = UDim.new(0, 0)
+	ldc.TopRightRadius = UDim.new(0, 15)
+	ldc.BottomRightRadius = UDim.new(0, 15)
 	local rightDoor = Instance.new("Frame")
 	rightDoor.Name = "RightDoor"
 	rightDoor.Size = UDim2.new(0.5, 0, 1, 0)
@@ -458,11 +458,11 @@ local function CreateDoorOverlay(parentFrame, width, height)
 	rightDoor.ZIndex = 51
 	rightDoor.Parent = overlay
 	local rdc = Instance.new("UICorner", rightDoor)
-	rdc.CornerRadius = UDim.new(0, 0)
+	rdc.CornerRadius = UDim.new(0, 15)
 	rdc.TopRightRadius = UDim.new(0, parentRadius)
 	rdc.BottomRightRadius = UDim.new(0, parentRadius)
-	rdc.TopLeftRadius = UDim.new(0, 0)
-	rdc.BottomLeftRadius = UDim.new(0, 0)
+	rdc.TopLeftRadius = UDim.new(0, 15)
+	rdc.BottomLeftRadius = UDim.new(0, 15)
 	local logoSize = math.min(width, height) * 0.28
 	local logoImage = Instance.new("ImageLabel")
 	logoImage.Name = "DoorLogo"
@@ -2798,7 +2798,7 @@ local function buildZyrixUI()
 			Active = true,
 			Parent = root,
 		})
-		corner(tabBar, UDim.new(0, 0))
+		corner(tabBar, UDim.new(0, 1000))
 		stroke(tabBar, C.STROKE)
 	else
 		tabBar.Position = UDim2.new(0, 0, 0, 0)
@@ -2814,6 +2814,8 @@ local function buildZyrixUI()
 		end
 	end
 	tabBar.ZIndex = 10
+	local tbc = tabBar:FindFirstChildOfClass("UICorner") or Instance.new("UICorner", tabBar)
+	tbc.CornerRadius = UDim.new(0, 1000)
 	local tabScroll = tabBar:FindFirstChild("tablist")
 	if not tabScroll then
 		tabScroll = Instance.new("ScrollingFrame")
@@ -2824,7 +2826,7 @@ local function buildZyrixUI()
 		tabScroll.BorderSizePixel = 0
 		tabScroll.ScrollBarThickness = 2
 		tabScroll.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
-		tabScroll.ScrollBarImageTransparency = 0.4
+		tabScroll.ScrollBarImageTransparency = 1
 		tabScroll.ScrollingDirection = Enum.ScrollingDirection.X
 		tabScroll.AutomaticCanvasSize = Enum.AutomaticSize.X
 		tabScroll.ElasticBehavior = Enum.ElasticBehavior.WhenScrollable
@@ -2832,7 +2834,10 @@ local function buildZyrixUI()
 		tabScroll.Active = true
 		tabScroll.Parent = tabBar
 		pad(tabScroll, 0, 0, 4, 4)
+		corner(tabScroll, UDim.new(0, 1000))
 	end
+	local tsc = tabScroll:FindFirstChildOfClass("UICorner") or Instance.new("UICorner", tabScroll)
+	tsc.CornerRadius = UDim.new(0, 1000)
 	tabScroll.CanvasSize = UDim2.new()
 	local tabLayout = tabScroll:FindFirstChildOfClass("UIListLayout")
 	if not tabLayout then
@@ -2875,7 +2880,7 @@ local function buildZyrixUI()
 			Active = true,
 			Parent = root,
 		})
-		corner(main, UDim.new(0, 0))
+		corner(main, UDim.new(0, 8))
 		stroke(main, C.STROKE)
 	else
 		main.Size = UDim2.new(0, WIN_W, 0, WIN_H)
@@ -2965,6 +2970,8 @@ local function buildZyrixUI()
 			local idleText = t:GetAttribute("IdleTextColor") or C.TEXT_DIM
 			t.BackgroundColor3 = name == activeTab and activeCol or idleCol
 			t.TextColor3 = name == activeTab and activeText or idleText
+			local tc = t:FindFirstChildOfClass("UICorner") or Instance.new("UICorner", t)
+			tc.CornerRadius = UDim.new(0, 1000)
 		else
 			t = btn({
 				Name = name,
@@ -2979,7 +2986,7 @@ local function buildZyrixUI()
 				Text = name,
 				TextColor3 = name == activeTab and C.WHITE or C.TEXT_DIM,
 			})
-			corner(t, UDim.new(0, 0))
+			corner(t, UDim.new(0, 1000))
 			stroke(t, C.STROKE_IN, 0.8)
 			pad(t, 0, 0, 14, 14)
 			local ind = frame({
@@ -3866,21 +3873,19 @@ local function buildZyrixUI()
 			Size = UDim2.new(0, 40, 0, 40),
 			Position = UDim2.new(1, -14, 0, 14),
 			AnchorPoint = Vector2.new(1, 0),
-			BackgroundColor3 = C.TAB_BAR,
-			BackgroundTransparency = 0.05,
+			BackgroundColor3 = Color3.fromRGB(15, 18, 21),
+			BackgroundTransparency = 0,
 			Text = "OPEN",
 			Font = Enum.Font.GothamBold,
 			TextSize = 9,
 			TextColor3 = C.TEXT,
 			ZIndex = 20,
 		})
-		corner(closeBtn, UDim.new(0, 0))
+		corner(closeBtn, UDim.new(0, 1000))
 		stroke(closeBtn, C.STROKE)
 	else
 		closeBtn.ZIndex = 20
-		if not _templateRoot:GetAttribute("Color_TAB_BAR") then
-			C.TAB_BAR = closeBtn.BackgroundColor3
-		end
+		closeBtn.BackgroundColor3 = Color3.fromRGB(25, 31, 36)
 		if not _templateRoot:GetAttribute("Color_TEXT") then
 			C.TEXT = closeBtn.TextColor3
 		end
@@ -3889,6 +3894,8 @@ local function buildZyrixUI()
 			C.STROKE = cs.Color
 		end
 	end
+	local cbc = closeBtn:FindFirstChildOfClass("UICorner") or Instance.new("UICorner", closeBtn)
+	cbc.CornerRadius = UDim.new(0, 1000)
 	closeBtn.MouseEnter:Connect(function() tw(closeBtn, 0.12, {BackgroundColor3 = C.HOVER}) end)
 	closeBtn.MouseLeave:Connect(function() tw(closeBtn, 0.12, {BackgroundColor3 = C.TAB_BAR}) end)
 	local TOTAL_H = TAB_H + GAP + WIN_H
