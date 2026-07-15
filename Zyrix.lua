@@ -66,7 +66,7 @@ genv.ZyrixClosed = false
 local Zyrix = {}
 Zyrix.Appearance = {
 	Title = "B4TMAN // Interface",
-	Subtitle = "Enter your key to continue",
+	Subtitle = "TACTICAL OPERATING SYSTEM",
 	Icon = "rbxassetid://333658348",
 	IconSize = UDim2.new(0, 30, 0, 30)
 }
@@ -87,44 +87,44 @@ Zyrix.Options = {
 	NoGetKey = false
 }
 Zyrix.BatmanTheme = {
-	Accent = Color3.fromRGB(255, 209, 0),
-	AccentHover = Color3.fromRGB(230, 188, 0),
-	Background = Color3.fromRGB(0, 0, 0),
-	TabBar = Color3.fromRGB(10, 10, 10),
-	TabIdle = Color3.fromRGB(0, 0, 0),
-	TabActive = Color3.fromRGB(22, 22, 22),
-	Panel = Color3.fromRGB(16, 16, 16),
-	Element = Color3.fromRGB(10, 10, 10),
-	Inner = Color3.fromRGB(22, 22, 22),
-	Progress = Color3.fromRGB(255, 209, 0),
-	KnobOn = Color3.fromRGB(255, 209, 0),
-	KnobOff = Color3.fromRGB(100, 100, 100),
-	Stroke = Color3.fromRGB(38, 38, 38),
+	Accent = Color3.fromRGB(170, 170, 170),
+	AccentHover = Color3.fromRGB(140, 140, 140),
+	Background = Color3.fromRGB(6, 6, 6),
+	TabBar = Color3.fromRGB(12, 12, 12),
+	TabIdle = Color3.fromRGB(6, 6, 6),
+	TabActive = Color3.fromRGB(18, 18, 18),
+	Panel = Color3.fromRGB(12, 12, 12),
+	Element = Color3.fromRGB(8, 8, 8),
+	Inner = Color3.fromRGB(18, 18, 18),
+	Progress = Color3.fromRGB(170, 170, 170),
+	KnobOn = Color3.fromRGB(170, 170, 170),
+	KnobOff = Color3.fromRGB(80, 80, 80),
+	Stroke = Color3.fromRGB(45, 45, 45),
 	StrokeIn = Color3.fromRGB(55, 55, 55),
 	Divider = Color3.fromRGB(35, 35, 35),
-	Text = Color3.fromRGB(255, 255, 255),
-	TextDim = Color3.fromRGB(155, 155, 155),
-	TextGrey = Color3.fromRGB(110, 110, 110),
-	White = Color3.fromRGB(255, 209, 0),
-	Hover = Color3.fromRGB(26, 26, 26),
-	Door = Color3.fromRGB(0, 0, 0),
+	Text = Color3.fromRGB(235, 235, 235),
+	TextDim = Color3.fromRGB(130, 130, 130),
+	TextGrey = Color3.fromRGB(100, 100, 100),
+	White = Color3.fromRGB(170, 170, 170),
+	Hover = Color3.fromRGB(22, 22, 22),
+	Door = Color3.fromRGB(6, 6, 6),
 }
 Zyrix.Theme = {
-	Accent = Color3.fromRGB(255, 209, 0),
-	AccentHover = Color3.fromRGB(230, 188, 0),
-	Background = Color3.fromRGB(0, 0, 0),
+	Accent = Color3.fromRGB(170, 170, 170),
+	AccentHover = Color3.fromRGB(140, 140, 140),
+	Background = Color3.fromRGB(6, 6, 6),
 	Header = Color3.fromRGB(12, 12, 12),
 	Input = Color3.fromRGB(18, 18, 18),
-	Text = Color3.fromRGB(255, 255, 255),
+	Text = Color3.fromRGB(235, 235, 235),
 	TextDim = Color3.fromRGB(130, 130, 130),
-	Success = Color3.fromRGB(255, 209, 0),
-	Error = Color3.fromRGB(200, 30, 30),
-	Warning = Color3.fromRGB(200, 140, 0),
-	StatusIdle = Color3.fromRGB(100, 100, 100),
-	Discord = Color3.fromRGB(140, 140, 140),
-	DiscordHover = Color3.fromRGB(255, 209, 0),
-	Divider = Color3.fromRGB(40, 40, 40),
-	Pending = Color3.fromRGB(60, 60, 60)
+	Success = Color3.fromRGB(170, 170, 170),
+	Error = Color3.fromRGB(80, 40, 40),
+	Warning = Color3.fromRGB(70, 55, 35),
+	StatusIdle = Color3.fromRGB(80, 80, 80),
+	Discord = Color3.fromRGB(120, 120, 120),
+	DiscordHover = Color3.fromRGB(170, 170, 170),
+	Divider = Color3.fromRGB(35, 35, 35),
+	Pending = Color3.fromRGB(50, 50, 50)
 }
 Zyrix.Callbacks = {
 	OnVerify = nil,
@@ -615,7 +615,7 @@ local function ShowLoadingScreen(onComplete)
 		indicator.Text = "○"
 		indicator.TextColor3 = Zyrix.Theme.Pending
 		indicator.TextSize = phaseTextSize
-		indicator.Font = Enum.Font.ArimoBold
+		indicator.Font = Enum.Font.GothamMedium
 		indicator.TextTransparency = 1
 		indicator.Parent = row
 		local label = Instance.new("TextLabel")
@@ -625,7 +625,7 @@ local function ShowLoadingScreen(onComplete)
 		label.Text = name
 		label.TextColor3 = Zyrix.Theme.Pending
 		label.TextSize = phaseTextSize
-		label.Font = Enum.Font.ArimoBold
+		label.Font = Enum.Font.GothamMedium
 		label.TextXAlignment = Enum.TextXAlignment.Left
 		label.TextTransparency = 1
 		label.Parent = row
@@ -802,7 +802,7 @@ function Zyrix:Notify(title, message, duration, iconType)
 	local progressBg = Instance.new("Frame")
 	progressBg.Size = UDim2.new(1, 0, 0, 2)
 	progressBg.Position = UDim2.new(0, 0, 1, -2)
-	progressBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	progressBg.BackgroundColor3 = Zyrix.Theme.Divider
 	progressBg.BorderSizePixel = 0
 	progressBg.Parent = frame
 	local progressBar = Instance.new("Frame")
@@ -837,7 +837,7 @@ function Zyrix:Notify(title, message, duration, iconType)
 	titleLabel.Size = UDim2.new(1, -(textX + 14), 0, 24)
 	titleLabel.Position = UDim2.new(0, textX, 0, 12)
 	titleLabel.BackgroundTransparency = 1
-	titleLabel.Font = Enum.Font.ArimoBold
+	titleLabel.Font = Enum.Font.GothamBold
 	titleLabel.TextSize = math.clamp(15 * scale, 13, 18)
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.TextColor3 = Zyrix.Theme.Text
@@ -848,7 +848,7 @@ function Zyrix:Notify(title, message, duration, iconType)
 	messageLabel.Size = UDim2.new(1, -(textX + 14), 0, 22)
 	messageLabel.Position = UDim2.new(0, textX, 0, 38)
 	messageLabel.BackgroundTransparency = 1
-	messageLabel.Font = Enum.Font.ArimoBold
+	messageLabel.Font = Enum.Font.GothamMedium
 	messageLabel.TextSize = math.clamp(13 * scale, 11, 15)
 	messageLabel.TextXAlignment = Enum.TextXAlignment.Left
 	messageLabel.TextColor3 = Zyrix.Theme.TextDim
@@ -943,7 +943,7 @@ local function CreateChangelogPanel(parent, windowWidth, panelHeight, panelWidth
 	panelTitle.Text = "Changelog"
 	panelTitle.TextColor3 = Zyrix.Theme.Text
 	panelTitle.TextSize = 16
-	panelTitle.Font = Enum.Font.ArimoBold
+	panelTitle.Font = Enum.Font.GothamBold
 	panelTitle.TextXAlignment = Enum.TextXAlignment.Left
 	panelTitle.Parent = panelHeader
 	local panelClose = Instance.new("ImageButton")
@@ -990,7 +990,7 @@ local function CreateChangelogPanel(parent, windowWidth, panelHeight, panelWidth
 		versionLabel.Text = update.Version .. "  •  " .. update.Date
 		versionLabel.TextColor3 = Zyrix.Theme.Accent
 		versionLabel.TextSize = 14
-		versionLabel.Font = Enum.Font.ArimoBold
+		versionLabel.Font = Enum.Font.GothamBold
 		versionLabel.TextXAlignment = Enum.TextXAlignment.Left
 		versionLabel.LayoutOrder = 1
 		versionLabel.Parent = entry
@@ -1002,7 +1002,7 @@ local function CreateChangelogPanel(parent, windowWidth, panelHeight, panelWidth
 			changeLabel.Text = "  •  " .. change
 			changeLabel.TextColor3 = Zyrix.Theme.TextDim
 			changeLabel.TextSize = 12
-			changeLabel.Font = Enum.Font.ArimoBold
+			changeLabel.Font = Enum.Font.GothamMedium
 			changeLabel.TextXAlignment = Enum.TextXAlignment.Left
 			changeLabel.TextWrapped = true
 			changeLabel.LayoutOrder = j + 1
@@ -1097,7 +1097,7 @@ local function CreateUserInfoPanel(parent, windowWidth, panelHeight, panelWidth,
 	panelTitle.Text = "User Info"
 	panelTitle.TextColor3 = Zyrix.Theme.Text
 	panelTitle.TextSize = 16
-	panelTitle.Font = Enum.Font.ArimoBold
+	panelTitle.Font = Enum.Font.GothamBold
 	panelTitle.TextXAlignment = Enum.TextXAlignment.Left
 	panelTitle.Parent = panelHeader
 	local panelClose = Instance.new("ImageButton")
@@ -1169,7 +1169,7 @@ local function CreateUserInfoPanel(parent, windowWidth, panelHeight, panelWidth,
 	welcomeLabel.Text = "Welcome, " .. (player and player.DisplayName or "User")
 	welcomeLabel.TextColor3 = Zyrix.Theme.Text
 	welcomeLabel.TextSize = welcomeSize
-	welcomeLabel.Font = Enum.Font.ArimoBold
+	welcomeLabel.Font = Enum.Font.GothamBold
 	welcomeLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	welcomeLabel.LayoutOrder = 2
 	welcomeLabel.Parent = contentFrame
@@ -1192,7 +1192,7 @@ local function CreateUserInfoPanel(parent, windowWidth, panelHeight, panelWidth,
 	executorTitle.Text = "Executor"
 	executorTitle.TextColor3 = Zyrix.Theme.TextDim
 	executorTitle.TextSize = titleSize
-	executorTitle.Font = Enum.Font.ArimoBold
+	executorTitle.Font = Enum.Font.GothamMedium
 	executorTitle.TextXAlignment = Enum.TextXAlignment.Left
 	executorTitle.Parent = executorContainer
 	local executorValue = Instance.new("TextLabel")
@@ -1202,7 +1202,7 @@ local function CreateUserInfoPanel(parent, windowWidth, panelHeight, panelWidth,
 	executorValue.Text = getExecutorName()
 	executorValue.TextColor3 = Zyrix.Theme.Accent
 	executorValue.TextSize = valueSize
-	executorValue.Font = Enum.Font.ArimoBold
+	executorValue.Font = Enum.Font.GothamBold
 	executorValue.TextXAlignment = Enum.TextXAlignment.Left
 	executorValue.TextTruncate = Enum.TextTruncate.AtEnd
 	executorValue.Parent = executorContainer
@@ -1217,7 +1217,7 @@ local function CreateUserInfoPanel(parent, windowWidth, panelHeight, panelWidth,
 	deviceTitle.Text = "Device"
 	deviceTitle.TextColor3 = Zyrix.Theme.TextDim
 	deviceTitle.TextSize = titleSize
-	deviceTitle.Font = Enum.Font.ArimoBold
+	deviceTitle.Font = Enum.Font.GothamMedium
 	deviceTitle.TextXAlignment = Enum.TextXAlignment.Left
 	deviceTitle.Parent = deviceContainer
 	local deviceValue = Instance.new("TextLabel")
@@ -1227,7 +1227,7 @@ local function CreateUserInfoPanel(parent, windowWidth, panelHeight, panelWidth,
 	deviceValue.Text = getDeviceType()
 	deviceValue.TextColor3 = Zyrix.Theme.Accent
 	deviceValue.TextSize = valueSize
-	deviceValue.Font = Enum.Font.ArimoBold
+	deviceValue.Font = Enum.Font.GothamBold
 	deviceValue.TextXAlignment = Enum.TextXAlignment.Left
 	deviceValue.TextTruncate = Enum.TextTruncate.AtEnd
 	deviceValue.Parent = deviceContainer
@@ -1250,7 +1250,7 @@ local function CreateUserInfoPanel(parent, windowWidth, panelHeight, panelWidth,
 	hwidTitle.Text = "HWID"
 	hwidTitle.TextColor3 = Zyrix.Theme.TextDim
 	hwidTitle.TextSize = titleSize
-	hwidTitle.Font = Enum.Font.ArimoBold
+	hwidTitle.Font = Enum.Font.GothamMedium
 	hwidTitle.TextXAlignment = Enum.TextXAlignment.Left
 	hwidTitle.Parent = hwidContainer
 	local fullHWID = getHWID()
@@ -1264,7 +1264,7 @@ local function CreateUserInfoPanel(parent, windowWidth, panelHeight, panelWidth,
 	hwidValue.Text = hiddenDots
 	hwidValue.TextColor3 = Zyrix.Theme.TextDim
 	hwidValue.TextSize = isCompact and 9 or 10
-	hwidValue.Font = Enum.Font.ArimoBold
+	hwidValue.Font = Enum.Font.GothamMedium
 	hwidValue.TextXAlignment = Enum.TextXAlignment.Left
 	hwidValue.TextTruncate = Enum.TextTruncate.AtEnd
 	hwidValue.Parent = hwidContainer
@@ -1324,7 +1324,7 @@ local function CreateUserInfoPanel(parent, windowWidth, panelHeight, panelWidth,
 	clockTimeLabel.Text = formatTime12()
 	clockTimeLabel.TextColor3 = Zyrix.Theme.Accent
 	clockTimeLabel.TextSize = isCompact and 14 or 16
-	clockTimeLabel.Font = Enum.Font.ArimoBold
+	clockTimeLabel.Font = Enum.Font.GothamBold
 	clockTimeLabel.LayoutOrder = 2
 	clockTimeLabel.Parent = clockRow
 	local clockDateLabel = Instance.new("TextLabel")
@@ -1334,7 +1334,7 @@ local function CreateUserInfoPanel(parent, windowWidth, panelHeight, panelWidth,
 	clockDateLabel.Text = formatDate()
 	clockDateLabel.TextColor3 = Zyrix.Theme.TextDim
 	clockDateLabel.TextSize = isCompact and 9 or 11
-	clockDateLabel.Font = Enum.Font.ArimoBold
+	clockDateLabel.Font = Enum.Font.GothamMedium
 	clockDateLabel.TextXAlignment = Enum.TextXAlignment.Center
 	clockDateLabel.Parent = clockContainer
 	local clockRunning = true
@@ -1491,7 +1491,7 @@ local function BuildKeylessUI()
 	title.Text = Zyrix.Appearance.Title
 	title.TextColor3 = Zyrix.Theme.Text
 	title.TextSize = mobile and 24 or 26
-	title.Font = Enum.Font.ArimoBold
+	title.Font = Enum.Font.GothamBold
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Parent = header
 	local closeBtn = Instance.new("ImageButton")
@@ -1535,7 +1535,7 @@ local function BuildKeylessUI()
 	successText.Text = "Access Granted"
 	successText.TextColor3 = Zyrix.Theme.Success
 	successText.TextSize = mobile and 17 or 18
-	successText.Font = Enum.Font.ArimoBold
+	successText.Font = Enum.Font.GothamMedium
 	successText.TextXAlignment = Enum.TextXAlignment.Left
 	successText.Parent = successBox
 	local keylessText = Instance.new("TextLabel")
@@ -1546,7 +1546,7 @@ local function BuildKeylessUI()
 	keylessText.Text = "Keyless Script"
 	keylessText.TextColor3 = Zyrix.Theme.TextDim
 	keylessText.TextSize = mobile and 14 or 15
-	keylessText.Font = Enum.Font.ArimoBold
+	keylessText.Font = Enum.Font.GothamMedium
 	keylessText.Parent = main
 	local divider = Instance.new("Frame")
 	divider.Size = UDim2.new(1, 0, 0, 3)
@@ -1592,7 +1592,7 @@ local function BuildKeylessUI()
 	launchLabel.Text = "Launch Script"
 	launchLabel.TextColor3 = Zyrix.Theme.Text
 	launchLabel.TextSize = mobile and 14 or 15
-	launchLabel.Font = Enum.Font.ArimoBold
+	launchLabel.Font = Enum.Font.GothamBold
 	launchLabel.LayoutOrder = 2
 	launchLabel.Parent = launchContent
 	launchBtn.MouseEnter:Connect(function() TweenService:Create(launchBtn, TweenInfo.new(0.15), {BackgroundColor3 = Zyrix.Theme.AccentHover}):Play() end)
@@ -1781,7 +1781,7 @@ local function BuildKeyUI()
 	titleLabel.Text = Zyrix.Appearance.Title
 	titleLabel.TextColor3 = Zyrix.Theme.Text
 	titleLabel.TextSize = mobile and 24 or 26
-	titleLabel.Font = Enum.Font.ArimoBold
+	titleLabel.Font = Enum.Font.GothamBold
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.Parent = header
 	local closeBtn = Instance.new("ImageButton")
@@ -1825,7 +1825,7 @@ local function BuildKeyUI()
 	statusLabel.Text = Zyrix.Appearance.Subtitle
 	statusLabel.TextColor3 = Zyrix.Theme.StatusIdle
 	statusLabel.TextSize = mobile and 17 or 18
-	statusLabel.Font = Enum.Font.ArimoBold
+	statusLabel.Font = Enum.Font.GothamMedium
 	statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 	statusLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	statusLabel.Parent = statusFrame
@@ -1853,7 +1853,7 @@ local function BuildKeyUI()
 	textBox.PlaceholderText = "Enter your key..."
 	textBox.PlaceholderColor3 = Zyrix.Theme.TextDim
 	textBox.TextSize = mobile and 17 or 18
-	textBox.Font = Enum.Font.ArimoBold
+	textBox.Font = Enum.Font.GothamMedium
 	textBox.ClearTextOnFocus = false
 	textBox.TextTruncate = Enum.TextTruncate.AtEnd
 	textBox.TextXAlignment = Enum.TextXAlignment.Left
@@ -1907,7 +1907,7 @@ local function BuildKeyUI()
 		label.Text = text
 		label.TextColor3 = isPrimary and Zyrix.Theme.Background or Zyrix.Theme.Text
 		label.TextSize = mobile and 14 or 15
-		label.Font = Enum.Font.ArimoBold
+		label.Font = Enum.Font.GothamMedium
 		label.LayoutOrder = 2
 		label.Parent = content
 		local origColor = btn.BackgroundColor3
@@ -2050,7 +2050,7 @@ local function BuildKeyUI()
 		shopTitle.Text = Zyrix.Shop.Title
 		shopTitle.TextColor3 = Zyrix.Theme.Text
 		shopTitle.TextSize = mobile and 13 or 14
-		shopTitle.Font = Enum.Font.ArimoBold
+		shopTitle.Font = Enum.Font.GothamBold
 		shopTitle.TextXAlignment = Enum.TextXAlignment.Left
 		shopTitle.TextTruncate = Enum.TextTruncate.AtEnd
 		shopTitle.Parent = shopFrame
@@ -2061,7 +2061,7 @@ local function BuildKeyUI()
 		shopSubtitle.Text = Zyrix.Shop.Subtitle
 		shopSubtitle.TextColor3 = Zyrix.Theme.TextDim
 		shopSubtitle.TextSize = mobile and 10 or 11
-		shopSubtitle.Font = Enum.Font.ArimoBold
+		shopSubtitle.Font = Enum.Font.GothamMedium
 		shopSubtitle.TextXAlignment = Enum.TextXAlignment.Left
 		shopSubtitle.TextTruncate = Enum.TextTruncate.AtEnd
 		shopSubtitle.Parent = shopFrame
@@ -2103,7 +2103,7 @@ local function BuildKeyUI()
 		buyLabel.Text = Zyrix.Shop.ButtonText
 		buyLabel.TextColor3 = Zyrix.Theme.Text
 		buyLabel.TextSize = mobile and 11 or 12
-		buyLabel.Font = Enum.Font.ArimoBold
+		buyLabel.Font = Enum.Font.GothamBold
 		buyLabel.LayoutOrder = 2
 		buyLabel.Parent = buyContent
 		buyBtn.MouseEnter:Connect(function() TweenService:Create(buyBtn, TweenInfo.new(0.15), {BackgroundColor3 = Zyrix.Theme.AccentHover}):Play() end)
@@ -2518,27 +2518,27 @@ local function buildZyrixUI()
 		return fallback
 	end
 	local C = {
-		WIN = readColor("Color_WIN", Color3.fromRGB(0, 0, 0)),
-		TAB_BAR = readColor("Color_TAB_BAR", Color3.fromRGB(10, 10, 10)),
-		TAB_IDLE = readColor("Color_TAB_IDLE", Color3.fromRGB(0, 0, 0)),
-		TAB_ACTIVE = readColor("Color_TAB_ACTIVE", Color3.fromRGB(22, 22, 22)),
-		PANEL = readColor("Color_PANEL", Color3.fromRGB(16, 16, 16)),
-		EL = readColor("Color_EL", Color3.fromRGB(10, 10, 10)),
-		INNER = readColor("Color_INNER", Color3.fromRGB(22, 22, 22)),
-		PROGRESS = readColor("Color_PROGRESS", Color3.fromRGB(255, 209, 0)),
-		KNOB_ON = readColor("Color_KNOB_ON", Color3.fromRGB(255, 209, 0)),
-		KNOB_OFF = readColor("Color_KNOB_OFF", Color3.fromRGB(100, 100, 100)),
-		DD_ITEM = readColor("Color_DD_ITEM", Color3.fromRGB(22, 22, 22)),
-		DD_LIST = readColor("Color_DD_LIST", Color3.fromRGB(16, 16, 16)),
-		STROKE = readColor("Color_STROKE", Color3.fromRGB(38, 38, 38)),
+		WIN = readColor("Color_WIN", Color3.fromRGB(6, 6, 6)),
+		TAB_BAR = readColor("Color_TAB_BAR", Color3.fromRGB(12, 12, 12)),
+		TAB_IDLE = readColor("Color_TAB_IDLE", Color3.fromRGB(6, 6, 6)),
+		TAB_ACTIVE = readColor("Color_TAB_ACTIVE", Color3.fromRGB(18, 18, 18)),
+		PANEL = readColor("Color_PANEL", Color3.fromRGB(12, 12, 12)),
+		EL = readColor("Color_EL", Color3.fromRGB(8, 8, 8)),
+		INNER = readColor("Color_INNER", Color3.fromRGB(18, 18, 18)),
+		PROGRESS = readColor("Color_PROGRESS", Color3.fromRGB(170, 170, 170)),
+		KNOB_ON = readColor("Color_KNOB_ON", Color3.fromRGB(170, 170, 170)),
+		KNOB_OFF = readColor("Color_KNOB_OFF", Color3.fromRGB(80, 80, 80)),
+		DD_ITEM = readColor("Color_DD_ITEM", Color3.fromRGB(18, 18, 18)),
+		DD_LIST = readColor("Color_DD_LIST", Color3.fromRGB(12, 12, 12)),
+		STROKE = readColor("Color_STROKE", Color3.fromRGB(45, 45, 45)),
 		STROKE_IN = readColor("Color_STROKE_IN", Color3.fromRGB(55, 55, 55)),
 		DIVIDER = readColor("Color_DIVIDER", Color3.fromRGB(35, 35, 35)),
-		TEXT = readColor("Color_TEXT", Color3.fromRGB(255, 255, 255)),
-		TEXT_DIM = readColor("Color_TEXT_DIM", Color3.fromRGB(155, 155, 155)),
-		TEXT_GREY = readColor("Color_TEXT_GREY", Color3.fromRGB(110, 110, 110)),
-		WHITE = readColor("Color_WHITE", Color3.fromRGB(255, 209, 0)),
-		HOVER = readColor("Color_HOVER", Color3.fromRGB(26, 26, 26)),
-		DOOR = readColor("Color_DOOR", Color3.fromRGB(0, 0, 0)),
+		TEXT = readColor("Color_TEXT", Color3.fromRGB(235, 235, 235)),
+		TEXT_DIM = readColor("Color_TEXT_DIM", Color3.fromRGB(130, 130, 130)),
+		TEXT_GREY = readColor("Color_TEXT_GREY", Color3.fromRGB(100, 100, 100)),
+		WHITE = readColor("Color_WHITE", Color3.fromRGB(170, 170, 170)),
+		HOVER = readColor("Color_HOVER", Color3.fromRGB(22, 22, 22)),
+		DOOR = readColor("Color_DOOR", Color3.fromRGB(6, 6, 6)),
 	}
 	local function tw(obj, t, props, style, dir)
 		TS:Create(obj, TweenInfo.new(t, style or Enum.EasingStyle.Quart, dir or Enum.EasingDirection.Out), props):Play()
@@ -2823,7 +2823,7 @@ local function buildZyrixUI()
 		tabScroll.BackgroundTransparency = 1
 		tabScroll.BorderSizePixel = 0
 		tabScroll.ScrollBarThickness = 2
-		tabScroll.ScrollBarImageColor3 = Color3.fromRGB(90, 90, 90)
+		tabScroll.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
 		tabScroll.ScrollBarImageTransparency = 0.4
 		tabScroll.ScrollingDirection = Enum.ScrollingDirection.X
 		tabScroll.AutomaticCanvasSize = Enum.AutomaticSize.X
@@ -3130,12 +3130,18 @@ local function buildZyrixUI()
 	local hubTitle = (HubRegistry.windowConfig and HubRegistry.windowConfig.Name) or Zyrix.Appearance.Title or "B4TMAN // Interface"
 	local titleLabel = header:FindFirstChild("Title")
 	if not titleLabel then
-		titleLabel = lbl({ Parent = header, Name = "Title", Size = UDim2.new(1, -58, 1, 0), Position = UDim2.new(0, 48, 0, 0), Text = hubTitle, Font = Enum.Font.GothamBold, TextSize = 18, TextColor3 = C.TEXT })
+		titleLabel = lbl({ Parent = header, Name = "Title", Size = UDim2.new(1, -58, 0, 20), Position = UDim2.new(0, 48, 0, 2), Text = hubTitle, Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = C.TEXT })
 	else
 		titleLabel.Text = hubTitle
 		if not _templateRoot:GetAttribute("Color_TEXT") then
 			C.TEXT = titleLabel.TextColor3
 		end
+	end
+	local subtitleLabel = header:FindFirstChild("Subtitle")
+	if not subtitleLabel then
+		subtitleLabel = lbl({ Parent = header, Name = "Subtitle", Size = UDim2.new(1, -58, 0, 14), Position = UDim2.new(0, 48, 0, 20), Text = Zyrix.Appearance.Subtitle or "TACTICAL OPERATING SYSTEM", Font = Enum.Font.GothamMedium, TextSize = 10, TextColor3 = C.TEXT_DIM })
+	else
+		subtitleLabel.Text = Zyrix.Appearance.Subtitle or "TACTICAL OPERATING SYSTEM"
 	end
 	local headerDivider = main:FindFirstChild("HeaderDivider")
 	if not headerDivider then
@@ -3154,7 +3160,7 @@ local function buildZyrixUI()
 		elements.BackgroundTransparency = 1
 		elements.BorderSizePixel = 0
 		elements.ScrollBarThickness = 3
-		elements.ScrollBarImageColor3 = Color3.fromRGB(120, 120, 120)
+		elements.ScrollBarImageColor3 = C.TEXT_GREY
 		elements.ScrollBarImageTransparency = 0.25
 		elements.AutomaticCanvasSize = Enum.AutomaticSize.Y
 		elements.ScrollingEnabled = true
@@ -3457,7 +3463,7 @@ local function buildZyrixUI()
 		ddTitle.TextXAlignment = Enum.TextXAlignment.Left
 		ddTitle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 		ddTitle.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium, Enum.FontStyle.Normal)
-		ddTitle.TextColor3 = Color3.fromRGB(231, 231, 231)
+		ddTitle.TextColor3 = Color3.fromRGB(235, 235, 235)
 		ddTitle.BackgroundTransparency = 1
 		ddTitle.Size = UDim2.new(0, 100, 0, 24)
 		ddTitle.BorderColor3 = Color3.fromRGB(28, 43, 54)
@@ -3472,7 +3478,7 @@ local function buildZyrixUI()
 		ddSelected.TextXAlignment = Enum.TextXAlignment.Right
 		ddSelected.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 		ddSelected.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium, Enum.FontStyle.Normal)
-		ddSelected.TextColor3 = Color3.fromRGB(181, 181, 181)
+		ddSelected.TextColor3 = Color3.fromRGB(170, 170, 170)
 		ddSelected.BackgroundTransparency = 1
 		ddSelected.AnchorPoint = Vector2.new(1, 0)
 		ddSelected.Size = UDim2.new(0, 70, 0, 24)
@@ -3485,7 +3491,7 @@ local function buildZyrixUI()
 		ddArrow.BorderSizePixel = 0
 		ddArrow.ScaleType = Enum.ScaleType.Fit
 		ddArrow.BackgroundTransparency = 1
-		ddArrow.ImageColor3 = Color3.fromRGB(161, 161, 161)
+		ddArrow.ImageColor3 = Color3.fromRGB(170, 170, 170)
 		ddArrow.ZIndex = 2
 		ddArrow.Image = "rbxassetid://3926305904"
 		ddArrow.ImageRectSize = Vector2.new(36, 36)
@@ -3538,7 +3544,7 @@ local function buildZyrixUI()
 		ddList.BackgroundColor3 = C.DD_LIST
 		ddList.AutomaticCanvasSize = Enum.AutomaticSize.Y
 		ddList.Size = UDim2.new(1, 0, 0, 0)
-		ddList.ScrollBarImageColor3 = Color3.fromRGB(141, 141, 141)
+		ddList.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
 		ddList.Position = UDim2.new(0, 0, 0, 0)
 		ddList.BorderColor3 = Color3.fromRGB(28, 43, 54)
 		ddList.ScrollBarThickness = 2
@@ -3623,7 +3629,7 @@ local function buildZyrixUI()
 			itemTitle.TextXAlignment = Enum.TextXAlignment.Left
 			itemTitle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 			itemTitle.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium, Enum.FontStyle.Normal)
-			itemTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+			itemTitle.TextColor3 = Color3.fromRGB(235, 235, 235)
 			itemTitle.BackgroundTransparency = 1
 			itemTitle.Size = UDim2.new(1, -12, 1, 0)
 			itemTitle.BorderColor3 = Color3.fromRGB(28, 43, 54)
