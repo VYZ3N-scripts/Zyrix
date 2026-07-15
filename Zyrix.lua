@@ -65,9 +65,9 @@ genv.ZyrixLoaded = true
 genv.ZyrixClosed = false
 local Zyrix = {}
 Zyrix.Appearance = {
-	Title = "zyrix",
+	Title = "B4TMAN // Interface",
 	Subtitle = "Enter your key to continue",
-	Icon = "rbxassetid://105436073524298",
+	Icon = "rbxassetid://333658348",
 	IconSize = UDim2.new(0, 30, 0, 30)
 }
 Zyrix.Links = {
@@ -86,22 +86,45 @@ Zyrix.Options = {
 	Draggable = true,
 	NoGetKey = false
 }
-Zyrix.Theme = {
-	Accent = Color3.fromRGB(255, 255, 255),
-	AccentHover = Color3.fromRGB(220, 220, 220),
+Zyrix.BatmanTheme = {
+	Accent = Color3.fromRGB(255, 209, 0),
+	AccentHover = Color3.fromRGB(230, 188, 0),
 	Background = Color3.fromRGB(0, 0, 0),
-	Header = Color3.fromRGB(15, 15, 15),
-	Input = Color3.fromRGB(20, 20, 20),
+	TabBar = Color3.fromRGB(10, 10, 10),
+	TabIdle = Color3.fromRGB(0, 0, 0),
+	TabActive = Color3.fromRGB(22, 22, 22),
+	Panel = Color3.fromRGB(16, 16, 16),
+	Element = Color3.fromRGB(10, 10, 10),
+	Inner = Color3.fromRGB(22, 22, 22),
+	Progress = Color3.fromRGB(255, 209, 0),
+	KnobOn = Color3.fromRGB(255, 209, 0),
+	KnobOff = Color3.fromRGB(100, 100, 100),
+	Stroke = Color3.fromRGB(38, 38, 38),
+	StrokeIn = Color3.fromRGB(55, 55, 55),
+	Divider = Color3.fromRGB(35, 35, 35),
 	Text = Color3.fromRGB(255, 255, 255),
-	TextDim = Color3.fromRGB(140, 140, 140),
-	Success = Color3.fromRGB(255, 255, 255),
-	Error = Color3.fromRGB(200, 200, 200),
-	Warning = Color3.fromRGB(180, 180, 180),
-	StatusIdle = Color3.fromRGB(120, 120, 120),
-	Discord = Color3.fromRGB(160, 160, 160),
-	DiscordHover = Color3.fromRGB(220, 220, 220),
-	Divider = Color3.fromRGB(50, 50, 50),
-	Pending = Color3.fromRGB(80, 80, 80)
+	TextDim = Color3.fromRGB(155, 155, 155),
+	TextGrey = Color3.fromRGB(110, 110, 110),
+	White = Color3.fromRGB(255, 209, 0),
+	Hover = Color3.fromRGB(26, 26, 26),
+	Door = Color3.fromRGB(0, 0, 0),
+}
+Zyrix.Theme = {
+	Accent = Color3.fromRGB(255, 209, 0),
+	AccentHover = Color3.fromRGB(230, 188, 0),
+	Background = Color3.fromRGB(0, 0, 0),
+	Header = Color3.fromRGB(12, 12, 12),
+	Input = Color3.fromRGB(18, 18, 18),
+	Text = Color3.fromRGB(255, 255, 255),
+	TextDim = Color3.fromRGB(130, 130, 130),
+	Success = Color3.fromRGB(255, 209, 0),
+	Error = Color3.fromRGB(200, 30, 30),
+	Warning = Color3.fromRGB(200, 140, 0),
+	StatusIdle = Color3.fromRGB(100, 100, 100),
+	Discord = Color3.fromRGB(140, 140, 140),
+	DiscordHover = Color3.fromRGB(255, 209, 0),
+	Divider = Color3.fromRGB(40, 40, 40),
+	Pending = Color3.fromRGB(60, 60, 60)
 }
 Zyrix.Callbacks = {
 	OnVerify = nil,
@@ -156,16 +179,28 @@ local FallbackIcons = {
 	loading = "rbxassetid://116535712789945",
 	close = "rbxassetid://6022668916",
 	changelog = "rbxassetid://138133190015277",
-	logo = "rbxassetid://105436073524298",
+	logo = "rbxassetid://333658348",
 	user = "rbxassetid://77400125196692",
 	clock = "rbxassetid://87505349362628",
 	cart = "rbxassetid://114754518183872",
 	nogetkey = "rbxassetid://119765975153029"
 }
 local CachedIcons = {}
+local TrackedConnections = {}
+local function trackConnection(conn)
+	table.insert(TrackedConnections, conn)
+	return conn
+end
+local function disconnectAllTracked()
+	for i = #TrackedConnections, 1, -1 do
+		local conn = TrackedConnections[i]
+		if conn then pcall(function() conn:Disconnect() end) end
+		TrackedConnections[i] = nil
+	end
+end
 local FolderName = "Zyrix"
 local IconsFolder = "Icons"
-local DefaultLogoAsset = "rbxassetid://94718337725407"
+local DefaultLogoAsset = "rbxassetid://333658348"
 local function isMobile()
 	return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 end
@@ -369,7 +404,7 @@ local function setupDragging(header, main)
 			end)
 		end
 	end)
-	UserInputService.InputChanged:Connect(function(input)
+	trackConnection(UserInputService.InputChanged:Connect(function(input)
 		if not dragging or not dragInput then return end
 		if input.UserInputType == Enum.UserInputType.MouseMovement then
 			local delta = input.Position - dragStart
@@ -380,7 +415,7 @@ local function setupDragging(header, main)
 				main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 			end
 		end
-	end)
+	end))
 end
 local function validateKey(key, validateFunc)
 	if not validateFunc or not key or key == "" then return false end
@@ -709,6 +744,7 @@ local function ShowLoadingScreen(onComplete)
 	local deadline = os.clock() + 45
 	while not completed and os.clock() < deadline do task.wait(0.05) end
 	if not completed then
+		animationRunning = false
 		warn("[Zyrix] Loading timed out — continuing with fallback icons")
 		loadIconsFast()
 		if onComplete then onComplete() end
@@ -2083,6 +2119,10 @@ local function BuildKeyUI()
 	userBtn.MouseButton1Click:Connect(function() ui.toggleUser(userIcon) end)
 	changelogBtn.MouseButton1Click:Connect(function() ui.toggleCL(changelogIcon) end)
 	local spinConnection, dotsThread
+	screenGui.Destroying:Connect(function()
+		if spinConnection then spinConnection:Disconnect() spinConnection = nil end
+		if dotsThread then task.cancel(dotsThread) dotsThread = nil end
+	end)
 	local function setStatus(state, customText)
 		if spinConnection then spinConnection:Disconnect() spinConnection = nil statusIcon.Rotation = 0 end
 		if dotsThread then task.cancel(dotsThread) dotsThread = nil end
@@ -2330,8 +2370,8 @@ local HubRegistry = {
 }
 local function applyWindowConfig(config)
 	if not config then return end
-	if config.Name then Zyrix.Appearance.Title = string.lower(config.Name) end
-	if config.LoadingTitle then Zyrix.Appearance.Title = string.lower(config.LoadingTitle) end
+	if config.Name then Zyrix.Appearance.Title = config.Name end
+	if config.LoadingTitle then Zyrix.Appearance.Title = config.LoadingTitle end
 	if config.LoadingSubtitle then Zyrix.Appearance.Subtitle = config.LoadingSubtitle end
 	if config.Icon and type(config.Icon) == "string" and config.Icon:find("rbxasset") then
 		Zyrix.Appearance.Icon = config.Icon
@@ -2482,22 +2522,22 @@ local function buildZyrixUI()
 		TAB_BAR = readColor("Color_TAB_BAR", Color3.fromRGB(10, 10, 10)),
 		TAB_IDLE = readColor("Color_TAB_IDLE", Color3.fromRGB(0, 0, 0)),
 		TAB_ACTIVE = readColor("Color_TAB_ACTIVE", Color3.fromRGB(22, 22, 22)),
-		PANEL = readColor("Color_PANEL", Color3.fromRGB(18, 18, 18)),
-		EL = readColor("Color_EL", Color3.fromRGB(12, 12, 12)),
+		PANEL = readColor("Color_PANEL", Color3.fromRGB(16, 16, 16)),
+		EL = readColor("Color_EL", Color3.fromRGB(10, 10, 10)),
 		INNER = readColor("Color_INNER", Color3.fromRGB(22, 22, 22)),
-		PROGRESS = readColor("Color_PROGRESS", Color3.fromRGB(168, 168, 168)),
-		KNOB_ON = readColor("Color_KNOB_ON", Color3.fromRGB(192, 192, 192)),
-		KNOB_OFF = readColor("Color_KNOB_OFF", Color3.fromRGB(168, 168, 168)),
-		DD_ITEM = readColor("Color_DD_ITEM", Color3.fromRGB(24, 24, 24)),
-		DD_LIST = readColor("Color_DD_LIST", Color3.fromRGB(18, 18, 18)),
-		STROKE = readColor("Color_STROKE", Color3.fromRGB(30, 30, 30)),
-		STROKE_IN = readColor("Color_STROKE_IN", Color3.fromRGB(51, 51, 51)),
-		DIVIDER = readColor("Color_DIVIDER", Color3.fromRGB(37, 37, 37)),
+		PROGRESS = readColor("Color_PROGRESS", Color3.fromRGB(255, 209, 0)),
+		KNOB_ON = readColor("Color_KNOB_ON", Color3.fromRGB(255, 209, 0)),
+		KNOB_OFF = readColor("Color_KNOB_OFF", Color3.fromRGB(100, 100, 100)),
+		DD_ITEM = readColor("Color_DD_ITEM", Color3.fromRGB(22, 22, 22)),
+		DD_LIST = readColor("Color_DD_LIST", Color3.fromRGB(16, 16, 16)),
+		STROKE = readColor("Color_STROKE", Color3.fromRGB(38, 38, 38)),
+		STROKE_IN = readColor("Color_STROKE_IN", Color3.fromRGB(55, 55, 55)),
+		DIVIDER = readColor("Color_DIVIDER", Color3.fromRGB(35, 35, 35)),
 		TEXT = readColor("Color_TEXT", Color3.fromRGB(255, 255, 255)),
-		TEXT_DIM = readColor("Color_TEXT_DIM", Color3.fromRGB(180, 180, 180)),
-		TEXT_GREY = readColor("Color_TEXT_GREY", Color3.fromRGB(120, 120, 120)),
-		WHITE = readColor("Color_WHITE", Color3.fromRGB(255, 255, 255)),
-		HOVER = readColor("Color_HOVER", Color3.fromRGB(18, 18, 18)),
+		TEXT_DIM = readColor("Color_TEXT_DIM", Color3.fromRGB(155, 155, 155)),
+		TEXT_GREY = readColor("Color_TEXT_GREY", Color3.fromRGB(110, 110, 110)),
+		WHITE = readColor("Color_WHITE", Color3.fromRGB(255, 209, 0)),
+		HOVER = readColor("Color_HOVER", Color3.fromRGB(26, 26, 26)),
 		DOOR = readColor("Color_DOOR", Color3.fromRGB(0, 0, 0)),
 	}
 	local function tw(obj, t, props, style, dir)
@@ -3087,7 +3127,7 @@ local function buildZyrixUI()
 	if not (_templateRoot and _templateRoot:GetAttribute("Color_TEXT")) then
 		logoImg.ImageColor3 = C.TEXT
 	end
-	local hubTitle = string.lower((HubRegistry.windowConfig and HubRegistry.windowConfig.Name) or Zyrix.Appearance.Title or "zyrix")
+	local hubTitle = (HubRegistry.windowConfig and HubRegistry.windowConfig.Name) or Zyrix.Appearance.Title or "B4TMAN // Interface"
 	local titleLabel = header:FindFirstChild("Title")
 	if not titleLabel then
 		titleLabel = lbl({ Parent = header, Name = "Title", Size = UDim2.new(1, -58, 1, 0), Position = UDim2.new(0, 48, 0, 0), Text = hubTitle, Font = Enum.Font.GothamBold, TextSize = 18, TextColor3 = C.TEXT })
@@ -3854,7 +3894,7 @@ local function buildZyrixUI()
 			closeBtn.Text = "CLOSE"
 		end
 	end
-	UIS.InputChanged:Connect(function(input)
+	trackConnection(UIS.InputChanged:Connect(function(input)
 		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 			local d = input.Position - dragStart
 			root.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
@@ -3885,13 +3925,13 @@ local function buildZyrixUI()
 				end
 			end
 		end
-	end)
-	UIS.InputEnded:Connect(function(input)
+	end))
+	trackConnection(UIS.InputEnded:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			sliderDragTrack = nil
 			dragging = false
 		end
-	end)
+	end))
 	local function beginDrag(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			dragging = true
@@ -4045,13 +4085,13 @@ local function buildZyrixUI()
 		return Enum.KeyCode.K
 	end
 	local toggleKey = resolveToggleKey(HubRegistry.toggleKeybind or "K")
-	UIS.InputBegan:Connect(function(input, gp)
+	trackConnection(UIS.InputBegan:Connect(function(input, gp)
 		if keybindCapture and keybindCapture(input) then return end
 		if gp then return end
 		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == toggleKey then
 			handleToggleInput()
 		end
-	end)
+	end))
 	setCollapsed()
 	root.Visible = true
 	updateCloseBtn()
@@ -4089,6 +4129,7 @@ function ZyrixUI._reset()
 	uiOpenPanel = nil
 	uiClosePanel = nil
 	uiExpandPanel = nil
+	disconnectAllTracked()
 	if uiScreenGui then
 		pcall(function() uiScreenGui:Destroy() end)
 		uiScreenGui = nil
@@ -4112,7 +4153,7 @@ fireOnSuccess = function()
 		end)
 		task.spawn(function()
 			if Zyrix and Zyrix.Notify then
-				Zyrix:Notify("zyrix", "Interface loaded — press K to toggle", 3, "success")
+				Zyrix:Notify("B4TMAN // Interface", "Interface loaded — press K to toggle", 3, "success")
 			end
 		end)
 	end)
@@ -4131,7 +4172,7 @@ if not genv.ZyrixSkipDefaultHub then
 	Demo.TargetPart = Demo.TargetPart or "Head"
 	Demo.TargetKey = Demo.TargetKey or Enum.KeyCode.Q
 	local Window = Zyrix:CreateWindow({
-		Name = "zyrix",
+		Name = "B4TMAN // Interface",
 		ToggleUIKeybind = "K",
 		KeySystem = false,
 	})
@@ -4240,9 +4281,9 @@ if not genv.ZyrixSkipDefaultHub then
 		Callback = function(o) Demo.Theme = o[1] end,
 	})
 	Zyrix.Callbacks.OnSuccess = function()
-		print("[Zyrix] Hub loaded! Press K to toggle.")
+		print("[B4TMAN] Hub loaded! Press K to toggle.")
 	end
-	print("[Zyrix] Launching hub...")
+	print("[B4TMAN] Launching hub...")
 	Zyrix:Launch()
 end
 return Zyrix
