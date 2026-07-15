@@ -169,7 +169,7 @@ local IconFiles = {
 	nogetkey = "lucide--lock.png"
 }
 local FallbackIcons = {
-	key = "rbxassetid://96510194465420",
+	key = "rbxassetid://120000763572538",
 	shield = "rbxassetid://89965059528921",
 	check = "rbxassetid://76078495178149",
 	copy = "rbxassetid://125851897718493",
@@ -434,7 +434,7 @@ local function CreateDoorOverlay(parentFrame, width, height)
 	overlay.ZIndex = 50
 	overlay.Parent = parentFrame
 	local parentCorner = parentFrame:FindFirstChildOfClass("UICorner")
-	local parentRadius = (parentCorner and parentCorner.CornerRadius.Offset) or 16
+	local parentRadius = (parentCorner and parentCorner.CornerRadius.Offset) or 0
 	local leftDoor = Instance.new("Frame")
 	leftDoor.Name = "LeftDoor"
 	leftDoor.Size = UDim2.new(0.5, 0, 1, 0)
@@ -2009,7 +2009,7 @@ local function BuildKeyUI()
 		shopFrame.ClipsDescendants = true
 		shopFrame.Parent = mainFrame
 		local shopCorner = Instance.new("UICorner", shopFrame)
-		shopCorner.CornerRadius = UDim.new(0, 4)
+		shopCorner.CornerRadius = UDim.new(0, 0)
 		local shopTopFix = Instance.new("Frame")
 		shopTopFix.Size = UDim2.new(1, 0, 0, 8)
 		shopTopFix.Position = UDim2.new(0, 0, 0, 0)
@@ -2545,7 +2545,7 @@ local function buildZyrixUI()
 	end
 	local function corner(p, r)
 		local c = Instance.new("UICorner", p)
-		c.CornerRadius = r or UDim.new(0, 6)
+		c.CornerRadius = r or UDim.new(0, 0)
 		return c
 	end
 	local function stroke(p, col, thick)
@@ -2798,7 +2798,7 @@ local function buildZyrixUI()
 			Active = true,
 			Parent = root,
 		})
-		corner(tabBar, UDim.new(1, 0))
+		corner(tabBar, UDim.new(0, 0))
 		stroke(tabBar, C.STROKE)
 	else
 		tabBar.Position = UDim2.new(0, 0, 0, 0)
@@ -2875,7 +2875,7 @@ local function buildZyrixUI()
 			Active = true,
 			Parent = root,
 		})
-		corner(main, UDim.new(0, 16))
+		corner(main, UDim.new(0, 0))
 		stroke(main, C.STROKE)
 	else
 		main.Size = UDim2.new(0, WIN_W, 0, WIN_H)
@@ -2979,7 +2979,7 @@ local function buildZyrixUI()
 				Text = name,
 				TextColor3 = name == activeTab and C.WHITE or C.TEXT_DIM,
 			})
-			corner(t, UDim.new(1, 0))
+			corner(t, UDim.new(0, 0))
 			stroke(t, C.STROKE_IN, 0.8)
 			pad(t, 0, 0, 14, 14)
 			local ind = frame({
@@ -2991,7 +2991,7 @@ local function buildZyrixUI()
 				Visible = name == activeTab,
 				Parent = t,
 			})
-			corner(ind, UDim.new(1, 0))
+			corner(ind, UDim.new(0, 0))
 		end
 		t.MouseButton1Click:Connect(function() selectTab(name, true) end)
 		t.MouseEnter:Connect(function()
@@ -3030,7 +3030,7 @@ local function buildZyrixUI()
 			C.DOOR = leftDoor.BackgroundColor3
 		end
 	end
-	local mainCornerRadius = (main:FindFirstChildOfClass("UICorner") and main:FindFirstChildOfClass("UICorner").CornerRadius.Offset) or 16
+	local mainCornerRadius = (main:FindFirstChildOfClass("UICorner") and main:FindFirstChildOfClass("UICorner").CornerRadius.Offset) or 0
 	local doc = doorOverlay:FindFirstChildOfClass("UICorner") or Instance.new("UICorner", doorOverlay)
 	doc.CornerRadius = UDim.new(0, mainCornerRadius)
 	local ldc = leftDoor:FindFirstChildOfClass("UICorner") or Instance.new("UICorner", leftDoor)
@@ -3235,7 +3235,7 @@ local function buildZyrixUI()
 			ClipsDescendants = true,
 			Parent = body,
 		})
-		corner(leftCol, UDim.new(0, 2))
+		corner(leftCol, UDim.new(0, 0))
 		local leftList = Instance.new("UIListLayout", leftCol)
 		leftList.SortOrder = Enum.SortOrder.LayoutOrder
 		leftList.Padding = UDim.new(0, 2)
@@ -3308,7 +3308,7 @@ local function buildZyrixUI()
 		local toggleRow = row(parent, "Toggle", ROW_H, order)
 		lbl({ Parent = toggleRow, Size = UDim2.new(1, -56, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 14, TextColor3 = C.TEXT })
 		local switch = frame({ Parent = toggleRow, Size = UDim2.new(0, 42, 0, 22), Position = UDim2.new(1, -48, 0.5, -11), BackgroundColor3 = defaultOn and C.STROKE_IN or C.INNER })
-		corner(switch, UDim.new(1, 0))
+		corner(switch, UDim.new(0, 0))
 		stroke(switch, C.STROKE_IN)
 		local knob = frame({
 			Parent = switch,
@@ -3316,7 +3316,7 @@ local function buildZyrixUI()
 			Position = defaultOn and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0, 2, 0.5, -9),
 			BackgroundColor3 = defaultOn and C.KNOB_ON or C.KNOB_OFF,
 		})
-		corner(knob, UDim.new(1, 0))
+		corner(knob, UDim.new(0, 2))
 		local on = defaultOn == true
 		local function applyState(state, skipCb)
 			on = state == true
@@ -3341,10 +3341,10 @@ local function buildZyrixUI()
 		local sliderRow = row(parent, "Slider", SLIDER_ROW_H, order)
 		lbl({ Parent = sliderRow, Size = UDim2.new(0.45, 0, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 14, TextColor3 = C.TEXT })
 		local sliderTrack = frame({ Name = "SliderTrack", Parent = sliderRow, Size = UDim2.new(0.52, 0, 0, 24), Position = UDim2.new(0.46, 0, 0.5, -12), BackgroundColor3 = C.INNER })
-		corner(sliderTrack, UDim.new(0, 4))
+		corner(sliderTrack, UDim.new(0, 0))
 		stroke(sliderTrack, C.STROKE_IN)
 		local sliderFill = frame({ Name = "Progress", Parent = sliderTrack, Size = UDim2.new(defaultPct, 0, 1, 0), BackgroundColor3 = C.PROGRESS })
-		corner(sliderFill, UDim.new(0, 4))
+		corner(sliderFill, UDim.new(0, 0))
 		maxValue = maxValue or (suffix and 1000 or 100)
 		local minValue = (el and el.Min) or 0
 		if el and el.Max and el.Min then
@@ -3528,7 +3528,7 @@ local function buildZyrixUI()
 		clipFrame.Visible = false
 		clipFrame.Parent = ddContainer
 		local clipCorner = Instance.new("UICorner")
-		clipCorner.CornerRadius = UDim.new(0, 6)
+		clipCorner.CornerRadius = UDim.new(0, 0)
 		clipCorner.Parent = clipFrame
 		local clipStroke = Instance.new("UIStroke")
 		clipStroke.Color = C.STROKE
@@ -3555,7 +3555,7 @@ local function buildZyrixUI()
 		ddList.ElasticBehavior = Enum.ElasticBehavior.WhenScrollable
 		ddList.Parent = clipFrame
 		local ddListCorner = Instance.new("UICorner")
-		ddListCorner.CornerRadius = UDim.new(0, 6)
+		ddListCorner.CornerRadius = UDim.new(0, 0)
 		ddListCorner.Parent = ddList
 		local listLayout = Instance.new("UIListLayout")
 		listLayout.Padding = UDim.new(0, 4)
@@ -3619,7 +3619,7 @@ local function buildZyrixUI()
 			itemStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 			itemStroke.Parent = item
 			local itemCorner = Instance.new("UICorner")
-			itemCorner.CornerRadius = UDim.new(0, 4)
+			itemCorner.CornerRadius = UDim.new(0, 0)
 			itemCorner.Parent = item
 			local itemTitle = Instance.new("TextLabel")
 			itemTitle.Name = "Title"
@@ -3697,7 +3697,7 @@ local function buildZyrixUI()
 			Position = UDim2.new(1, -44, 0.5, -13),
 			BackgroundColor3 = C.INNER,
 		})
-		corner(keyBox, UDim.new(0, 4))
+		corner(keyBox, UDim.new(0, 0))
 		stroke(keyBox, C.STROKE_IN)
 		local currentKey = resolveKeyCode(defaultKey)
 		local keyLabel = lbl({
@@ -3744,7 +3744,7 @@ local function buildZyrixUI()
 		box.Text = ""
 		box.ClearTextOnFocus = false
 		box.Parent = inputRow
-		corner(box, UDim.new(0, 4))
+		corner(box, UDim.new(0, 0))
 		stroke(box, C.STROKE_IN)
 		pad(box, 0, 0, 8, 8)
 		if el then el._box = box end
@@ -3874,7 +3874,7 @@ local function buildZyrixUI()
 			TextColor3 = C.TEXT,
 			ZIndex = 20,
 		})
-		corner(closeBtn, UDim.new(1, 0))
+		corner(closeBtn, UDim.new(0, 0))
 		stroke(closeBtn, C.STROKE)
 	else
 		closeBtn.ZIndex = 20
