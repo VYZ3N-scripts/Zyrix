@@ -8,7 +8,7 @@
 ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝
 
     GitHub - https://github.com/VYZ3N-scripts
-    Author - Z4ITH
+    creator - adrenaline
 ]]
 
 repeat task.wait() until game:IsLoaded()
@@ -1439,12 +1439,13 @@ local function BuildKeylessUI()
 	if oldGui2 then oldGui2:Destroy() end
 	enableBlur()
 	local mobile = isMobile()
+	local scale = getScale()
 	local padding = 14
-	local windowWidth = 300
-	local windowHeight = 265
-	local userPanelWidth = 165
-	local changelogPanelWidth = 200
-	local gap = 12
+	local windowWidth = mobile and math.clamp(300 * scale, 260, 320) or 300
+	local windowHeight = mobile and math.clamp(265 * scale, 240, 280) or 265
+	local userPanelWidth = mobile and math.clamp(165 * scale, 140, 170) or 165
+	local changelogPanelWidth = mobile and math.clamp(200 * scale, 170, 210) or 200
+	local gap = mobile and 10 or 12
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "ZyrixKeylessSystem"
 	gui.ResetOnSpawn = false
@@ -2471,6 +2472,82 @@ local uiScreenGui
 local uiOpenPanel
 local uiClosePanel
 local uiExpandPanel
+
+-- Theme system: presets and current state
+local THEME_PRESETS = {
+	Black = {
+		WIN = Color3.fromRGB(6, 6, 6),
+		TAB_BAR = Color3.fromRGB(12, 12, 12),
+		TAB_IDLE = Color3.fromRGB(6, 6, 6),
+		TAB_ACTIVE = Color3.fromRGB(18, 18, 18),
+		PANEL = Color3.fromRGB(12, 12, 12),
+		EL = Color3.fromRGB(8, 8, 8),
+		INNER = Color3.fromRGB(18, 18, 18),
+		PROGRESS = Color3.fromRGB(170, 170, 170),
+		KNOB_ON = Color3.fromRGB(170, 170, 170),
+		KNOB_OFF = Color3.fromRGB(80, 80, 80),
+		DD_ITEM = Color3.fromRGB(18, 18, 18),
+		DD_LIST = Color3.fromRGB(12, 12, 12),
+		STROKE = Color3.fromRGB(45, 45, 45),
+		STROKE_IN = Color3.fromRGB(55, 55, 55),
+		DIVIDER = Color3.fromRGB(35, 35, 35),
+		TEXT = Color3.fromRGB(235, 235, 235),
+		TEXT_DIM = Color3.fromRGB(130, 130, 130),
+		TEXT_GREY = Color3.fromRGB(100, 100, 100),
+		WHITE = Color3.fromRGB(170, 170, 170),
+		HOVER = Color3.fromRGB(22, 22, 22),
+		DOOR = Color3.fromRGB(6, 6, 6),
+	},
+	Red = {
+		WIN = Color3.fromRGB(20, 5, 5),
+		TAB_BAR = Color3.fromRGB(30, 8, 8),
+		TAB_IDLE = Color3.fromRGB(20, 5, 5),
+		TAB_ACTIVE = Color3.fromRGB(45, 12, 12),
+		PANEL = Color3.fromRGB(30, 8, 8),
+		EL = Color3.fromRGB(25, 6, 6),
+		INNER = Color3.fromRGB(45, 12, 12),
+		PROGRESS = Color3.fromRGB(200, 30, 30),
+		KNOB_ON = Color3.fromRGB(200, 30, 30),
+		KNOB_OFF = Color3.fromRGB(100, 30, 30),
+		DD_ITEM = Color3.fromRGB(45, 12, 12),
+		DD_LIST = Color3.fromRGB(30, 8, 8),
+		STROKE = Color3.fromRGB(80, 20, 20),
+		STROKE_IN = Color3.fromRGB(100, 25, 25),
+		DIVIDER = Color3.fromRGB(60, 15, 15),
+		TEXT = Color3.fromRGB(235, 235, 235),
+		TEXT_DIM = Color3.fromRGB(180, 100, 100),
+		TEXT_GREY = Color3.fromRGB(120, 80, 80),
+		WHITE = Color3.fromRGB(200, 30, 30),
+		HOVER = Color3.fromRGB(35, 10, 10),
+		DOOR = Color3.fromRGB(20, 5, 5),
+	},
+}
+local currentTheme = "Black"
+local function applyThemeToColors(C)
+	local preset = THEME_PRESETS[currentTheme]
+	if not preset then return end
+	for k, v in pairs(preset) do
+		C[k] = v
+	end
+end
+
+-- Listen for server-wide theme changes
+local ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
+local themeEvent = ReplicatedStorage:FindFirstChild("ZyrixThemeEvent")
+if themeEvent then
+	themeEvent.OnClientEvent:Connect(function(themeName)
+		if THEME_PRESETS[themeName] then
+			currentTheme = themeName
+			-- Rebuild the UI with the new theme
+			if genv.ZyrixUI and genv.ZyrixUI.Refresh then
+				task.spawn(function()
+					genv.ZyrixUI:Refresh()
+				end)
+			end
+		end
+	end)
+end
+
 local function buildZyrixUI()
 	local uiParent = hui
 	local oldGui = uiParent:FindFirstChild("ZyrixMainUI")
@@ -2540,6 +2617,7 @@ local function buildZyrixUI()
 		HOVER = readColor("Color_HOVER", Color3.fromRGB(22, 22, 22)),
 		DOOR = readColor("Color_DOOR", Color3.fromRGB(6, 6, 6)),
 	}
+	applyThemeToColors(C)
 	local function tw(obj, t, props, style, dir)
 		TS:Create(obj, TweenInfo.new(t, style or Enum.EasingStyle.Quart, dir or Enum.EasingDirection.Out), props):Play()
 	end
@@ -2593,6 +2671,22 @@ local function buildZyrixUI()
 	local SLIDER_ROW_H = readNum("Size_SLIDER_ROW_H", 52)
 	local CONTENT_H = readNum("Size_CONTENT_H", 380)
 	local TAB_INNER = TAB_H - 8
+	local _mobile = isMobile()
+	local _scale = getScale()
+	local TAB_BTN_W = 91
+	local TAB_BTN_H = 33
+	if _mobile then
+		WIN_W = math.clamp(WIN_W * 0.55, 300, 380)
+		WIN_H = math.clamp(WIN_H * 0.85, 340, 420)
+		TAB_H = math.clamp(TAB_H * _scale, 36, 44)
+		TAB_INNER = TAB_H - 8
+		GAP = math.max(6, math.floor(GAP * _scale))
+		ROW_H = math.clamp(ROW_H * _scale, 38, 44)
+		SLIDER_ROW_H = math.clamp(SLIDER_ROW_H * _scale, 44, 52)
+		CONTENT_H = WIN_H - 60
+		TAB_BTN_W = math.floor(TAB_BTN_W * _scale)
+		TAB_BTN_H = math.floor(TAB_BTN_H * _scale)
+	end
 	local openDropdown = nil
 	local sliderDragTrack = nil
 	local sliderRegistry = {}
@@ -2772,6 +2866,10 @@ local function buildZyrixUI()
 	local templateTabBar = root and root:FindFirstChild("TabBar")
 	if templateTabBar then
 		TAB_H = templateTabBar.Size.Y.Offset
+		TAB_INNER = TAB_H - 6
+	end
+	if _mobile then
+		TAB_H = math.clamp(TAB_H * _scale, 36, 44)
 		TAB_INNER = TAB_H - 6
 	end
 	if not root then
@@ -2958,9 +3056,9 @@ local function buildZyrixUI()
 		local t = tabScroll:FindFirstChild(name)
 		if t and t:IsA("TextButton") and not t:GetAttribute("_zyrixConnected") then
 			t.LayoutOrder = i
-			t.Size = UDim2.new(0, 91, 0, 33)
+			t.Size = UDim2.new(0, TAB_BTN_W, 0, TAB_BTN_H)
 			t.AutomaticSize = Enum.AutomaticSize.None
-			t.TextSize = 13
+			t.TextSize = _mobile and 12 or 13
 			t.Font = Enum.Font.GothamMedium
 			t.TextXAlignment = Enum.TextXAlignment.Center
 			t.TextYAlignment = Enum.TextYAlignment.Center
@@ -2976,13 +3074,13 @@ local function buildZyrixUI()
 			t = btn({
 				Name = name,
 				Parent = tabScroll,
-				Size = UDim2.new(0, 91, 0, 33),
+				Size = UDim2.new(0, TAB_BTN_W, 0, TAB_BTN_H),
 				AutomaticSize = Enum.AutomaticSize.None,
 				BackgroundColor3 = name == activeTab and C.TAB_ACTIVE or C.TAB_IDLE,
 				BackgroundTransparency = 0,
 				LayoutOrder = i,
 				Font = Enum.Font.GothamMedium,
-				TextSize = 13,
+				TextSize = _mobile and 12 or 13,
 				Text = name,
 				TextColor3 = name == activeTab and C.WHITE or C.TEXT_DIM,
 			})
@@ -3064,7 +3162,7 @@ local function buildZyrixUI()
 	if not doorLogo then
 		doorLogo = Instance.new("ImageLabel")
 		doorLogo.Name = "DoorLogo"
-		doorLogo.Size = UDim2.new(0, 72, 0, 72)
+		doorLogo.Size = UDim2.new(0, _mobile and math.floor(72 * _scale) or 72, 0, _mobile and math.floor(72 * _scale) or 72)
 		doorLogo.Position = UDim2.new(0.5, 0, 0.5, 0)
 		doorLogo.AnchorPoint = Vector2.new(0.5, 0.5)
 		doorLogo.BackgroundTransparency = 1
@@ -3120,7 +3218,7 @@ local function buildZyrixUI()
 	end
 	local logoBtn = header:FindFirstChild("openTab")
 	if not logoBtn then
-		logoBtn = btn({ Name = "openTab", Parent = header, Size = UDim2.new(0, 32, 0, 32), Position = UDim2.new(0, 8, 0.5, -16), BackgroundTransparency = 1 })
+		logoBtn = btn({ Name = "openTab", Parent = header, Size = UDim2.new(0, _mobile and 28 or 32, 0, _mobile and 28 or 32), Position = UDim2.new(0, 8, 0.5, _mobile and -14 or -16), BackgroundTransparency = 1 })
 	end
 	local logoImg = logoBtn:FindFirstChildOfClass("ImageLabel")
 	if not logoImg then
@@ -3137,7 +3235,7 @@ local function buildZyrixUI()
 	local hubTitle = (HubRegistry.windowConfig and HubRegistry.windowConfig.Name) or Zyrix.Appearance.Title or "B4TMAN // Interface"
 	local titleLabel = header:FindFirstChild("Title")
 	if not titleLabel then
-		titleLabel = lbl({ Parent = header, Name = "Title", Size = UDim2.new(1, -58, 0, 20), Position = UDim2.new(0, 48, 0, 2), Text = hubTitle, Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = C.TEXT })
+		titleLabel = lbl({ Parent = header, Name = "Title", Size = UDim2.new(1, -58, 0, 20), Position = UDim2.new(0, 48, 0, 2), Text = hubTitle, Font = Enum.Font.GothamBold, TextSize = _mobile and 14 or 16, TextColor3 = C.TEXT })
 	else
 		titleLabel.Text = hubTitle
 		if not _templateRoot:GetAttribute("Color_TEXT") then
@@ -3870,7 +3968,7 @@ local function buildZyrixUI()
 		closeBtn = btn({
 			Name = "CloseToggle",
 			Parent = sg,
-			Size = UDim2.new(0, 40, 0, 40),
+			Size = UDim2.new(0, _mobile and 36 or 40, 0, _mobile and 36 or 40),
 			Position = UDim2.new(1, -14, 0, 14),
 			AnchorPoint = Vector2.new(1, 0),
 			BackgroundColor3 = Color3.fromRGB(15, 18, 21),
@@ -4293,6 +4391,31 @@ if not genv.ZyrixSkipDefaultHub then
 		CurrentOption = {"White"},
 		Callback = function(o) Demo.Theme = o[1] end,
 	})
+	-- Owner-only tab: visible only to VYZEN_NN
+	if Players.LocalPlayer and Players.LocalPlayer.Name == "VYZEN_NN" then
+		local Owner = Window:CreateTab("Owner")
+		Owner:CreateSection("Theme Switcher")
+		Owner:CreateButton({
+			Name = "Black Theme",
+			Callback = function()
+				local rs = cloneref(game:GetService("ReplicatedStorage"))
+				local ev = rs:FindFirstChild("ZyrixThemeEvent")
+				if ev then
+					ev:FireServer("Black")
+				end
+			end,
+		})
+		Owner:CreateButton({
+			Name = "Red Theme",
+			Callback = function()
+				local rs = cloneref(game:GetService("ReplicatedStorage"))
+				local ev = rs:FindFirstChild("ZyrixThemeEvent")
+				if ev then
+					ev:FireServer("Red")
+				end
+			end,
+		})
+	end
 	Zyrix.Callbacks.OnSuccess = function()
 		print("[B4TMAN] Hub loaded! Press K to toggle.")
 	end
