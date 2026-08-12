@@ -280,11 +280,10 @@ local function getIcon(iconName)
 	return CachedIcons[iconName] or FallbackIcons[iconName]
 end
 local function getLogoIcon()
-	if Zyrix.Appearance.Icon == DefaultLogoAsset then return getIcon("logo") end
-	return Zyrix.Appearance.Icon
+	return getIcon("logo")
 end
 local function shouldDownloadLogo()
-	return Zyrix.Appearance.Icon == DefaultLogoAsset
+	return false
 end
 local function getShopIcon()
 	if Zyrix.Shop.Icon == "" then return getLogoIcon() end
