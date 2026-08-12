@@ -266,29 +266,15 @@ local function httpGetRaw(url)
 		end)
 		if ok and result and #result > 0 then return result end
 	end
-	-- Fall back to game:HttpGet (some executors try to parse JSON, but pcall catches it)
-	local ok2, result2 = pcall(function() return game:HttpGet(url) end)
-	if ok2 and result2 and #result2 > 0 then return result2 end
+	-- Do NOT use game:HttpGet — many executors try to JSON-parse the response
+	-- and throw "Can't parse JSON" errors that bypass pcall
 	return nil
 end
 local function downloadIcon(iconName)
-	if not fileSystemSupported then
-		CachedIcons[iconName] = FallbackIcons[iconName]
-		return false
-	end
-	local path = getIconPath(iconName)
-	if isIconCached(iconName) then
-		local success = pcall(function() CachedIcons[iconName] = getcustomasset(path) end)
-		if success then return true end
-	end
-	local success = pcall(function()
-		local response = httpGetRaw(IconBaseURL .. IconFiles[iconName])
-		if not response or #response < 100 then error("Invalid") end
-		writefile(path, response)
-		CachedIcons[iconName] = getcustomasset(path)
-	end)
-	if not success then CachedIcons[iconName] = FallbackIcons[iconName] end
-	return success
+	-- Always use fallback icons — HTTP icon downloads cause JSON parse errors
+	-- in executors that wrap game:HttpGet with JSON parsing
+	CachedIcons[iconName] = FallbackIcons[iconName]
+	return false
 end
 local function getIcon(iconName)
 	return CachedIcons[iconName] or FallbackIcons[iconName]
