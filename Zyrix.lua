@@ -255,6 +255,22 @@ local function isIconCached(iconName)
 	local success, result = pcall(function() return isfile(getIconPath(iconName)) end)
 	return success and result
 end
+local function httpGetRaw(url)
+	-- Try request/http_request first (returns raw body, no JSON parsing)
+	local reqFunc = (syn and syn.request) or http_request or request or http_request
+	if reqFunc then
+		local ok, result = pcall(function()
+			local res = reqFunc({Url = url, Method = "GET"})
+			if type(res) == "table" then return res.Body or "" end
+			return tostring(res)
+		end)
+		if ok and result and #result > 0 then return result end
+	end
+	-- Fall back to game:HttpGet (some executors try to parse JSON, but pcall catches it)
+	local ok2, result2 = pcall(function() return game:HttpGet(url) end)
+	if ok2 and result2 and #result2 > 0 then return result2 end
+	return nil
+end
 local function downloadIcon(iconName)
 	if not fileSystemSupported then
 		CachedIcons[iconName] = FallbackIcons[iconName]
@@ -266,8 +282,8 @@ local function downloadIcon(iconName)
 		if success then return true end
 	end
 	local success = pcall(function()
-		local response = game:HttpGet(IconBaseURL .. IconFiles[iconName])
-		if #response < 100 then error("Invalid") end
+		local response = httpGetRaw(IconBaseURL .. IconFiles[iconName])
+		if not response or #response < 100 then error("Invalid") end
 		writefile(path, response)
 		CachedIcons[iconName] = getcustomasset(path)
 	end)
@@ -2297,7 +2313,9 @@ function Zyrix:LaunchJunkie(config)
 	end
 	genv.ZyrixClosed = false
 	EnsureIconsReady(function()
-		local success, Junkie = pcall(function() return loadstring(game:HttpGet("https://jnkie.com/sdk/library.lua"))() end)
+		local junkieSource = httpGetRaw("https://jnkie.com/sdk/library.lua")
+		if not junkieSource then Zyrix:Notify("Error", "Failed to load Junkie SDK (HTTP failed)", 5, "error") return end
+		local success, Junkie = pcall(function() return loadstring(junkieSource)() end)
 		if not success or not Junkie then Zyrix:Notify("Error", "Failed to load Junkie SDK", 5, "error") return end
 		Junkie.service = config.Service
 		Junkie.identifier = config.Identifier
