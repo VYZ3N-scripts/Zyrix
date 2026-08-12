@@ -2370,35 +2370,33 @@ local HubRegistry = {
 	toggleKeybind = "K",
 }
 local function applyWindowConfig(config)
-	if not config then return end
-	if config.Name then Zyrix.Appearance.Title = config.Name end
-	if config.LoadingTitle then Zyrix.Appearance.Title = config.LoadingTitle end
-	if config.LoadingSubtitle then Zyrix.Appearance.Subtitle = config.LoadingSubtitle end
-	if config.Icon and type(config.Icon) == "string" and config.Icon:find("rbxasset") then
-		Zyrix.Appearance.Icon = config.Icon
-	end
-	if config.ToggleUIKeybind then HubRegistry.toggleKeybind = config.ToggleUIKeybind end
+	-- FIXED KEY SYSTEM
 	if config.KeySystem == false then
 		Zyrix.Options.Keyless = true
 		Zyrix.Options.KeylessUI = false
-	elseif config.KeySystem == true and config.KeySettings then
+	elseif config.KeySystem == true then
+		-- Force key system ON
 		Zyrix.Options.Keyless = false
-		local ks = config.KeySettings
-		if ks.Title then Zyrix.Appearance.Title = ks.Title end
-		if ks.Subtitle then Zyrix.Appearance.Subtitle = ks.Subtitle end
-		if ks.Note then Zyrix.Appearance.Subtitle = ks.Note end
-		if ks.FileName then Zyrix.Storage.FileName = ks.FileName end
-		if ks.SaveKey ~= nil then Zyrix.Storage.Remember = ks.SaveKey end
-		if ks.Key and type(ks.Key) == "table" then
-			Zyrix.Callbacks.OnVerify = function(key)
-				for _, validKey in ipairs(ks.Key) do
-					if key == validKey then return true end
+		Zyrix.Options.KeylessUI = false
+
+		-- Support both KeySettings and direct OnVerify
+		if config.KeySettings then
+			local ks = config.KeySettings
+			if ks.Title then Zyrix.Appearance.Title = ks.Title end
+			if ks.Subtitle then Zyrix.Appearance.Subtitle = ks.Subtitle end
+			if ks.Note then Zyrix.Appearance.Subtitle = ks.Note end
+			if ks.FileName then Zyrix.Storage.FileName = ks.FileName end
+			if ks.SaveKey ~= nil then Zyrix.Storage.Remember = ks.SaveKey end
+			if ks.Key and type(ks.Key) == "table" then
+				Zyrix.Callbacks.OnVerify = function(key)
+					for _, validKey in ipairs(ks.Key) do
+						if key == validKey then return true end
+					end
+					return false
 				end
-				return false
 			end
 		end
 	end
-end
 function Zyrix:CreateWindow(config)
 	HubRegistry.tabs = {}
 	HubRegistry.windowConfig = config or {}
