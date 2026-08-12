@@ -64,6 +64,7 @@ end
 genv.ZyrixLoaded = true
 genv.ZyrixClosed = false
 local Zyrix = {}
+genv.Zyrix = Zyrix
 Zyrix.Appearance = {
 	Title = "B4TMAN // Interface",
 	Subtitle = "TACTICAL OPERATING SYSTEM",
@@ -2369,7 +2370,8 @@ function Zyrix:Reset()
 		end
 	end)
 end
-genv.Zyrix = Zyrix
+-- ZyrixLoaded already set early in the script
+genv.ZyrixLoaded = true
 local HubRegistry = {
 	tabs = {},
 	windowConfig = nil,
