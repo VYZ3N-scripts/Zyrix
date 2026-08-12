@@ -2370,33 +2370,30 @@ local HubRegistry = {
 	toggleKeybind = "K",
 }
 local function applyWindowConfig(config)
-	-- FIXED KEY SYSTEM
-	if config.KeySystem == false then
-		Zyrix.Options.Keyless = true
-		Zyrix.Options.KeylessUI = false
-	elseif config.KeySystem == true then
-		-- Force key system ON
-		Zyrix.Options.Keyless = false
-		Zyrix.Options.KeylessUI = false
+if config.KeySystem == false then
+	Zyrix.Options.Keyless = true
+	Zyrix.Options.KeylessUI = false
+elseif config.KeySystem == true then
+	Zyrix.Options.Keyless = false
+	Zyrix.Options.KeylessUI = false
 
-		-- Support both KeySettings and direct OnVerify
-		if config.KeySettings then
-			local ks = config.KeySettings
-			if ks.Title then Zyrix.Appearance.Title = ks.Title end
-			if ks.Subtitle then Zyrix.Appearance.Subtitle = ks.Subtitle end
-			if ks.Note then Zyrix.Appearance.Subtitle = ks.Note end
-			if ks.FileName then Zyrix.Storage.FileName = ks.FileName end
-			if ks.SaveKey ~= nil then Zyrix.Storage.Remember = ks.SaveKey end
-			if ks.Key and type(ks.Key) == "table" then
-				Zyrix.Callbacks.OnVerify = function(key)
-					for _, validKey in ipairs(ks.Key) do
-						if key == validKey then return true end
-					end
-					return false
+	if config.KeySettings then
+		local ks = config.KeySettings
+		if ks.Title then Zyrix.Appearance.Title = ks.Title end
+		if ks.Subtitle then Zyrix.Appearance.Subtitle = ks.Subtitle end
+		if ks.Note then Zyrix.Appearance.Subtitle = ks.Note end
+		if ks.FileName then Zyrix.Storage.FileName = ks.FileName end
+		if ks.SaveKey ~= nil then Zyrix.Storage.Remember = ks.SaveKey end
+		if ks.Key and type(ks.Key) == "table" then
+			Zyrix.Callbacks.OnVerify = function(key)
+				for _, validKey in ipairs(ks.Key) do
+					if key == validKey then return true end
 				end
+				return false
 			end
 		end
 	end
+end
 function Zyrix:CreateWindow(config)
 	HubRegistry.tabs = {}
 	HubRegistry.windowConfig = config or {}
