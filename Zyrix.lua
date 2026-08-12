@@ -183,7 +183,7 @@ local FallbackIcons = {
 	user = "rbxassetid://77400125196692",
 	clock = "rbxassetid://87505349362628",
 	cart = "rbxassetid://114754518183872",
-	nogetkey = "rbxassetid://119765975153029"
+	nogetkey = "rbxassetid://120000763572538"
 }
 local CachedIcons = {}
 local TrackedConnections = {}
