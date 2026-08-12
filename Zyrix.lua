@@ -2248,7 +2248,7 @@ function Zyrix:Launch()
 		if existingKey == "KEYLESS" and hubOnly then
 			openHub()
 			return
-		elseif existingKey == "KEYLESS" then
+		elseif existingKey == "KEYLESS" and Zyrix.Options.Keyless == true then
 			EnsureIconsReady(function() fireOnSuccess() end, true)
 			return
 		elseif Internal.ValidateFunction and validateKey(existingKey, Internal.ValidateFunction) then
