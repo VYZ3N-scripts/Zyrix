@@ -4138,10 +4138,21 @@ local function buildZyrixUI()
 			if setSlider then setSlider(pct, nil, true) end
 		elseif input.UserInputType == Enum.UserInputType.MouseWheel then
 			local mouse = UIS:GetMouseLocation()
+			-- If the mouse is over an open dropdown, let the dropdown handle the
+			-- scroll natively instead of scrolling the parent page.
+			if openDropdown then
+				local clip = openDropdown:FindFirstChild("Clip")
+				if clip and clip.Visible then
+					local cAp, cAs = clip.AbsolutePosition, clip.AbsoluteSize
+					if mouse.X >= cAp.X and mouse.X <= cAp.X + cAs.X and mouse.Y >= cAp.Y and mouse.Y <= cAp.Y + cAs.Y then
+						return
+					end
+				end
+			end
 			local elemAp, elemAs = elements.AbsolutePosition, elements.AbsoluteSize
 			if mouse.X >= elemAp.X and mouse.X <= elemAp.X + elemAs.X and mouse.Y >= elemAp.Y and mouse.Y <= elemAp.Y + elemAs.Y then
 				local maxScroll = math.max(0, elements.AbsoluteCanvasSize.Y - elemAs.Y)
-				if maxScroll > 0 then
+				if maxScroll > 0 and elements.ScrollingEnabled then
 					local scrollDelta = input.Position.Z
 					if scrollDelta == 0 then scrollDelta = 1 end
 					elements.CanvasPosition = Vector2.new(0, math.clamp(elements.CanvasPosition.Y - scrollDelta * 28, 0, maxScroll))
