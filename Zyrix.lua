@@ -179,7 +179,7 @@ local IconFiles = {
 	nogetkey = "lucide--lock.png"
 }
 local FallbackIcons = {
-	key = "rbxassetid://120000763572538",
+	key = "rbxassetid://120859604144547",
 	shield = "rbxassetid://89965059528921",
 	check = "rbxassetid://76078495178149",
 	copy = "rbxassetid://125851897718493",
