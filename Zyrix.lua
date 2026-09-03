@@ -1,4 +1,13 @@
 --[[
+	ZYRIXUI - Standalone Zyrix UI (default configuration)
+	Extracted from FLUX and reset to library defaults:
+	- No custom title/subtitle overrides (uses default "B4TMAN // Interface")
+	-	- No compatibility shim, no icon fixes
+	- Key system ENABLED (example): key = "FluxVI4T", SaveKey = false (asks every run)
+	- Default hub enabled: Combat / Visuals / Movement / Misc tabs
+	Toggle UI key: K
+]]
+--[[
 
 ███████╗██╗   ██╗██████╗ ██╗██╗  ██╗
 ╚══███╔╝╚██╗ ██╔╝██╔══██╗██║╚██╗██╔╝
@@ -2266,27 +2275,34 @@ function Zyrix:Launch()
 		openHub()
 		return
 	end
-	EnsureIconsReady(function()
-		if Zyrix.Options.Keyless == true then
-			if Zyrix.Options.KeylessUI == false then handleKeylessSkip() return end
-			BuildKeylessUI()
-			while not genv.SCRIPT_KEY do task.wait(0.1) end
-			return
-		end
-		if Zyrix.Storage.AutoLoad and Internal.ValidateFunction then
-			local savedKey = loadKey()
-			if savedKey and savedKey ~= "" then
-				Zyrix:Notify("Checking", "Validating saved key...", 2, "shield") task.wait(0.5)
-				if validateKey(savedKey, Internal.ValidateFunction) then
-					genv.SCRIPT_KEY = savedKey
-					Zyrix:Notify("Welcome Back", "Key validated!", 2, "success")
-					fireOnSuccess() return
-				else clearKey() Zyrix:Notify("Expired", "Saved key is no longer valid", 3, "warning") task.wait(1) end
-			end
-		end
-		BuildKeyUI()
+	-- PATCH: bulletproof key UI flow — build the key GUI directly with error reporting
+	pcall(function() EnsureIconsReady(function() end, true) end)
+	if Zyrix.Options.Keyless == true then
+		if Zyrix.Options.KeylessUI == false then handleKeylessSkip() return end
+		local okK, errK = pcall(BuildKeylessUI)
+		if not okK then warn("[Zyrix] KeylessUI build failed: " .. tostring(errK)) end
 		while not genv.SCRIPT_KEY do task.wait(0.1) end
-	end, true)
+		return
+	end
+	if Zyrix.Storage.AutoLoad and Internal.ValidateFunction then
+		local savedKey = loadKey()
+		if savedKey and savedKey ~= "" then
+			Zyrix:Notify("Checking", "Validating saved key...", 2, "shield") task.wait(0.5)
+			if validateKey(savedKey, Internal.ValidateFunction) then
+				genv.SCRIPT_KEY = savedKey
+				Zyrix:Notify("Welcome Back", "Key validated!", 2, "success")
+				fireOnSuccess() return
+			else clearKey() Zyrix:Notify("Expired", "Saved key is no longer valid", 3, "warning") task.wait(1) end
+		end
+	end
+	local okB, errB = pcall(BuildKeyUI)
+	if not okB then
+		warn("[Zyrix] Key UI build failed: " .. tostring(errB))
+		warn("[Zyrix] Falling back to hub (key check bypassed)")
+		openHub()
+		return
+	end
+	while not genv.SCRIPT_KEY do task.wait(0.1) end
 end
 function Zyrix:LaunchJunkie(config)
 	assert(config and config.Service and config.Identifier and config.Provider, "Config required: Service, Identifier, Provider")
@@ -4409,6 +4425,13 @@ if not genv.ZyrixSkipDefaultHub then
 	genv.ZyrixLoaded = false
 	genv.SCRIPT_KEY = nil
 	genv.ZyrixForceReload = prevForceReload or false
+	-- Wipe any key saved to disk by previous runs so the key window ALWAYS shows
+	pcall(function()
+		if Zyrix.ClearSavedKey then Zyrix:ClearSavedKey() end
+		if type(isfile) == "function" and type(delfile) == "function" and isfile("Zyrix/Zyrix_Key.txt") then
+			delfile("Zyrix/Zyrix_Key.txt")
+		end
+	end)
 	local Demo = genv.ZyrixDemoState or {}
 	genv.ZyrixDemoState = Demo
 	Demo.Aimbot = Demo.Aimbot or false
@@ -4418,7 +4441,13 @@ if not genv.ZyrixSkipDefaultHub then
 	local Window = Zyrix:CreateWindow({
 		Name = "B4TMAN // Interface",
 		ToggleUIKeybind = "K",
-		KeySystem = false,
+		KeySystem = true,
+		KeySettings = {
+			Title = "Key System",
+			Subtitle = "Enter your key",
+			Key = "FluxVI4T",
+			SaveKey = false, -- false = key window shows EVERY run (true = remembers key in a file & skips the window)
+		}
 	})
 	local Combat = Window:CreateTab("Combat")
 	local Visuals = Window:CreateTab("Visuals")
@@ -4525,6 +4554,205 @@ if not genv.ZyrixSkipDefaultHub then
 		CurrentOption = {"White"},
 		Callback = function(o) Demo.Theme = o[1] end,
 	})
+	-- ===== Extra elements (toggles, sliders, inputs, keybinds) =====
+	local RunService = game:GetService("RunService")
+	local UserInputService = game:GetService("UserInputService")
+	local VirtualUser = game:GetService("VirtualUser")
+
+	-- Combat extras
+	Combat:CreateSection("Extra Combat")
+	Combat:CreateToggle({
+		Name = "Hitbox Expander",
+		CurrentValue = false,
+		Side = "Right",
+		Callback = function(on)
+			Demo.HitboxExpander = on
+			local char = Players.LocalPlayer.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			if hrp then
+				if on then
+					if not hrp:GetAttribute("OriginalSize") then
+						hrp:SetAttribute("OriginalSize", hrp.Size)
+					end
+					hrp.Size = hrp:GetAttribute("OriginalSize") + Vector3.new(10, 10, 10)
+				else
+					local orig = hrp:GetAttribute("OriginalSize")
+					if orig then hrp.Size = orig end
+				end
+			end
+		end,
+	})
+	Combat:CreateSlider({
+		Name = "Camera FOV",
+		Range = {30, 120},
+		CurrentValue = 70,
+		Callback = function(v)
+			local cam = Workspace.CurrentCamera
+			if cam then cam.FieldOfView = v end
+		end,
+	})
+	Combat:CreateDropdown({
+		Name = "Target Part",
+		Options = {"Head", "Torso", "HumanoidRootPart"},
+		CurrentOption = {"Head"},
+		Callback = function(o)
+			Demo.TargetPart = o[1]
+			Zyrix:Notify("Combat", "Target: " .. tostring(o[1]), 2, "info")
+		end,
+	})
+
+	-- Visuals extras
+	Visuals:CreateSection("World")
+	Visuals:CreateToggle({
+		Name = "Fullbright",
+		CurrentValue = false,
+		Callback = function(on)
+			local Lighting = game:GetService("Lighting")
+			if on then
+				Lighting.Brightness = 2
+				Lighting.ClockTime = 14
+				Lighting.FogEnd = 100000
+				Lighting.GlobalShadows = false
+				Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+			else
+				Lighting.Brightness = 1
+				Lighting.GlobalShadows = true
+				Lighting.OutdoorAmbient = Color3.fromRGB(70, 70, 70)
+			end
+		end,
+	})
+	Visuals:CreateToggle({
+		Name = "No Fog",
+		CurrentValue = false,
+		Callback = function(on)
+			game:GetService("Lighting").FogEnd = on and 1000000 or 1000
+		end,
+	})
+	Visuals:CreateSlider({
+		Name = "Brightness",
+		Range = {0, 5},
+		CurrentValue = 1,
+		Callback = function(v)
+			game:GetService("Lighting").Brightness = v
+		end,
+	})
+	Visuals:CreateDropdown({
+		Name = "Time of Day",
+		Options = {"Morning", "Noon", "Evening", "Night"},
+		CurrentOption = {"Noon"},
+		Callback = function(o)
+			local map = {Morning = 6, Noon = 12, Evening = 17, Night = 0}
+			game:GetService("Lighting").ClockTime = map[o[1]] or 12
+		end,
+	})
+
+	-- Movement extras
+	Movement:CreateSection("Extra Movement")
+	Movement:CreateSlider({
+		Name = "Jump Power",
+		Range = {20, 200},
+		CurrentValue = 50,
+		Callback = function(v)
+			local char = Players.LocalPlayer.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			if hum then
+				hum.UseJumpPower = true
+				hum.JumpPower = v
+			end
+		end,
+	})
+	local noclipConn = nil
+	Movement:CreateToggle({
+		Name = "Noclip",
+		CurrentValue = false,
+		Side = "Right",
+		Callback = function(on)
+			Demo.Noclip = on
+			if on then
+				noclipConn = RunService.Stepped:Connect(function()
+					local char = Players.LocalPlayer.Character
+					if char then
+						for _, p in ipairs(char:GetDescendants()) do
+							if p:IsA("BasePart") then p.CanCollide = false end
+						end
+					end
+				end)
+			elseif noclipConn then
+				noclipConn:Disconnect()
+				noclipConn = nil
+			end
+		end,
+	})
+	local clickTpConn = nil
+	Movement:CreateToggle({
+		Name = "Click TP",
+		CurrentValue = false,
+		Side = "Right",
+		Callback = function(on)
+			Demo.ClickTP = on
+			if on then
+				clickTpConn = UserInputService.InputBegan:Connect(function(input, processed)
+					if processed then return end
+					if input.UserInputType == Enum.UserInputType.MouseButton1 then
+						local mouse = Players.LocalPlayer:GetMouse()
+						local char = Players.LocalPlayer.Character
+						local hrp = char and char:FindFirstChild("HumanoidRootPart")
+						if mouse and mouse.Hit and hrp then
+							hrp.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0))
+						end
+					end
+				end)
+			elseif clickTpConn then
+				clickTpConn:Disconnect()
+				clickTpConn = nil
+			end
+		end,
+	})
+
+	-- Misc extras
+	Misc:CreateSection("Player")
+	local antiAfkConn = nil
+	Misc:CreateToggle({
+		Name = "Anti-AFK",
+		CurrentValue = false,
+		Callback = function(on)
+			Demo.AntiAFK = on
+			if on then
+				antiAfkConn = Players.LocalPlayer.Idled:Connect(function()
+					VirtualUser:CaptureController()
+					VirtualUser:ClickButton2(Vector2.new())
+				end)
+			elseif antiAfkConn then
+				antiAfkConn:Disconnect()
+				antiAfkConn = nil
+			end
+		end,
+	})
+	Misc:CreateButton({
+		Name = "Reset Character",
+		Callback = function()
+			local char = Players.LocalPlayer.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			if hum then hum.Health = 0 end
+		end,
+	})
+	Misc:CreateInput({
+		Name = "Custom Notify",
+		PlaceholderText = "Type a message...",
+		Callback = function(text)
+			Zyrix:Notify("Misc", tostring(text), 3, "info")
+		end,
+	})
+	Misc:CreateKeybind({
+		Name = "Notify Keybind",
+		CurrentKeybind = "H",
+		Callback = function()
+			Zyrix:Notify("Misc", "Keybind pressed!", 2, "success")
+		end,
+	})
+	Misc:CreateDivider()
+	Misc:CreateLabel("All element types working: toggle, slider, dropdown, input, keybind, button, label, divider.")
+
 	-- Owner-only tab: visible only to VYZEN_NN
 	if Players.LocalPlayer and Players.LocalPlayer.Name == "VYZEN_NN" then
 		local Owner = Window:CreateTab("Owner")
