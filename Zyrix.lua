@@ -179,7 +179,7 @@ local IconFiles = {
 	nogetkey = "lucide--lock.png"
 }
 local FallbackIcons = {
-	key = "rbxassetid://82741550850814",
+	key = "rbxassetid://120859604144547",
 	shield = "rbxassetid://89965059528921",
 	check = "rbxassetid://76078495178149",
 	copy = "rbxassetid://125851897718493",
@@ -4405,6 +4405,8 @@ fireOnSuccess = function()
 				task.wait(0.35)
 				ui:Expand()
 			end
+		else
+			warn("[Zyrix] UI controller (genv.ZyrixUI) is missing — the hub cannot be built. The loaded library file is incomplete/out of sync; re-run with the full library source.")
 		end
 		pcall(function()
 			if Zyrix.Callbacks.OnSuccess then
