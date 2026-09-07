@@ -2493,6 +2493,7 @@ function Zyrix:CreateWindow(config)
 			return {
 				Set = function(_, val) local pick = type(val) == "table" and val[1] or val; if el._apply then el._apply(pick) end end,
 				SetOptions = function(_, newOptions) if el._setOptions then el._setOptions(newOptions) end end,
+				SetDisplay = function(_, text) if el._setDisplay then el._setDisplay(text) else el.PendingDisplay = text end end,
 			}
 		end
 		function tab:CreateKeybind(opts)
@@ -3894,6 +3895,8 @@ local function buildZyrixUI()
 				if callback then callback(opt) end
 			end
 			el._setOptions = setOptions
+			el._setDisplay = function(text) if ddSelected then ddSelected.Text = tostring(text) end end
+			if el.PendingDisplay ~= nil then el._setDisplay(el.PendingDisplay) end
 		end
 		local function toggleDropdown() setOpen(not ddOpen) end
 		if ddInteract then ddInteract.MouseButton1Click:Connect(toggleDropdown) end
