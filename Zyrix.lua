@@ -76,8 +76,8 @@ genv.ZyrixClosed = false
 local Zyrix = {}
 genv.Zyrix = Zyrix
 Zyrix.Appearance = {
-	Title = "B4TMAN // Interface",
-	Subtitle = "TACTICAL OPERATING SYSTEM",
+	Title = "Ftap Script Loaded",
+	Subtitle = "Ftap Script",
 	Icon = "rbxassetid://120000763572538",
 	IconSize = UDim2.new(0, 30, 0, 30)
 }
