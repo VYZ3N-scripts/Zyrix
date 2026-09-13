@@ -22,7 +22,6 @@
 
 repeat task.wait() until game:IsLoaded()
 local genv = (getgenv and getgenv()) or _G
-genv.ZyrixSkipDefaultHub = true -- cosmic (StarterGui.cosmic) registers its own hub on top of this library; skip the default demo hub
 local cloneref = cloneref or function(obj) return obj end
 local gethui = gethui or function()
 	local ok, core = pcall(function() return cloneref(game:GetService("CoreGui")) end)
@@ -76,8 +75,8 @@ genv.ZyrixClosed = false
 local Zyrix = {}
 genv.Zyrix = Zyrix
 Zyrix.Appearance = {
-	Title = "Ftap Script Loaded",
-	Subtitle = "Ftap Script",
+	Title = "B4TMAN // Interface",
+	Subtitle = "TACTICAL OPERATING SYSTEM",
 	Icon = "rbxassetid://120000763572538",
 	IconSize = UDim2.new(0, 30, 0, 30)
 }
@@ -526,7 +525,6 @@ local function ShowLoadingScreen(onComplete)
 	gui.Name = "ZyrixLoadingScreen"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
-	gui.DisplayOrder = 1000000
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = hui
 	protectGui(gui)
@@ -797,7 +795,7 @@ function Zyrix:Notify(title, message, duration, iconType)
 	local height = math.clamp(80 * scale, 75, 105)
 	local notifGui = Instance.new("ScreenGui")
 	notifGui.ResetOnSpawn = false
-	notifGui.DisplayOrder = 1000001
+	notifGui.DisplayOrder = 999999
 	notifGui.Parent = hui
 	protectGui(notifGui)
 	local frame = Instance.new("Frame")
@@ -1463,7 +1461,6 @@ local function BuildKeylessUI()
 	gui.Name = "ZyrixKeylessSystem"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
-	gui.DisplayOrder = 1000000
 	gui.Parent = hui
 	protectGui(gui)
 	local ui = BuildCenteredUI(windowWidth, windowHeight, windowHeight, userPanelWidth, changelogPanelWidth, gap, {gui = gui})
@@ -1754,7 +1751,6 @@ local function BuildKeyUI()
 	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	screenGui.ResetOnSpawn = false
 	screenGui.IgnoreGuiInset = true
-	screenGui.DisplayOrder = 1000000
 	screenGui.Parent = hui
 	protectGui(screenGui)
 	local ui = BuildCenteredUI(windowWidth, windowHeight, baseWindowHeight, userPanelWidth, changelogPanelWidth, gap, {gui = screenGui})
@@ -2622,7 +2618,7 @@ local function buildZyrixUI()
 		sg.Name = "ZyrixMainUI"
 		sg.ResetOnSpawn = false
 		sg.IgnoreGuiInset = true
-		sg.DisplayOrder = 1000000 -- above ftap1's UI (999999)
+		sg.DisplayOrder = 1000
 		sg.Enabled = true
 		sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 		sg.Parent = uiParent
@@ -3066,15 +3062,9 @@ local function buildZyrixUI()
 	end
 	local elements
 	local function refreshScroll()
-		if elements and elements.Parent then
-			local saved = elements.CanvasPosition
-			elements.CanvasPosition = Vector2.new(0, 0)
-			task.defer(function()
-				if elements and elements.Parent then
-					elements.CanvasPosition = saved
-				end
-			end)
-		end
+		-- Canvas size is managed by AutomaticCanvasSize and explicit CanvasSize sets.
+		-- Do NOT reset CanvasPosition — that causes the scroll to jump to the top
+		-- when a dropdown opens (the dropdown resize triggers syncPageHeight -> refreshScroll).
 	end
 	local function selectTab(name, shouldExpand)
 		activeTab = name
@@ -4366,7 +4356,6 @@ local function buildZyrixUI()
 	uiBuilt = true
 end
 function ZyrixUI:Open()
-	if uiBuilt and uiScreenGui then return true end
 	local ok, err = pcall(buildZyrixUI)
 	if not ok then
 		uiBuilt = false
@@ -4402,9 +4391,6 @@ function ZyrixUI._reset()
 		pcall(function() uiScreenGui:Destroy() end)
 		uiScreenGui = nil
 	end
-end
-function ZyrixUI.IsBuilt()
-	return uiBuilt == true and uiScreenGui ~= nil
 end
 genv.ZyrixUI = ZyrixUI
 fireOnSuccess = function()
@@ -4795,9 +4781,6 @@ if not genv.ZyrixSkipDefaultHub then
 		print("[B4TMAN] Hub loaded! Press " .. tostring(HubRegistry.toggleKeybind or "K") .. " to toggle.")
 	end
 	print("[B4TMAN] Launching hub...")
-	-- Marker for external scripts (e.g. the cosmic UI adapter): the default hub
-	-- window is fully registered, so they can safely register their own tabs.
-	genv.ZyrixHubRegistered = true
 	Zyrix:Launch()
 end
 return Zyrix
