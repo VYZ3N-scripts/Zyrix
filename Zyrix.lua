@@ -20,9 +20,13 @@
     creator - adrenaline
 ]]
 
+--[[
+	═══════════════════════════════════════════════════════════════
+	ENVIRONMENT SETUP & SERVICE REFERENCES
+	═══════════════════════════════════════════════════════════════
+]]
 repeat task.wait() until game:IsLoaded()
 local genv = (getgenv and getgenv()) or _G
-genv.ZyrixSkipDefaultHub = true -- cosmic (StarterGui.cosmic) registers its own hub on top of this library; skip the default demo hub
 local cloneref = cloneref or function(obj) return obj end
 local gethui = gethui or function()
 	local ok, core = pcall(function() return cloneref(game:GetService("CoreGui")) end)
@@ -75,6 +79,11 @@ genv.ZyrixLoaded = true
 genv.ZyrixClosed = false
 local Zyrix = {}
 genv.Zyrix = Zyrix
+--[[
+	═══════════════════════════════════════════════════════════════
+	CONFIGURATION TABLES
+	═══════════════════════════════════════════════════════════════
+]]
 Zyrix.Appearance = {
 	Title = "B4TMAN // Interface",
 	Subtitle = "TACTICAL OPERATING SYSTEM",
@@ -97,6 +106,11 @@ Zyrix.Options = {
 	Draggable = true,
 	NoGetKey = false
 }
+--[[
+	═══════════════════════════════════════════════════════════════
+	THEME DEFINITIONS
+	═══════════════════════════════════════════════════════════════
+]]
 Zyrix.BatmanTheme = {
 	Accent = Color3.fromRGB(170, 170, 170),
 	AccentHover = Color3.fromRGB(140, 140, 140),
@@ -137,6 +151,11 @@ Zyrix.Theme = {
 	Divider = Color3.fromRGB(35, 35, 35),
 	Pending = Color3.fromRGB(50, 50, 50)
 }
+--[[
+	═══════════════════════════════════════════════════════════════
+	CALLBACKS & SHOP CONFIGURATION
+	═══════════════════════════════════════════════════════════════
+]]
 Zyrix.Callbacks = {
 	OnVerify = nil,
 	OnSuccess = nil,
@@ -153,6 +172,11 @@ Zyrix.Shop = {
 	ButtonText = "Buy",
 	Link = ""
 }
+--[[
+	═══════════════════════════════════════════════════════════════
+	INTERNAL STATE & ICON SYSTEM
+	═══════════════════════════════════════════════════════════════
+]]
 local Internal = {
 	Junkie = nil,
 	BlurEffect = nil,
@@ -318,6 +342,11 @@ local function loadAllIconsFromCache()
 	for _, name in ipairs(iconNames) do downloadIcon(name) end
 	Internal.IconsLoaded = true
 end
+--[[
+	═══════════════════════════════════════════════════════════════
+	UTILITY FUNCTIONS
+	═══════════════════════════════════════════════════════════════
+]]
 local function getExecutorName()
 	local success, name = pcall(identifyexecutor)
 	if success and name then return tostring(name) end
@@ -437,6 +466,11 @@ local function validateKey(key, validateFunc)
 	if type(result) == "boolean" then return result end
 	return false
 end
+--[[
+	═══════════════════════════════════════════════════════════════
+	DOOR OVERLAY SYSTEM
+	═══════════════════════════════════════════════════════════════
+]]
 local function CreateDoorOverlay(parentFrame, width, height)
 	local overlay = Instance.new("Frame")
 	overlay.Name = "DoorOverlay"
@@ -511,6 +545,11 @@ local function CreateDoorOverlay(parentFrame, width, height)
 	end
 	return {overlay = overlay, open = openDoors, close = closeDoors}
 end
+--[[
+	═══════════════════════════════════════════════════════════════
+	LOADING SCREEN SYSTEM
+	═══════════════════════════════════════════════════════════════
+]]
 local loadIconsFast
 local function ShowLoadingScreen(onComplete)
 	local completed = false
@@ -526,7 +565,6 @@ local function ShowLoadingScreen(onComplete)
 	gui.Name = "ZyrixLoadingScreen"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
-	gui.DisplayOrder = 1000000
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = hui
 	protectGui(gui)
@@ -785,6 +823,11 @@ local function EnsureIconsReady(callback, fastMode)
 		ShowLoadingScreen(callback)
 	end
 end
+--[[
+	═══════════════════════════════════════════════════════════════
+	NOTIFICATION SYSTEM
+	═══════════════════════════════════════════════════════════════
+]]
 function Zyrix:Notify(title, message, duration, iconType)
 	if type(title) == "table" then
 		local opts = title
@@ -797,7 +840,7 @@ function Zyrix:Notify(title, message, duration, iconType)
 	local height = math.clamp(80 * scale, 75, 105)
 	local notifGui = Instance.new("ScreenGui")
 	notifGui.ResetOnSpawn = false
-	notifGui.DisplayOrder = 1000001
+	notifGui.DisplayOrder = 999999
 	notifGui.Parent = hui
 	protectGui(notifGui)
 	local frame = Instance.new("Frame")
@@ -905,6 +948,11 @@ function Zyrix:Notify(title, message, duration, iconType)
 	clickBtn.Parent = frame
 	clickBtn.MouseButton1Click:Connect(dismiss)
 end
+--[[
+	═══════════════════════════════════════════════════════════════
+	CHANGELOG PANEL
+	═══════════════════════════════════════════════════════════════
+]]
 local function CreateChangelogPanel(parent, windowWidth, panelHeight, panelWidth, mainFrame, gap)
 	panelWidth = panelWidth or 220
 	local isOpen = false
@@ -1051,6 +1099,11 @@ local function CreateChangelogPanel(parent, windowWidth, panelHeight, panelWidth
 	panelClose.MouseButton1Click:Connect(function() if isOpen then toggle(nil, parent, windowWidth) end end)
 	return panel, toggle, function() return isOpen end, panelWidth
 end
+--[[
+	═══════════════════════════════════════════════════════════════
+	USER INFO PANEL
+	═══════════════════════════════════════════════════════════════
+]]
 local function CreateUserInfoPanel(parent, windowWidth, panelHeight, panelWidth, mainFrame, gap, startOpen)
 	panelWidth = panelWidth or 180
 	local isOpen = startOpen or false
@@ -1375,6 +1428,11 @@ local function CreateUserInfoPanel(parent, windowWidth, panelHeight, panelWidth,
 	panelClose.MouseButton1Click:Connect(function() if isOpen then toggle(nil, parent, windowWidth) end end)
 	return panel, toggle, function() return isOpen end, panelWidth
 end
+--[[
+	═══════════════════════════════════════════════════════════════
+	KEYLESS SKIP & UI BUILDERS
+	═══════════════════════════════════════════════════════════════
+]]
 local function handleKeylessSkip()
 	genv.SCRIPT_KEY = "KEYLESS"
 	genv.ZyrixLoaded = false
@@ -1383,6 +1441,9 @@ local function handleKeylessSkip()
 		fireOnSuccess()
 	end)
 end
+-- ─────────────────────────────────────────────────────────────
+-- Centered UI Builder
+-- ─────────────────────────────────────────────────────────────
 local function BuildCenteredUI(windowWidth, windowHeight, panelHeight, userPanelWidth, changelogPanelWidth, gap, buildContent)
 	local gui = buildContent.gui
 	local container = Instance.new("Frame")
@@ -1445,6 +1506,9 @@ local function BuildCenteredUI(windowWidth, windowHeight, panelHeight, userPanel
 		closeAllPanels = closeAllPanels
 	}
 end
+-- ─────────────────────────────────────────────────────────────
+-- Keyless UI Builder
+-- ─────────────────────────────────────────────────────────────
 local function BuildKeylessUI()
 	local oldGui = hui:FindFirstChild("ZyrixKeylessSystem")
 	if oldGui then oldGui:Destroy() end
@@ -1463,7 +1527,6 @@ local function BuildKeylessUI()
 	gui.Name = "ZyrixKeylessSystem"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
-	gui.DisplayOrder = 1000000
 	gui.Parent = hui
 	protectGui(gui)
 	local ui = BuildCenteredUI(windowWidth, windowHeight, windowHeight, userPanelWidth, changelogPanelWidth, gap, {gui = gui})
@@ -1727,6 +1790,9 @@ local function BuildKeylessUI()
 		TweenService:Create(checkIcon, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 24, 0, 24)}):Play()
 	end)
 end
+-- ─────────────────────────────────────────────────────────────
+-- Key UI Builder
+-- ─────────────────────────────────────────────────────────────
 local function BuildKeyUI()
 	local oldGui = hui:FindFirstChild("ZyrixKeySystem")
 	if oldGui then oldGui:Destroy() end
@@ -1754,10 +1820,9 @@ local function BuildKeyUI()
 	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	screenGui.ResetOnSpawn = false
 	screenGui.IgnoreGuiInset = true
-	screenGui.DisplayOrder = 1000000
 	screenGui.Parent = hui
 	protectGui(screenGui)
-	local ui = BuildCenteredUI(windowWidth, windowHeight, baseWindowHeight, userPanelWidth, changelogPanelWidth, gap, {gui = screenGui})
+	local ui = BuildCenteredUI(windowWidth, windowHeight, windowHeight, userPanelWidth, changelogPanelWidth, gap, {gui = screenGui})
 	local container = ui.container
 	local mainFrame = ui.mainFrame
 	local mainStroke = ui.mainStroke
@@ -2240,6 +2305,11 @@ local function BuildKeyUI()
 	task.wait(0.6)
 	doors.open(function() end)
 end
+--[[
+	═══════════════════════════════════════════════════════════════
+	LAUNCH & LIFECYCLE FUNCTIONS
+	═══════════════════════════════════════════════════════════════
+]]
 function Zyrix:Launch()
 	Internal.IsJunkieMode = false
 	Internal.ValidateFunction = Zyrix.Callbacks.OnVerify
@@ -2395,6 +2465,11 @@ function Zyrix:Reset()
 end
 -- ZyrixLoaded already set early in the script
 genv.ZyrixLoaded = true
+--[[
+	═══════════════════════════════════════════════════════════════
+	HUB REGISTRY & WINDOW CREATION
+	═══════════════════════════════════════════════════════════════
+]]
 local HubRegistry = {
 	tabs = {},
 	windowConfig = nil,
@@ -2516,6 +2591,11 @@ function Zyrix:CreateWindow(config)
 	end
 	return window
 end
+--[[
+	═══════════════════════════════════════════════════════════════
+	MAIN UI SYSTEM (buildZyrixUI)
+	═══════════════════════════════════════════════════════════════
+]]
 local ZyrixUI = {}
 local uiBuilt = false
 local uiScreenGui
@@ -2622,7 +2702,7 @@ local function buildZyrixUI()
 		sg.Name = "ZyrixMainUI"
 		sg.ResetOnSpawn = false
 		sg.IgnoreGuiInset = true
-		sg.DisplayOrder = 1000000 -- above ftap1's UI (999999)
+		sg.DisplayOrder = 1000
 		sg.Enabled = true
 		sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 		sg.Parent = uiParent
@@ -2668,6 +2748,9 @@ local function buildZyrixUI()
 		DOOR = readColor("Color_DOOR", Color3.fromRGB(6, 6, 6)),
 	}
 	applyThemeToColors(C)
+	-- ─────────────────────────────────────────────────────────────
+	-- Helper Functions & Color Setup
+	-- ─────────────────────────────────────────────────────────────
 	local function tw(obj, t, props, style, dir)
 		TS:Create(obj, TweenInfo.new(t, style or Enum.EasingStyle.Quart, dir or Enum.EasingDirection.Out), props):Play()
 	end
@@ -2737,6 +2820,9 @@ local function buildZyrixUI()
 		TAB_BTN_W = math.floor(TAB_BTN_W * _scale)
 		TAB_BTN_H = math.floor(TAB_BTN_H * _scale)
 	end
+	-- ─────────────────────────────────────────────────────────────
+	-- State Variables
+	-- ─────────────────────────────────────────────────────────────
 	local openDropdown = nil
 	local sliderDragTrack = nil
 	local sliderRegistry = {}
@@ -2961,6 +3047,9 @@ local function buildZyrixUI()
 			end
 		end
 	end
+	-- ─────────────────────────────────────────────────────────────
+	-- Tab Bar & Tab Buttons
+	-- ─────────────────────────────────────────────────────────────
 	tabBar.ZIndex = 10
 	local tbc = tabBar:FindFirstChildOfClass("UICorner") or Instance.new("UICorner", tabBar)
 	tbc.CornerRadius = UDim.new(0, 1000)
@@ -3066,15 +3155,9 @@ local function buildZyrixUI()
 	end
 	local elements
 	local function refreshScroll()
-		if elements and elements.Parent then
-			local saved = elements.CanvasPosition
-			elements.CanvasPosition = Vector2.new(0, 0)
-			task.defer(function()
-				if elements and elements.Parent then
-					elements.CanvasPosition = saved
-				end
-			end)
-		end
+		-- Canvas size is managed by AutomaticCanvasSize and explicit CanvasSize sets.
+		-- Do NOT reset CanvasPosition — that causes the scroll to jump to the top
+		-- when a dropdown opens (the dropdown resize triggers syncPageHeight -> refreshScroll).
 	end
 	local function selectTab(name, shouldExpand)
 		activeTab = name
@@ -3260,6 +3343,9 @@ local function buildZyrixUI()
 		end)
 	end
 	resetDoorsClosed()
+	-- ─────────────────────────────────────────────────────────────
+	-- Header & Elements Frame
+	-- ─────────────────────────────────────────────────────────────
 	local header = main:FindFirstChild("Header")
 	if not header then
 		header = frame({ Name = "Header", Size = UDim2.new(1, 0, 0, 38), BackgroundTransparency = 1, Active = true, Parent = main })
@@ -3410,6 +3496,9 @@ local function buildZyrixUI()
 		tabPageCols[tabName] = { left = leftCol, right = rightCol }
 		return leftCol, rightCol
 	end
+	-- ─────────────────────────────────────────────────────────────
+	-- Page System & Element Builders
+	-- ─────────────────────────────────────────────────────────────
 	local function getElementParent(tabName, itemType, side)
 		local cols = tabPageCols[tabName]
 		if not cols then return nil end
@@ -3459,6 +3548,9 @@ local function buildZyrixUI()
 			TextColor3 = C.TEXT_DIM,
 		})
 	end
+	-- ─────────────────────────────────────────────────────────────
+	-- Element Builder: Toggle
+	-- ─────────────────────────────────────────────────────────────
 	local function addToggle(parent, title, order, defaultOn, callback, el)
 		local toggleRow = row(parent, "Toggle", ROW_H, order)
 		lbl({ Parent = toggleRow, Size = UDim2.new(1, -56, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 14, TextColor3 = C.TEXT })
@@ -3492,6 +3584,9 @@ local function buildZyrixUI()
 			applyState(not on)
 		end)
 	end
+	-- ─────────────────────────────────────────────────────────────
+	-- Element Builder: Slider
+	-- ─────────────────────────────────────────────────────────────
 	local function addSlider(parent, title, order, defaultPct, callback, suffix, maxValue, el)
 		local sliderRow = row(parent, "Slider", SLIDER_ROW_H, order)
 		lbl({ Parent = sliderRow, Size = UDim2.new(0.45, 0, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 14, TextColor3 = C.TEXT })
@@ -3545,6 +3640,9 @@ local function buildZyrixUI()
 			end
 		end)
 	end
+	-- ─────────────────────────────────────────────────────────────
+	-- Element Builder: Button
+	-- ─────────────────────────────────────────────────────────────
 	local function addButton(parent, title, order, callback)
 		local btnRow = row(parent, "Button", ROW_H, order)
 		lbl({ Parent = btnRow, Size = UDim2.new(0.7, 0, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 14, TextColor3 = C.TEXT })
@@ -3572,6 +3670,9 @@ local function buildZyrixUI()
 			if callback then callback() end
 		end)
 	end
+	-- ─────────────────────────────────────────────────────────────
+	-- Element Builder: Dropdown
+	-- ─────────────────────────────────────────────────────────────
 	local function addDropdown(parent, title, order, options, defaultIndex, callback, el)
 		local ddContainer, ddTitle, ddSelected, ddArrow, ddInteract, ddList
 		ddContainer = Instance.new("Frame")
@@ -3933,6 +4034,9 @@ local function buildZyrixUI()
 			if elements and not ddOpen then elements.ScrollingEnabled = true end
 		end)
 	end
+	-- ─────────────────────────────────────────────────────────────
+	-- Element Builder: Keybind
+	-- ─────────────────────────────────────────────────────────────
 	local function resolveKeyCode(key)
 		if typeof(key) == "EnumItem" then return key end
 		if type(key) == "string" and Enum.KeyCode[key] then return Enum.KeyCode[key] end
@@ -3979,6 +4083,9 @@ local function buildZyrixUI()
 			keyLabel.Text = "..."
 		end)
 	end
+	-- ─────────────────────────────────────────────────────────────
+	-- Element Builder: Input
+	-- ─────────────────────────────────────────────────────────────
 	local function addInput(parent, title, order, placeholder, callback, el)
 		local inputRow = row(parent, "Input", ROW_H, order)
 		lbl({ Parent = inputRow, Size = UDim2.new(0.45, 0, 1, 0), Text = title, Font = Enum.Font.GothamMedium, TextSize = 14, TextColor3 = C.TEXT })
@@ -4002,6 +4109,9 @@ local function buildZyrixUI()
 			if callback then callback(box.Text) end
 		end)
 	end
+	-- ─────────────────────────────────────────────────────────────
+	-- Element Renderer & Hub Builder
+	-- ─────────────────────────────────────────────────────────────
 	local function renderHubItem(tabName, i, item)
 		local parent = getElementParent(tabName, item.Type, item.Side)
 		if not parent then return end
@@ -4054,6 +4164,9 @@ local function buildZyrixUI()
 		end
 		return hasContent
 	end
+	-- ─────────────────────────────────────────────────────────────
+	-- Demo Content Fallback (when no hub elements registered)
+	-- ─────────────────────────────────────────────────────────────
 	if not buildHubElements() then
 		local Demo = genv.ZyrixDemoState or {}
 		genv.ZyrixDemoState = Demo
@@ -4137,6 +4250,9 @@ local function buildZyrixUI()
 			C.STROKE = cs.Color
 		end
 	end
+	-- ─────────────────────────────────────────────────────────────
+	-- Close Button & Input Handling
+	-- ─────────────────────────────────────────────────────────────
 	local cbc = closeBtn:FindFirstChildOfClass("UICorner") or Instance.new("UICorner", closeBtn)
 	cbc.CornerRadius = UDim.new(0, 1000)
 	closeBtn.MouseEnter:Connect(function() tw(closeBtn, 0.12, {BackgroundColor3 = C.HOVER}) end)
@@ -4229,6 +4345,9 @@ local function buildZyrixUI()
 		if isOverGuiObject(pos, elements) then return end
 		beginDrag(input)
 	end)
+	-- ─────────────────────────────────────────────────────────────
+	-- Panel State & Animations
+	-- ─────────────────────────────────────────────────────────────
 	local function setCollapsed()
 		root.Size = UDim2.new(0, WIN_W, 0, TAB_H)
 		main.Size = UDim2.new(0, WIN_W, 0, WIN_H)
@@ -4324,6 +4443,9 @@ local function buildZyrixUI()
 	uiClosePanel = function()
 		hideUI()
 	end
+	-- ─────────────────────────────────────────────────────────────
+	-- Toggle Keybind Handler & Final Setup
+	-- ─────────────────────────────────────────────────────────────
 	local function handleToggleInput()
 		if uiAnimating then return end
 		if not root.Visible then
@@ -4366,7 +4488,6 @@ local function buildZyrixUI()
 	uiBuilt = true
 end
 function ZyrixUI:Open()
-	if uiBuilt and uiScreenGui then return true end
 	local ok, err = pcall(buildZyrixUI)
 	if not ok then
 		uiBuilt = false
@@ -4403,10 +4524,12 @@ function ZyrixUI._reset()
 		uiScreenGui = nil
 	end
 end
-function ZyrixUI.IsBuilt()
-	return uiBuilt == true and uiScreenGui ~= nil
-end
 genv.ZyrixUI = ZyrixUI
+--[[
+	═══════════════════════════════════════════════════════════════
+	FIRE ON SUCCESS & DEFAULT HUB SETUP
+	═══════════════════════════════════════════════════════════════
+]]
 fireOnSuccess = function()
 	task.spawn(function()
 		local ui = genv.ZyrixUI
@@ -4431,6 +4554,9 @@ fireOnSuccess = function()
 		end)
 	end)
 end
+-- ─────────────────────────────────────────────────────────────
+-- Default Hub Setup (Combat / Visuals / Movement / Misc tabs)
+-- ─────────────────────────────────────────────────────────────
 if not genv.ZyrixSkipDefaultHub then
 	local prevForceReload = genv.ZyrixForceReload
 	genv.ZyrixForceReload = true
@@ -4795,9 +4921,6 @@ if not genv.ZyrixSkipDefaultHub then
 		print("[B4TMAN] Hub loaded! Press " .. tostring(HubRegistry.toggleKeybind or "K") .. " to toggle.")
 	end
 	print("[B4TMAN] Launching hub...")
-	-- Marker for external scripts (e.g. the cosmic UI adapter): the default hub
-	-- window is fully registered, so they can safely register their own tabs.
-	genv.ZyrixHubRegistered = true
 	Zyrix:Launch()
 end
 return Zyrix
