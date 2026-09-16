@@ -3862,7 +3862,22 @@ local function buildZyrixUI()
 				openDropdown:SetAttribute("ForceClose", true)
 			end
 			ddOpen = state
-			if elements then elements.ScrollingEnabled = not state end
+			if elements then
+				if state then
+					-- Save scroll position before disabling scrolling,
+					-- because setting ScrollingEnabled = false resets CanvasPosition to (0,0)
+					elements:SetAttribute("SavedScrollY", tostring(elements.CanvasPosition.Y))
+					elements.ScrollingEnabled = false
+					elements.CanvasPosition = Vector2.new(0, tonumber(elements:GetAttribute("SavedScrollY")) or 0)
+				else
+					elements.ScrollingEnabled = true
+					local savedY = elements:GetAttribute("SavedScrollY")
+					if savedY then
+						elements.CanvasPosition = Vector2.new(0, tonumber(savedY) or 0)
+						elements:SetAttribute("SavedScrollY", nil)
+					end
+				end
+			end
 			if state then
 				clipFrame.Visible = true
 				if searchBar then searchBar.Visible = searchable end
