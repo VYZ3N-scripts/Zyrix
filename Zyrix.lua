@@ -37,6 +37,12 @@ local RunService = cloneref(game:GetService("RunService"))
 local Lighting = cloneref(game:GetService("Lighting"))
 local Players = cloneref(game:GetService("Players"))
 local function resolveGuiParent()
+	-- Prefer gethui / CoreGui so key + hub overlay ABOVE the game's PlayerGui HUD.
+	-- PlayerGui is last resort only (some restricted environments block CoreGui).
+	local ok, parent = pcall(gethui)
+	if ok and parent then return parent end
+	local ok2, core = pcall(function() return cloneref(game:GetService("CoreGui")) end)
+	if ok2 and core then return core end
 	local player = Players.LocalPlayer
 	if not player then
 		player = Players.PlayerAdded:Wait()
@@ -45,8 +51,6 @@ local function resolveGuiParent()
 	if playerGui then
 		return cloneref(playerGui)
 	end
-	local ok, parent = pcall(gethui)
-	if ok and parent then return parent end
 	return cloneref(game:GetService("CoreGui"))
 end
 local function protectGui(gui)
@@ -526,7 +530,7 @@ local function ShowLoadingScreen(onComplete)
 	gui.Name = "ZyrixLoadingScreen"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
-	gui.DisplayOrder = 1000000
+	gui.DisplayOrder = 2147483647
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = hui
 	protectGui(gui)
@@ -797,7 +801,7 @@ function Zyrix:Notify(title, message, duration, iconType)
 	local height = math.clamp(80 * scale, 75, 105)
 	local notifGui = Instance.new("ScreenGui")
 	notifGui.ResetOnSpawn = false
-	notifGui.DisplayOrder = 1000001
+	notifGui.DisplayOrder = 2147483647
 	notifGui.Parent = hui
 	protectGui(notifGui)
 	local frame = Instance.new("Frame")
@@ -1453,10 +1457,12 @@ local function createBackdrop(gui)
 	backdrop.BackgroundColor3 = Color3.new(0, 0, 0)
 	backdrop.BackgroundTransparency = 1
 	backdrop.BorderSizePixel = 0
-	backdrop.Active = true
+	backdrop.Active = true -- swallow clicks so the game is not interactable under the key UI
+	backdrop.Selectable = false
 	backdrop.ZIndex = 0
 	backdrop.Parent = gui
-	TweenService:Create(backdrop, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {BackgroundTransparency = 0.45}):Play()
+	-- Darker dim so it clearly reads as a modal overlay
+	TweenService:Create(backdrop, TweenInfo.new(0.35, Enum.EasingStyle.Quart), {BackgroundTransparency = 0.25}):Play()
 	return backdrop
 end
 local function BuildKeylessUI()
@@ -1477,7 +1483,9 @@ local function BuildKeylessUI()
 	gui.Name = "ZyrixKeylessSystem"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
-	gui.DisplayOrder = 1000000
+	gui.DisplayOrder = 2147483647
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	pcall(function() gui.ClipToDeviceSafeArea = false end)
 	gui.Parent = hui
 	protectGui(gui)
 	createBackdrop(gui)
@@ -1769,7 +1777,9 @@ local function BuildKeyUI()
 	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	screenGui.ResetOnSpawn = false
 	screenGui.IgnoreGuiInset = true
-	screenGui.DisplayOrder = 1000000
+	screenGui.DisplayOrder = 2147483647
+	pcall(function() screenGui.ClipToDeviceSafeArea = false end)
+	pcall(function() screenGui.SafeAreaCompatibility = Enum.SafeAreaCompatibility.None end)
 	screenGui.Parent = hui
 	protectGui(screenGui)
 	createBackdrop(screenGui)
@@ -2630,7 +2640,10 @@ local function buildZyrixUI()
 	local sg
 	if template then
 		sg = template:Clone()
-		sg.Enabled = true 
+		sg.Enabled = true
+		sg.IgnoreGuiInset = true
+		sg.DisplayOrder = 2147483647
+		sg.ResetOnSpawn = false
 		sg.Parent = uiParent
 		protectGui(sg)
 	else
@@ -2638,7 +2651,7 @@ local function buildZyrixUI()
 		sg.Name = "ZyrixMainUI"
 		sg.ResetOnSpawn = false
 		sg.IgnoreGuiInset = true
-		sg.DisplayOrder = 1000000 -- above ftap1's UI (999999)
+		sg.DisplayOrder = 2147483647 -- above ftap1's UI (999999)
 		sg.Enabled = true
 		sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 		sg.Parent = uiParent
