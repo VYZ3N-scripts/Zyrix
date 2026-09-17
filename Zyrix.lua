@@ -2489,7 +2489,6 @@ function Zyrix:CreateWindow(config)
 				text = title.Text or title.Name or title.Title or "Section"
 				side = side or title.Side
 			end
-			-- Always normalize so getElementParent matches ("Right" / "LEFT" → "right" / "left")
 			if type(side) == "string" then
 				side = string.lower(side)
 				if side ~= "left" and side ~= "right" then side = nil end
@@ -2499,24 +2498,24 @@ function Zyrix:CreateWindow(config)
 			table.insert(tabData.Elements, { Type = "section", Text = tostring(text or "Section"), Side = side })
 		end
 		function tab:CreateButton(opts)
-			local el = { Type = "button", Text = opts.Name, Callback = opts.Callback, Side = normalizeSide(opts.Side) }
+			local el = { Type = "button", Text = opts.Name, Callback = opts.Callback, Side = opts.Side }
 			table.insert(tabData.Elements, el)
 			return { Set = function(_, val) el.Text = val end }
 		end
 		function tab:CreateToggle(opts)
-			local el = { Type = "toggle", Text = opts.Name, Default = opts.CurrentValue == true, Callback = opts.Callback, Side = normalizeSide(opts.Side) }
+			local el = { Type = "toggle", Text = opts.Name, Default = opts.CurrentValue == true, Callback = opts.Callback, Side = opts.Side }
 			table.insert(tabData.Elements, el)
 			return { Set = function(_, val) el.Default = val == true; if el._apply then el._apply(el.Default, true) end end }
 		end
 		function tab:CreateSlider(opts)
 			local range = opts.Range or {0, 100}
 			local minV, maxV = range[1], range[2]
-			local el = { Type = "slider", Text = opts.Name, Min = minV, Max = maxV, Default = (opts.CurrentValue - minV) / math.max(maxV - minV, 1), Callback = opts.Callback, Suffix = opts.Suffix, Side = normalizeSide(opts.Side) }
+			local el = { Type = "slider", Text = opts.Name, Min = minV, Max = maxV, Default = (opts.CurrentValue - minV) / math.max(maxV - minV, 1), Callback = opts.Callback, Suffix = opts.Suffix, Side = opts.Side }
 			table.insert(tabData.Elements, el)
 			return { Set = function(_, val) el.Default = (val - minV) / math.max(maxV - minV, 1); if el._apply then el._apply(el.Default, true) end end }
 		end
 		function tab:CreateInput(opts)
-			local el = { Type = "input", Text = opts.Name, Placeholder = opts.PlaceholderText or "", Callback = opts.Callback, Side = normalizeSide(opts.Side) }
+			local el = { Type = "input", Text = opts.Name, Placeholder = opts.PlaceholderText or "", Callback = opts.Callback, Side = opts.Side }
 			table.insert(tabData.Elements, el)
 			return { Set = function(_, val) if el._box then el._box.Text = tostring(val) end end }
 		end
@@ -2527,7 +2526,7 @@ function Zyrix:CreateWindow(config)
 			if type(current) == "table" and current[1] then
 				for i, opt in ipairs(options) do if opt == current[1] then defaultIndex = i break end end
 			end
-			local el = { Type = "dropdown", Text = opts.Name, Options = options, Default = defaultIndex, Searchable = opts.Searchable == true, Callback = function(opt) if opts.Callback then opts.Callback({opt}) end end, Side = normalizeSide(opts.Side) }
+			local el = { Type = "dropdown", Text = opts.Name, Options = options, Default = defaultIndex, Searchable = opts.Searchable == true, Callback = function(opt) if opts.Callback then opts.Callback({opt}) end end, Side = opts.Side }
 			table.insert(tabData.Elements, el)
 			return {
 				Set = function(_, val) local pick = type(val) == "table" and val[1] or val; if el._apply then el._apply(pick) end end,
@@ -2536,7 +2535,7 @@ function Zyrix:CreateWindow(config)
 			}
 		end
 		function tab:CreateKeybind(opts)
-			local el = { Type = "keybind", Text = opts.Name, Default = opts.CurrentKeybind or "Q", Callback = opts.Callback, Side = normalizeSide(opts.Side) }
+			local el = { Type = "keybind", Text = opts.Name, Default = opts.CurrentKeybind or "Q", Callback = opts.Callback, Side = opts.Side }
 			table.insert(tabData.Elements, el)
 			return { Set = function(_, val) if el._apply then el._apply(val) end end }
 		end
@@ -3101,8 +3100,7 @@ local function buildZyrixUI()
 	end
 	local elements
 	local function refreshScroll()
-		-- Keep scroll position. Old code set CanvasPosition to 0 then restored
-		-- on defer, which jumped the user to the top when opening dropdowns.
+		-- Keep scroll position (old code zeroed CanvasPosition and caused jump-to-top on dropdown)
 		if not elements or not elements.Parent then return end
 		local saved = elements.CanvasPosition
 		task.defer(function()
@@ -3141,7 +3139,7 @@ local function buildZyrixUI()
 		local t = tabScroll:FindFirstChild(name)
 		if t and t:IsA("TextButton") and not t:GetAttribute("_zyrixConnected") then
 			t.LayoutOrder = i
-			-- Fixed equal tab sizes (AutomaticSize.X made long names huge, short names tiny)
+			-- Equal tab widths (AutomaticSize.X made some tabs huge and some tiny)
 			local tabW = _mobile and 72 or 88
 			t.AutomaticSize = Enum.AutomaticSize.None
 			t.Size = UDim2.new(0, tabW, 0, TAB_BTN_H)
@@ -3840,7 +3838,6 @@ local function buildZyrixUI()
 			end
 			if ddArrow then tw(ddArrow, 0.12, {Rotation = state and 180 or 0}) end
 			openDropdown = state and ddContainer or (openDropdown == ddContainer and nil or openDropdown)
-			-- Only refresh scroll when closing; opening must not reset position
 			if not state then refreshScroll() end
 		end
 		ddContainer:GetAttributeChangedSignal("ForceClose"):Connect(function()
