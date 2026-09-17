@@ -37,12 +37,6 @@ local RunService = cloneref(game:GetService("RunService"))
 local Lighting = cloneref(game:GetService("Lighting"))
 local Players = cloneref(game:GetService("Players"))
 local function resolveGuiParent()
-	-- Prefer gethui / CoreGui so key + hub overlay ABOVE the game's PlayerGui HUD.
-	-- PlayerGui is last resort only (some restricted environments block CoreGui).
-	local ok, parent = pcall(gethui)
-	if ok and parent then return parent end
-	local ok2, core = pcall(function() return cloneref(game:GetService("CoreGui")) end)
-	if ok2 and core then return core end
 	local player = Players.LocalPlayer
 	if not player then
 		player = Players.PlayerAdded:Wait()
@@ -51,6 +45,8 @@ local function resolveGuiParent()
 	if playerGui then
 		return cloneref(playerGui)
 	end
+	local ok, parent = pcall(gethui)
+	if ok and parent then return parent end
 	return cloneref(game:GetService("CoreGui"))
 end
 local function protectGui(gui)
@@ -530,7 +526,7 @@ local function ShowLoadingScreen(onComplete)
 	gui.Name = "ZyrixLoadingScreen"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
-	gui.DisplayOrder = 2147483647
+	gui.DisplayOrder = 1000000
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = hui
 	protectGui(gui)
@@ -801,7 +797,7 @@ function Zyrix:Notify(title, message, duration, iconType)
 	local height = math.clamp(80 * scale, 75, 105)
 	local notifGui = Instance.new("ScreenGui")
 	notifGui.ResetOnSpawn = false
-	notifGui.DisplayOrder = 2147483647
+	notifGui.DisplayOrder = 1000001
 	notifGui.Parent = hui
 	protectGui(notifGui)
 	local frame = Instance.new("Frame")
@@ -1457,12 +1453,10 @@ local function createBackdrop(gui)
 	backdrop.BackgroundColor3 = Color3.new(0, 0, 0)
 	backdrop.BackgroundTransparency = 1
 	backdrop.BorderSizePixel = 0
-	backdrop.Active = true -- swallow clicks so the game is not interactable under the key UI
-	backdrop.Selectable = false
+	backdrop.Active = true
 	backdrop.ZIndex = 0
 	backdrop.Parent = gui
-	-- Darker dim so it clearly reads as a modal overlay
-	TweenService:Create(backdrop, TweenInfo.new(0.35, Enum.EasingStyle.Quart), {BackgroundTransparency = 0.25}):Play()
+	TweenService:Create(backdrop, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {BackgroundTransparency = 0.45}):Play()
 	return backdrop
 end
 local function BuildKeylessUI()
@@ -1483,9 +1477,7 @@ local function BuildKeylessUI()
 	gui.Name = "ZyrixKeylessSystem"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
-	gui.DisplayOrder = 2147483647
-	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	pcall(function() gui.ClipToDeviceSafeArea = false end)
+	gui.DisplayOrder = 1000000
 	gui.Parent = hui
 	protectGui(gui)
 	createBackdrop(gui)
@@ -1777,9 +1769,7 @@ local function BuildKeyUI()
 	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	screenGui.ResetOnSpawn = false
 	screenGui.IgnoreGuiInset = true
-	screenGui.DisplayOrder = 2147483647
-	pcall(function() screenGui.ClipToDeviceSafeArea = false end)
-	pcall(function() screenGui.SafeAreaCompatibility = Enum.SafeAreaCompatibility.None end)
+	screenGui.DisplayOrder = 1000000
 	screenGui.Parent = hui
 	protectGui(screenGui)
 	createBackdrop(screenGui)
@@ -2482,32 +2472,51 @@ function Zyrix:CreateWindow(config)
 		genv.ZyrixUI._reset()
 	end
 	local window = {}
+	local function normalizeSide(side)
+		if type(side) == "string" then
+			side = string.lower(side)
+			if side == "left" or side == "right" then return side end
+		end
+		return nil
+	end
 	function window:CreateTab(name, icon)
 		local tabData = { Name = name, Icon = icon, Elements = {} }
 		table.insert(HubRegistry.tabs, tabData)
 		local tab = {}
-		function tab:CreateSection(title)
-			table.insert(tabData.Elements, { Type = "section", Text = title })
+		function tab:CreateSection(title, side)
+			local text = title
+			if type(title) == "table" then
+				text = title.Text or title.Name or title.Title or "Section"
+				side = side or title.Side
+			end
+			-- Always normalize so getElementParent matches ("Right" / "LEFT" → "right" / "left")
+			if type(side) == "string" then
+				side = string.lower(side)
+				if side ~= "left" and side ~= "right" then side = nil end
+			else
+				side = nil
+			end
+			table.insert(tabData.Elements, { Type = "section", Text = tostring(text or "Section"), Side = side })
 		end
 		function tab:CreateButton(opts)
-			local el = { Type = "button", Text = opts.Name, Callback = opts.Callback, Side = opts.Side }
+			local el = { Type = "button", Text = opts.Name, Callback = opts.Callback, Side = normalizeSide(opts.Side) }
 			table.insert(tabData.Elements, el)
 			return { Set = function(_, val) el.Text = val end }
 		end
 		function tab:CreateToggle(opts)
-			local el = { Type = "toggle", Text = opts.Name, Default = opts.CurrentValue == true, Callback = opts.Callback, Side = opts.Side }
+			local el = { Type = "toggle", Text = opts.Name, Default = opts.CurrentValue == true, Callback = opts.Callback, Side = normalizeSide(opts.Side) }
 			table.insert(tabData.Elements, el)
 			return { Set = function(_, val) el.Default = val == true; if el._apply then el._apply(el.Default, true) end end }
 		end
 		function tab:CreateSlider(opts)
 			local range = opts.Range or {0, 100}
 			local minV, maxV = range[1], range[2]
-			local el = { Type = "slider", Text = opts.Name, Min = minV, Max = maxV, Default = (opts.CurrentValue - minV) / math.max(maxV - minV, 1), Callback = opts.Callback, Suffix = opts.Suffix, Side = opts.Side }
+			local el = { Type = "slider", Text = opts.Name, Min = minV, Max = maxV, Default = (opts.CurrentValue - minV) / math.max(maxV - minV, 1), Callback = opts.Callback, Suffix = opts.Suffix, Side = normalizeSide(opts.Side) }
 			table.insert(tabData.Elements, el)
 			return { Set = function(_, val) el.Default = (val - minV) / math.max(maxV - minV, 1); if el._apply then el._apply(el.Default, true) end end }
 		end
 		function tab:CreateInput(opts)
-			local el = { Type = "input", Text = opts.Name, Placeholder = opts.PlaceholderText or "", Callback = opts.Callback, Side = opts.Side }
+			local el = { Type = "input", Text = opts.Name, Placeholder = opts.PlaceholderText or "", Callback = opts.Callback, Side = normalizeSide(opts.Side) }
 			table.insert(tabData.Elements, el)
 			return { Set = function(_, val) if el._box then el._box.Text = tostring(val) end end }
 		end
@@ -2518,7 +2527,7 @@ function Zyrix:CreateWindow(config)
 			if type(current) == "table" and current[1] then
 				for i, opt in ipairs(options) do if opt == current[1] then defaultIndex = i break end end
 			end
-			local el = { Type = "dropdown", Text = opts.Name, Options = options, Default = defaultIndex, Searchable = opts.Searchable == true, Callback = function(opt) if opts.Callback then opts.Callback({opt}) end end, Side = opts.Side }
+			local el = { Type = "dropdown", Text = opts.Name, Options = options, Default = defaultIndex, Searchable = opts.Searchable == true, Callback = function(opt) if opts.Callback then opts.Callback({opt}) end end, Side = normalizeSide(opts.Side) }
 			table.insert(tabData.Elements, el)
 			return {
 				Set = function(_, val) local pick = type(val) == "table" and val[1] or val; if el._apply then el._apply(pick) end end,
@@ -2527,7 +2536,7 @@ function Zyrix:CreateWindow(config)
 			}
 		end
 		function tab:CreateKeybind(opts)
-			local el = { Type = "keybind", Text = opts.Name, Default = opts.CurrentKeybind or "Q", Callback = opts.Callback, Side = opts.Side }
+			local el = { Type = "keybind", Text = opts.Name, Default = opts.CurrentKeybind or "Q", Callback = opts.Callback, Side = normalizeSide(opts.Side) }
 			table.insert(tabData.Elements, el)
 			return { Set = function(_, val) if el._apply then el._apply(val) end end }
 		end
@@ -2640,10 +2649,7 @@ local function buildZyrixUI()
 	local sg
 	if template then
 		sg = template:Clone()
-		sg.Enabled = true
-		sg.IgnoreGuiInset = true
-		sg.DisplayOrder = 2147483647
-		sg.ResetOnSpawn = false
+		sg.Enabled = true 
 		sg.Parent = uiParent
 		protectGui(sg)
 	else
@@ -2651,7 +2657,7 @@ local function buildZyrixUI()
 		sg.Name = "ZyrixMainUI"
 		sg.ResetOnSpawn = false
 		sg.IgnoreGuiInset = true
-		sg.DisplayOrder = 2147483647 -- above ftap1's UI (999999)
+		sg.DisplayOrder = 1000000 -- above ftap1's UI (999999)
 		sg.Enabled = true
 		sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 		sg.Parent = uiParent
@@ -3135,12 +3141,15 @@ local function buildZyrixUI()
 		local t = tabScroll:FindFirstChild(name)
 		if t and t:IsA("TextButton") and not t:GetAttribute("_zyrixConnected") then
 			t.LayoutOrder = i
-			t.Size = UDim2.new(0, TAB_BTN_W, 0, TAB_BTN_H)
-			t.AutomaticSize = Enum.AutomaticSize.None
+			t.Size = UDim2.new(0, 0, 0, TAB_BTN_H)
+			t.AutomaticSize = Enum.AutomaticSize.X
 			t.TextSize = _mobile and 12 or 13
 			t.Font = Enum.Font.GothamMedium
 			t.TextXAlignment = Enum.TextXAlignment.Center
 			t.TextYAlignment = Enum.TextYAlignment.Center
+			if not t:FindFirstChildOfClass("UIPadding") then
+				pad(t, 0, 0, 14, 14)
+			end
 			local activeCol = t:GetAttribute("ActiveColor") or C.TAB_ACTIVE
 			local idleCol = t:GetAttribute("IdleColor") or C.TAB_IDLE
 			local activeText = t:GetAttribute("ActiveTextColor") or C.WHITE
@@ -3153,8 +3162,8 @@ local function buildZyrixUI()
 			t = btn({
 				Name = name,
 				Parent = tabScroll,
-				Size = UDim2.new(0, TAB_BTN_W, 0, TAB_BTN_H),
-				AutomaticSize = Enum.AutomaticSize.None,
+				Size = UDim2.new(0, 0, 0, TAB_BTN_H),
+				AutomaticSize = Enum.AutomaticSize.X,
 				BackgroundColor3 = name == activeTab and C.TAB_ACTIVE or C.TAB_IDLE,
 				BackgroundTransparency = 0,
 				LayoutOrder = i,
@@ -3397,7 +3406,8 @@ local function buildZyrixUI()
 			syncPageHeight(tabName)
 		end)
 	end
-	local function makePage(tabName)
+	local function makePage(tabName, hasRight)
+		if hasRight == nil then hasRight = true end
 		local page = frame({
 			Name = tabName .. "Page",
 			Size = UDim2.new(1, 0, 0, CONTENT_H),
@@ -3413,7 +3423,7 @@ local function buildZyrixUI()
 		})
 		local leftCol = frame({
 			Name = "LeftCol",
-			Size = UDim2.new(0.55, -4, 0, 0),
+			Size = hasRight and UDim2.new(0.55, -4, 0, 0) or UDim2.new(1, 0, 0, 0),
 			BackgroundColor3 = C.PANEL,
 			BackgroundTransparency = 1,
 			ClipsDescendants = true,
@@ -3422,17 +3432,18 @@ local function buildZyrixUI()
 		corner(leftCol, UDim.new(0, 0))
 		local leftList = Instance.new("UIListLayout", leftCol)
 		leftList.SortOrder = Enum.SortOrder.LayoutOrder
-		leftList.Padding = UDim.new(0, 2)
+		leftList.Padding = UDim.new(0, 4)
 		local rightCol = frame({
 			Name = "RightCol",
-			Size = UDim2.new(0.45, -4, 0, 0),
-			Position = UDim2.new(0.55, 4, 0, 0),
+			Size = hasRight and UDim2.new(0.45, -4, 0, 0) or UDim2.new(0, 0, 0, 0),
+			Position = hasRight and UDim2.new(0.55, 4, 0, 0) or UDim2.new(1, 0, 0, 0),
+			Visible = hasRight,
 			BackgroundTransparency = 1,
 			Parent = body,
 		})
 		local rightList = Instance.new("UIListLayout", rightCol)
 		rightList.SortOrder = Enum.SortOrder.LayoutOrder
-		rightList.Padding = UDim.new(0, 2)
+		rightList.Padding = UDim.new(0, 4)
 		bindColumnAutoHeight(tabName, leftCol, leftList)
 		bindColumnAutoHeight(tabName, rightCol, rightList)
 		tabPages[tabName] = page
@@ -3478,13 +3489,21 @@ local function buildZyrixUI()
 		return f
 	end
 	local function sectionLabel(parent, text, order)
-		lbl({
+		-- Wrapper frame adds breathing room above each section so groups are
+		-- visually separated instead of running into the previous element.
+		local wrap = frame({
 			Parent = parent,
-			Size = UDim2.new(1, 0, 0, 20),
-			LayoutOrder = order,
-			Text = text,
+			Size = UDim2.new(1, 0, 0, 30),
+			BackgroundTransparency = 1,
+			LayoutOrder = order * 2 - 1,
+		})
+		pad(wrap, 10, 0, 0, 0)
+		lbl({
+			Parent = wrap,
+			Size = UDim2.new(1, 0, 1, 0),
+			Text = string.upper(tostring(text or "Section")),
 			Font = Enum.Font.GothamBold,
-			TextSize = 13,
+			TextSize = 12,
 			TextColor3 = C.TEXT_DIM,
 		})
 	end
@@ -4054,15 +4073,25 @@ local function buildZyrixUI()
 		elseif t == "input" then
 			addInput(parent, item.Text or "Input", i, item.Placeholder, item.Callback, item)
 		elseif t == "label" then
-			lbl({ Parent = parent, Size = UDim2.new(1, 0, 0, 20), LayoutOrder = i, Text = item.Text or "", Font = Enum.Font.GothamMedium, TextSize = 13, TextColor3 = C.TEXT_DIM })
+			lbl({ Parent = parent, Size = UDim2.new(1, 0, 0, 20), LayoutOrder = i * 2, Text = item.Text or "", Font = Enum.Font.GothamMedium, TextSize = 13, TextColor3 = C.TEXT_DIM })
 		elseif t == "divider" then
-			frame({ Parent = parent, Size = UDim2.new(1, 0, 0, 2), LayoutOrder = i, BackgroundColor3 = C.STROKE_IN, BackgroundTransparency = 0.35 })
+			frame({ Parent = parent, Size = UDim2.new(1, 0, 0, 2), LayoutOrder = i * 2 - 1, BackgroundColor3 = C.STROKE_IN, BackgroundTransparency = 0.35 })
 		end
 	end
 	local function buildHubElements()
 		if #HubRegistry.tabs > 0 then
 			for _, tab in ipairs(HubRegistry.tabs) do
-				makePage(tab.Name)
+				-- Detect whether this tab actually has right-column content so the
+				-- left column can expand to full width when the right side is empty.
+				local hasRight = false
+				for _, item in ipairs(tab.Elements) do
+					local s = string.lower(item.Side or "")
+					if s == "right" or (s == "" and string.lower(item.Type or "") == "dropdown") then
+						hasRight = true
+						break
+					end
+				end
+				makePage(tab.Name, hasRight)
 				for i, item in ipairs(tab.Elements) do
 					renderHubItem(tab.Name, i, item)
 				end
