@@ -2472,13 +2472,6 @@ function Zyrix:CreateWindow(config)
 		genv.ZyrixUI._reset()
 	end
 	local window = {}
-	local function normalizeSide(side)
-		if type(side) == "string" then
-			side = string.lower(side)
-			if side == "left" or side == "right" then return side end
-		end
-		return nil
-	end
 	function window:CreateTab(name, icon)
 		local tabData = { Name = name, Icon = icon, Elements = {} }
 		table.insert(HubRegistry.tabs, tabData)
@@ -2486,16 +2479,10 @@ function Zyrix:CreateWindow(config)
 		function tab:CreateSection(title, side)
 			local text = title
 			if type(title) == "table" then
-				text = title.Text or title.Name or title.Title or "Section"
+				text = title.Text or title.Name
 				side = side or title.Side
 			end
-			if type(side) == "string" then
-				side = string.lower(side)
-				if side ~= "left" and side ~= "right" then side = nil end
-			else
-				side = nil
-			end
-			table.insert(tabData.Elements, { Type = "section", Text = tostring(text or "Section"), Side = side })
+			table.insert(tabData.Elements, { Type = "section", Text = text, Side = side })
 		end
 		function tab:CreateButton(opts)
 			local el = { Type = "button", Text = opts.Name, Callback = opts.Callback, Side = opts.Side }
@@ -2757,7 +2744,7 @@ local function buildZyrixUI()
 	local TAB_INNER = TAB_H - 8
 	local _mobile = isMobile()
 	local _scale = getScale()
-	local TAB_BTN_W = 91
+	local TAB_BTN_W = 96
 	local TAB_BTN_H = 33
 	if _mobile then
 		WIN_W = math.clamp(WIN_W * 0.55, 300, 380)
@@ -3100,14 +3087,15 @@ local function buildZyrixUI()
 	end
 	local elements
 	local function refreshScroll()
-		-- Keep scroll position (old code zeroed CanvasPosition and caused jump-to-top on dropdown)
-		if not elements or not elements.Parent then return end
-		local saved = elements.CanvasPosition
-		task.defer(function()
-			if elements and elements.Parent then
-				elements.CanvasPosition = saved
-			end
-		end)
+		if elements and elements.Parent then
+			local saved = elements.CanvasPosition
+			elements.CanvasPosition = Vector2.new(0, 0)
+			task.defer(function()
+				if elements and elements.Parent then
+					elements.CanvasPosition = saved
+				end
+			end)
+		end
 	end
 	local function selectTab(name, shouldExpand)
 		activeTab = name
@@ -3139,17 +3127,15 @@ local function buildZyrixUI()
 		local t = tabScroll:FindFirstChild(name)
 		if t and t:IsA("TextButton") and not t:GetAttribute("_zyrixConnected") then
 			t.LayoutOrder = i
-			-- Equal tab widths (AutomaticSize.X made some tabs huge and some tiny)
-			local tabW = _mobile and 72 or 88
 			t.AutomaticSize = Enum.AutomaticSize.None
-			t.Size = UDim2.new(0, tabW, 0, TAB_BTN_H)
+			t.Size = UDim2.new(0, TAB_BTN_W, 0, TAB_BTN_H)
 			t.TextSize = _mobile and 11 or 12
 			t.TextTruncate = Enum.TextTruncate.AtEnd
 			t.Font = Enum.Font.GothamMedium
 			t.TextXAlignment = Enum.TextXAlignment.Center
 			t.TextYAlignment = Enum.TextYAlignment.Center
 			if not t:FindFirstChildOfClass("UIPadding") then
-				pad(t, 0, 0, 14, 14)
+				pad(t, 0, 0, 6, 6)
 			end
 			local activeCol = t:GetAttribute("ActiveColor") or C.TAB_ACTIVE
 			local idleCol = t:GetAttribute("IdleColor") or C.TAB_IDLE
@@ -3160,22 +3146,26 @@ local function buildZyrixUI()
 			local tc = t:FindFirstChildOfClass("UICorner") or Instance.new("UICorner", t)
 			tc.CornerRadius = UDim.new(0, 1000)
 		else
+			-- NEW tabs: fixed equal width (was AutomaticSize.X = uneven sizes)
 			t = btn({
 				Name = name,
 				Parent = tabScroll,
-				Size = UDim2.new(0, 0, 0, TAB_BTN_H),
-				AutomaticSize = Enum.AutomaticSize.X,
+				Size = UDim2.new(0, TAB_BTN_W, 0, TAB_BTN_H),
+				AutomaticSize = Enum.AutomaticSize.None,
 				BackgroundColor3 = name == activeTab and C.TAB_ACTIVE or C.TAB_IDLE,
 				BackgroundTransparency = 0,
 				LayoutOrder = i,
 				Font = Enum.Font.GothamMedium,
-				TextSize = _mobile and 12 or 13,
+				TextSize = _mobile and 11 or 12,
 				Text = name,
 				TextColor3 = name == activeTab and C.WHITE or C.TEXT_DIM,
+				TextTruncate = Enum.TextTruncate.AtEnd,
+				TextXAlignment = Enum.TextXAlignment.Center,
+				TextYAlignment = Enum.TextYAlignment.Center,
 			})
 			corner(t, UDim.new(0, 1000))
 			stroke(t, C.STROKE_IN, 0.8)
-			pad(t, 0, 0, 14, 14)
+			pad(t, 0, 0, 6, 6)
 			local ind = frame({
 				Name = "ActiveIndicator",
 				Size = UDim2.new(0.55, 0, 0, 2),
@@ -3187,6 +3177,11 @@ local function buildZyrixUI()
 			})
 			corner(ind, UDim.new(0, 0))
 		end
+		-- Enforce equal size on every tab (template reuse + newly created)
+		t.AutomaticSize = Enum.AutomaticSize.None
+		t.Size = UDim2.new(0, TAB_BTN_W, 0, TAB_BTN_H)
+		t.TextTruncate = Enum.TextTruncate.AtEnd
+		t.TextXAlignment = Enum.TextXAlignment.Center
 		t.MouseButton1Click:Connect(function() selectTab(name, true) end)
 		t.MouseEnter:Connect(function()
 			if activeTab ~= name then
@@ -3838,7 +3833,7 @@ local function buildZyrixUI()
 			end
 			if ddArrow then tw(ddArrow, 0.12, {Rotation = state and 180 or 0}) end
 			openDropdown = state and ddContainer or (openDropdown == ddContainer and nil or openDropdown)
-			if not state then refreshScroll() end
+			refreshScroll()
 		end
 		ddContainer:GetAttributeChangedSignal("ForceClose"):Connect(function()
 			if ddContainer:GetAttribute("ForceClose") then
