@@ -3123,40 +3123,31 @@ local function buildZyrixUI()
 			end
 		end
 	end
+	-- ===== TAB SYSTEM: equal pill tabs (same look as default Main/Visuals/Movement/Misc) =====
+	local tabTextSize = _mobile and 12 or 13
+	local tabPadX = 28 -- horizontal padding inside pill (matches default hub look)
+	local TextService = game:GetService("TextService")
+	-- Width = longest label + padding, so every tab is identical (no small/big mix)
+	local equalTabW = TAB_BTN_W
+	for _, name in ipairs(tabNames) do
+		local bounds = TextService:GetTextSize(name, tabTextSize, Enum.Font.GothamMedium, Vector2.new(500, 50))
+		equalTabW = math.max(equalTabW, math.ceil(bounds.X + tabPadX))
+	end
+	equalTabW = math.clamp(equalTabW, 72, 140)
+
 	for i, name in ipairs(tabNames) do
 		local t = tabScroll:FindFirstChild(name)
-		if t and t:IsA("TextButton") and not t:GetAttribute("_zyrixConnected") then
-			t.LayoutOrder = i
-			t.AutomaticSize = Enum.AutomaticSize.None
-			t.Size = UDim2.new(0, TAB_BTN_W, 0, TAB_BTN_H)
-			t.TextSize = _mobile and 11 or 12
-			t.TextTruncate = Enum.TextTruncate.AtEnd
-			t.Font = Enum.Font.GothamMedium
-			t.TextXAlignment = Enum.TextXAlignment.Center
-			t.TextYAlignment = Enum.TextYAlignment.Center
-			if not t:FindFirstChildOfClass("UIPadding") then
-				pad(t, 0, 0, 6, 6)
-			end
-			local activeCol = t:GetAttribute("ActiveColor") or C.TAB_ACTIVE
-			local idleCol = t:GetAttribute("IdleColor") or C.TAB_IDLE
-			local activeText = t:GetAttribute("ActiveTextColor") or C.WHITE
-			local idleText = t:GetAttribute("IdleTextColor") or C.TEXT_DIM
-			t.BackgroundColor3 = name == activeTab and activeCol or idleCol
-			t.TextColor3 = name == activeTab and activeText or idleText
-			local tc = t:FindFirstChildOfClass("UICorner") or Instance.new("UICorner", t)
-			tc.CornerRadius = UDim.new(0, 1000)
-		else
-			-- NEW tabs: fixed equal width (was AutomaticSize.X = uneven sizes)
+		if not (t and t:IsA("TextButton")) then
 			t = btn({
 				Name = name,
 				Parent = tabScroll,
-				Size = UDim2.new(0, TAB_BTN_W, 0, TAB_BTN_H),
+				Size = UDim2.new(0, equalTabW, 0, TAB_BTN_H),
 				AutomaticSize = Enum.AutomaticSize.None,
 				BackgroundColor3 = name == activeTab and C.TAB_ACTIVE or C.TAB_IDLE,
 				BackgroundTransparency = 0,
 				LayoutOrder = i,
 				Font = Enum.Font.GothamMedium,
-				TextSize = _mobile and 11 or 12,
+				TextSize = tabTextSize,
 				Text = name,
 				TextColor3 = name == activeTab and C.WHITE or C.TEXT_DIM,
 				TextTruncate = Enum.TextTruncate.AtEnd,
@@ -3165,7 +3156,6 @@ local function buildZyrixUI()
 			})
 			corner(t, UDim.new(0, 1000))
 			stroke(t, C.STROKE_IN, 0.8)
-			pad(t, 0, 0, 6, 6)
 			local ind = frame({
 				Name = "ActiveIndicator",
 				Size = UDim2.new(0.55, 0, 0, 2),
@@ -3177,25 +3167,52 @@ local function buildZyrixUI()
 			})
 			corner(ind, UDim.new(0, 0))
 		end
-		-- Enforce equal size on every tab (template reuse + newly created)
+		-- Always force the same pill size on every tab
+		t.LayoutOrder = i
 		t.AutomaticSize = Enum.AutomaticSize.None
-		t.Size = UDim2.new(0, TAB_BTN_W, 0, TAB_BTN_H)
+		t.Size = UDim2.new(0, equalTabW, 0, TAB_BTN_H)
+		t.Text = name
+		t.TextSize = tabTextSize
+		t.Font = Enum.Font.GothamMedium
 		t.TextTruncate = Enum.TextTruncate.AtEnd
 		t.TextXAlignment = Enum.TextXAlignment.Center
-		t.MouseButton1Click:Connect(function() selectTab(name, true) end)
-		t.MouseEnter:Connect(function()
-			if activeTab ~= name then
-				local hoverCol = t:GetAttribute("HoverColor") or C.HOVER
-				tw(t, 0.12, {BackgroundColor3 = hoverCol})
-			end
-		end)
-		t.MouseLeave:Connect(function()
-			if activeTab ~= name then
-				local idleCol = t:GetAttribute("IdleColor") or C.TAB_IDLE
-				tw(t, 0.12, {BackgroundColor3 = idleCol})
-			end
-		end)
-		t:SetAttribute("_zyrixConnected", true)
+		t.TextYAlignment = Enum.TextYAlignment.Center
+		local activeCol = t:GetAttribute("ActiveColor") or C.TAB_ACTIVE
+		local idleCol = t:GetAttribute("IdleColor") or C.TAB_IDLE
+		local activeText = t:GetAttribute("ActiveTextColor") or C.WHITE
+		local idleText = t:GetAttribute("IdleTextColor") or C.TEXT_DIM
+		t.BackgroundColor3 = name == activeTab and activeCol or idleCol
+		t.TextColor3 = name == activeTab and activeText or idleText
+		local tc = t:FindFirstChildOfClass("UICorner") or Instance.new("UICorner", t)
+		tc.CornerRadius = UDim.new(0, 1000)
+		if not t:FindFirstChild("ActiveIndicator") then
+			local ind = frame({
+				Name = "ActiveIndicator",
+				Size = UDim2.new(0.55, 0, 0, 2),
+				Position = UDim2.new(0.225, 0, 1, -4),
+				BackgroundColor3 = C.WHITE,
+				BackgroundTransparency = name == activeTab and 0 or 1,
+				Visible = name == activeTab,
+				Parent = t,
+			})
+			corner(ind, UDim.new(0, 0))
+		end
+		if not t:GetAttribute("_zyrixConnected") then
+			t.MouseButton1Click:Connect(function() selectTab(name, true) end)
+			t.MouseEnter:Connect(function()
+				if activeTab ~= name then
+					local hoverCol = t:GetAttribute("HoverColor") or C.HOVER
+					tw(t, 0.12, {BackgroundColor3 = hoverCol})
+				end
+			end)
+			t.MouseLeave:Connect(function()
+				if activeTab ~= name then
+					local idleC = t:GetAttribute("IdleColor") or C.TAB_IDLE
+					tw(t, 0.12, {BackgroundColor3 = idleC})
+				end
+			end)
+			t:SetAttribute("_zyrixConnected", true)
+		end
 		tabButtons[name] = t
 	end
 	local doorOverlay = main:FindFirstChild("DoorOverlay")
