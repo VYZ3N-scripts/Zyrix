@@ -3101,15 +3101,15 @@ local function buildZyrixUI()
 	end
 	local elements
 	local function refreshScroll()
-		if elements and elements.Parent then
-			local saved = elements.CanvasPosition
-			elements.CanvasPosition = Vector2.new(0, 0)
-			task.defer(function()
-				if elements and elements.Parent then
-					elements.CanvasPosition = saved
-				end
-			end)
-		end
+		-- Keep scroll position. Old code set CanvasPosition to 0 then restored
+		-- on defer, which jumped the user to the top when opening dropdowns.
+		if not elements or not elements.Parent then return end
+		local saved = elements.CanvasPosition
+		task.defer(function()
+			if elements and elements.Parent then
+				elements.CanvasPosition = saved
+			end
+		end)
 	end
 	local function selectTab(name, shouldExpand)
 		activeTab = name
@@ -3141,9 +3141,12 @@ local function buildZyrixUI()
 		local t = tabScroll:FindFirstChild(name)
 		if t and t:IsA("TextButton") and not t:GetAttribute("_zyrixConnected") then
 			t.LayoutOrder = i
-			t.Size = UDim2.new(0, 0, 0, TAB_BTN_H)
-			t.AutomaticSize = Enum.AutomaticSize.X
-			t.TextSize = _mobile and 12 or 13
+			-- Fixed equal tab sizes (AutomaticSize.X made long names huge, short names tiny)
+			local tabW = _mobile and 72 or 88
+			t.AutomaticSize = Enum.AutomaticSize.None
+			t.Size = UDim2.new(0, tabW, 0, TAB_BTN_H)
+			t.TextSize = _mobile and 11 or 12
+			t.TextTruncate = Enum.TextTruncate.AtEnd
 			t.Font = Enum.Font.GothamMedium
 			t.TextXAlignment = Enum.TextXAlignment.Center
 			t.TextYAlignment = Enum.TextYAlignment.Center
@@ -3837,7 +3840,8 @@ local function buildZyrixUI()
 			end
 			if ddArrow then tw(ddArrow, 0.12, {Rotation = state and 180 or 0}) end
 			openDropdown = state and ddContainer or (openDropdown == ddContainer and nil or openDropdown)
-			refreshScroll()
+			-- Only refresh scroll when closing; opening must not reset position
+			if not state then refreshScroll() end
 		end
 		ddContainer:GetAttributeChangedSignal("ForceClose"):Connect(function()
 			if ddContainer:GetAttribute("ForceClose") then
