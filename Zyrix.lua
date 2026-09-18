@@ -213,7 +213,14 @@ local FolderName = "Zyrix"
 local IconsFolder = "Icons"
 local DefaultLogoAsset = "rbxassetid://120000763572538"
 local function isMobile()
-	return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+	-- Tablets often have keyboard API; prefer touch as mobile for larger UI
+	if UserInputService.TouchEnabled then
+		if not UserInputService.KeyboardEnabled then return true end
+		-- phone/tablet with keyboard connected still gets mobile layout if genv set
+		local g = (getgenv and getgenv()) or _G
+		if g.ZyrixMobile then return true end
+	end
+	return false
 end
 local function getScale()
 	local viewport = Workspace.CurrentCamera.ViewportSize
