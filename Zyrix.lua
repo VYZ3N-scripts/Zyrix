@@ -3959,7 +3959,38 @@ local function buildZyrixUI()
 			searchable = searchable or (el and el.Searchable == true) or #newOptions >= 8
 			if searchBox then searchBox.Text = "" end
 			applyFilter()
-			if ddSelected then ddSelected.Text = newOptions[1] or options[defaultIndex or 1] or "" end
+			-- Keep previous selection if still in the new list (sticky players)
+			local keepText = ddSelected and ddSelected.Text or ""
+			local found = false
+			if keepText and keepText ~= "" then
+				for _, opt in ipairs(newOptions) do
+					if tostring(opt) == tostring(keepText) or tostring(opt):find(tostring(keepText), 1, true) or tostring(keepText):find(tostring(opt), 1, true) then
+						ddSelected.Text = tostring(opt)
+						found = true
+						break
+					end
+				end
+			end
+			if not found and ddSelected then
+				-- Prefer genv sticky last name
+				local stickyName = nil
+				pcall(function()
+					local g = (getgenv and getgenv()) or _G
+					stickyName = g.CosmicStickyPlayers and g.CosmicStickyPlayers._last
+				end)
+				if stickyName then
+					for _, opt in ipairs(newOptions) do
+						if tostring(opt):find(stickyName, 1, true) then
+							ddSelected.Text = tostring(opt)
+							found = true
+							break
+						end
+					end
+				end
+			end
+			if not found and ddSelected then
+				ddSelected.Text = tostring(newOptions[1] or options[defaultIndex or 1] or keepText or "")
+			end
 		end
 		if el then
 			el._apply = function(opt)
