@@ -22,7 +22,7 @@
 
 repeat task.wait() until game:IsLoaded()
 local genv = (getgenv and getgenv()) or _G
-genv.ZyrixSkipDefaultHub = true -- cosmic (StarterGui.cosmic) registers its own hub on top of this library; skip the default demo hub
+genv.ZyrixSkipDefaultHub = true -- fluxy (StarterGui.fluxy) registers its own hub on top of this library; skip the default demo hub
 local cloneref = cloneref or function(obj) return obj end
 local gethui = gethui or function()
 	local ok, core = pcall(function() return cloneref(game:GetService("CoreGui")) end)
@@ -213,12 +213,17 @@ local FolderName = "Zyrix"
 local IconsFolder = "Icons"
 local DefaultLogoAsset = "rbxassetid://120000763572538"
 local function isMobile()
-	-- Tablets often have keyboard API; prefer touch as mobile for larger UI
+	local g = (getgenv and getgenv()) or _G
+	if g.ZyrixMobile or g.FluxyIsMobile then return true end
 	if UserInputService.TouchEnabled then
+		-- Phones and most tablets
 		if not UserInputService.KeyboardEnabled then return true end
-		-- phone/tablet with keyboard connected still gets mobile layout if genv set
-		local g = (getgenv and getgenv()) or _G
-		if g.ZyrixMobile then return true end
+		-- Small viewport = phone-like even with keyboard API
+		local cam = Workspace.CurrentCamera
+		if cam then
+			local vs = cam.ViewportSize
+			if math.min(vs.X, vs.Y) < 700 then return true end
+		end
 	end
 	return false
 end
@@ -2499,14 +2504,29 @@ function Zyrix:CreateWindow(config)
 		function tab:CreateToggle(opts)
 			local el = { Type = "toggle", Text = opts.Name, Default = opts.CurrentValue == true, Callback = opts.Callback, Side = opts.Side }
 			table.insert(tabData.Elements, el)
-			return { Set = function(_, val) el.Default = val == true; if el._apply then el._apply(el.Default, true) end end }
+			return { Set = function(_, val, skipCb)
+				el.Default = val == true
+				if el._apply then
+					-- skipCb defaults false so config restore actually runs feature code
+					local g = (getgenv and getgenv()) or _G
+					if skipCb == nil then skipCb = not g.FluxyApplying end
+					el._apply(el.Default, skipCb == true)
+				end
+			end }
 		end
 		function tab:CreateSlider(opts)
 			local range = opts.Range or {0, 100}
 			local minV, maxV = range[1], range[2]
 			local el = { Type = "slider", Text = opts.Name, Min = minV, Max = maxV, Default = (opts.CurrentValue - minV) / math.max(maxV - minV, 1), Callback = opts.Callback, Suffix = opts.Suffix, Side = opts.Side }
 			table.insert(tabData.Elements, el)
-			return { Set = function(_, val) el.Default = (val - minV) / math.max(maxV - minV, 1); if el._apply then el._apply(el.Default, true) end end }
+			return { Set = function(_, val, skipCb)
+				el.Default = (val - minV) / math.max(maxV - minV, 1)
+				if el._apply then
+					local g = (getgenv and getgenv()) or _G
+					if skipCb == nil then skipCb = not g.FluxyApplying end
+					el._apply(el.Default, skipCb == true)
+				end
+			end }
 		end
 		function tab:CreateInput(opts)
 			local el = { Type = "input", Text = opts.Name, Placeholder = opts.PlaceholderText or "", Callback = opts.Callback, Side = opts.Side }
@@ -2754,8 +2774,11 @@ local function buildZyrixUI()
 	local TAB_BTN_W = 96
 	local TAB_BTN_H = 33
 	if _mobile then
-		WIN_W = math.clamp(WIN_W * 0.55, 300, 380)
-		WIN_H = math.clamp(WIN_H * 0.85, 340, 420)
+		-- Fit phones and tablets without crushing controls
+		local vs = Workspace.CurrentCamera and Workspace.CurrentCamera.ViewportSize or Vector2.new(400, 700)
+		local minSide = math.min(vs.X, vs.Y)
+		WIN_W = math.clamp(math.floor(minSide * 0.92), 300, 440)
+		WIN_H = math.clamp(math.floor(vs.Y * 0.55), 320, 480)
 		TAB_H = math.clamp(TAB_H * _scale, 36, 44)
 		TAB_INNER = TAB_H - 8
 		GAP = math.max(6, math.floor(GAP * _scale))
@@ -3976,7 +3999,7 @@ local function buildZyrixUI()
 				local stickyName = nil
 				pcall(function()
 					local g = (getgenv and getgenv()) or _G
-					stickyName = g.CosmicStickyPlayers and g.CosmicStickyPlayers._last
+					stickyName = g.FluxyStickyPlayers and g.FluxyStickyPlayers._last
 				end)
 				if stickyName then
 					for _, opt in ipairs(newOptions) do
@@ -4904,7 +4927,7 @@ if not genv.ZyrixSkipDefaultHub then
 		print("[B4TMAN] Hub loaded! Press " .. tostring(HubRegistry.toggleKeybind or "K") .. " to toggle.")
 	end
 	print("[B4TMAN] Launching hub...")
-	-- Marker for external scripts (e.g. the cosmic UI adapter): the default hub
+	-- Marker for external scripts (e.g. the fluxy UI adapter): the default hub
 	-- window is fully registered, so they can safely register their own tabs.
 	genv.ZyrixHubRegistered = true
 	Zyrix:Launch()
