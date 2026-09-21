@@ -76,8 +76,8 @@ genv.ZyrixClosed = false
 local Zyrix = {}
 genv.Zyrix = Zyrix
 Zyrix.Appearance = {
-	Title = "B4TMAN // Interface",
-	Subtitle = "TACTICAL OPERATING SYSTEM",
+	Title = "FLUXY",
+	Subtitle = "script hub",
 	Icon = "rbxassetid://120000763572538",
 	IconSize = UDim2.new(0, 30, 0, 30)
 }
@@ -98,27 +98,27 @@ Zyrix.Options = {
 	NoGetKey = false
 }
 Zyrix.BatmanTheme = {
-	Accent = Color3.fromRGB(170, 170, 170),
-	AccentHover = Color3.fromRGB(140, 140, 140),
-	Background = Color3.fromRGB(6, 6, 6),
-	TabBar = Color3.fromRGB(12, 12, 12),
-	TabIdle = Color3.fromRGB(6, 6, 6),
-	TabActive = Color3.fromRGB(18, 18, 18),
-	Panel = Color3.fromRGB(12, 12, 12),
-	Element = Color3.fromRGB(8, 8, 8),
-	Inner = Color3.fromRGB(18, 18, 18),
-	Progress = Color3.fromRGB(170, 170, 170),
-	KnobOn = Color3.fromRGB(170, 170, 170),
-	KnobOff = Color3.fromRGB(80, 80, 80),
-	Stroke = Color3.fromRGB(45, 45, 45),
-	StrokeIn = Color3.fromRGB(55, 55, 55),
-	Divider = Color3.fromRGB(35, 35, 35),
-	Text = Color3.fromRGB(235, 235, 235),
-	TextDim = Color3.fromRGB(130, 130, 130),
-	TextGrey = Color3.fromRGB(100, 100, 100),
-	White = Color3.fromRGB(170, 170, 170),
-	Hover = Color3.fromRGB(22, 22, 22),
-	Door = Color3.fromRGB(6, 6, 6),
+	Accent = Color3.fromRGB(200, 200, 210),
+	AccentHover = Color3.fromRGB(160, 160, 175),
+	Background = Color3.fromRGB(10, 10, 12),
+	TabBar = Color3.fromRGB(14, 14, 16),
+	TabIdle = Color3.fromRGB(12, 12, 14),
+	TabActive = Color3.fromRGB(26, 26, 30),
+	Panel = Color3.fromRGB(14, 14, 16),
+	Element = Color3.fromRGB(16, 16, 18),
+	Inner = Color3.fromRGB(22, 22, 26),
+	Progress = Color3.fromRGB(200, 200, 210),
+	KnobOn = Color3.fromRGB(220, 220, 230),
+	KnobOff = Color3.fromRGB(70, 70, 78),
+	Stroke = Color3.fromRGB(40, 40, 48),
+	StrokeIn = Color3.fromRGB(50, 50, 58),
+	Divider = Color3.fromRGB(32, 32, 38),
+	Text = Color3.fromRGB(240, 240, 245),
+	TextDim = Color3.fromRGB(140, 140, 150),
+	TextGrey = Color3.fromRGB(110, 110, 120),
+	White = Color3.fromRGB(200, 200, 210),
+	Hover = Color3.fromRGB(28, 28, 32),
+	Door = Color3.fromRGB(10, 10, 12),
 }
 Zyrix.Theme = {
 	Accent = Color3.fromRGB(170, 170, 170),
@@ -2540,7 +2540,14 @@ function Zyrix:CreateWindow(config)
 			if type(current) == "table" and current[1] then
 				for i, opt in ipairs(options) do if opt == current[1] then defaultIndex = i break end end
 			end
-			local el = { Type = "dropdown", Text = opts.Name, Options = options, Default = defaultIndex, Searchable = opts.Searchable == true, Callback = function(opt) if opts.Callback then opts.Callback({opt}) end end, Side = opts.Side }
+			local el = { Type = "dropdown", Text = opts.Name, Options = options, Default = defaultIndex, Searchable = opts.Searchable == true, Multi = opts.Multi == true, Callback = function(opt)
+				if not opts.Callback then return end
+				if opts.Multi then
+					opts.Callback(type(opt) == "table" and opt or {opt})
+				else
+					opts.Callback({opt})
+				end
+			end, Side = opts.Side }
 			table.insert(tabData.Elements, el)
 			return {
 				Set = function(_, val) local pick = type(val) == "table" and val[1] or val; if el._apply then el._apply(pick) end end,
@@ -2761,18 +2768,18 @@ local function buildZyrixUI()
 		for k, v in pairs(props) do f[k] = v end
 		return f
 	end
-	local WIN_W = readNum("Size_WIN_W", 660)
-	local WIN_H = readNum("Size_WIN_H", 440)
-	local TAB_H = readNum("Size_TAB_H", 44)
-	local GAP = readNum("Size_GAP", 10)
-	local ROW_H = readNum("Size_ROW_H", 44)
-	local SLIDER_ROW_H = readNum("Size_SLIDER_ROW_H", 52)
+	local WIN_W = readNum("Size_WIN_W", 640)
+	local WIN_H = readNum("Size_WIN_H", 420)
+	local TAB_H = readNum("Size_TAB_H", 40)
+	local GAP = readNum("Size_GAP", 8)
+	local ROW_H = readNum("Size_ROW_H", 40)
+	local SLIDER_ROW_H = readNum("Size_SLIDER_ROW_H", 48)
 	local CONTENT_H = readNum("Size_CONTENT_H", 380)
 	local TAB_INNER = TAB_H - 8
 	local _mobile = isMobile()
 	local _scale = getScale()
-	local TAB_BTN_W = 96
-	local TAB_BTN_H = 33
+	local TAB_BTN_W = 88
+	local TAB_BTN_H = 30
 	if _mobile then
 		-- Fit phones and tablets without crushing controls
 		local vs = Workspace.CurrentCamera and Workspace.CurrentCamera.ViewportSize or Vector2.new(400, 700)
@@ -3935,9 +3942,32 @@ local function buildZyrixUI()
 			itemInteract.Text = ""
 			itemInteract.Parent = item
 			itemInteract.MouseButton1Click:Connect(function()
-				if ddSelected then ddSelected.Text = opt end
-				setOpen(false)
-				if callback then callback(opt) end
+				if el and el.Multi then
+					el._multiSel = el._multiSel or {}
+					local key = tostring(opt)
+					if el._multiSel[key] then
+						el._multiSel[key] = nil
+					else
+						el._multiSel[key] = opt
+					end
+					local picks = {}
+					for _, v in pairs(el._multiSel) do table.insert(picks, v) end
+					table.sort(picks, function(a, b) return tostring(a) < tostring(b) end)
+					if ddSelected then
+						if #picks == 0 then
+							ddSelected.Text = "None"
+						elseif #picks <= 2 then
+							ddSelected.Text = table.concat(picks, ", ")
+						else
+							ddSelected.Text = #picks .. " selected"
+						end
+					end
+					if callback then callback(picks) end
+				else
+					if ddSelected then ddSelected.Text = opt end
+					setOpen(false)
+					if callback then callback(opt) end
+				end
 			end)
 			itemInteract.MouseEnter:Connect(function() tw(item, 0.1, {BackgroundColor3 = C.STROKE}) end)
 			itemInteract.MouseLeave:Connect(function() tw(item, 0.1, {BackgroundColor3 = C.DD_ITEM}) end)
@@ -4090,7 +4120,6 @@ local function buildZyrixUI()
 					if input.KeyCode ~= Enum.KeyCode.Escape then
 						currentKey = input.KeyCode
 						keyLabel.Text = currentKey.Name
-						if callback then callback(currentKey) end
 					end
 					capturing = false
 					keybindCapture = nil
@@ -4100,6 +4129,14 @@ local function buildZyrixUI()
 			end
 			keyLabel.Text = "..."
 		end)
+		trackConnection(UIS.InputBegan:Connect(function(input, gp)
+			if capturing or gp then return end
+			if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == currentKey then
+				if callback then
+					pcall(callback, currentKey)
+				end
+			end
+		end))
 	end
 	local function addInput(parent, title, order, placeholder, callback, el)
 		local inputRow = row(parent, "Input", ROW_H, order)
