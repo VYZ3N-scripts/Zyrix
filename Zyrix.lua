@@ -2548,6 +2548,15 @@ function Zyrix:CreateWindow(config)
 					opts.Callback({opt})
 				end
 			end, Side = opts.Side }
+			if opts.Multi then
+				el._multiSel = {}
+				local defs = opts.CurrentOption or opts.Default
+				if type(defs) == "table" then
+					for _, d in ipairs(defs) do
+						el._multiSel[tostring(d)] = d
+					end
+				end
+			end
 			table.insert(tabData.Elements, el)
 			return {
 				Set = function(_, val) local pick = type(val) == "table" and val[1] or val; if el._apply then el._apply(pick) end end,
@@ -3734,10 +3743,11 @@ local function buildZyrixUI()
 		ddSelected.TextColor3 = Color3.fromRGB(170, 170, 170)
 		ddSelected.BackgroundTransparency = 1
 		ddSelected.AnchorPoint = Vector2.new(1, 0)
-		ddSelected.Size = UDim2.new(0, 70, 0, 24)
+		ddSelected.Size = UDim2.new(0, 140, 0, 24)
 		ddSelected.BorderColor3 = Color3.fromRGB(28, 43, 54)
-		ddSelected.Text = options[defaultIndex or 1] or options[1] or ""
+		ddSelected.Text = (el and el.Multi and "None") or (options[defaultIndex or 1] or options[1] or "")
 		ddSelected.Position = UDim2.new(1, -32, 0, 0)
+		ddSelected.TextTruncate = Enum.TextTruncate.AtEnd
 		ddSelected.Parent = ddContainer
 		ddArrow = Instance.new("ImageButton")
 		ddArrow.Name = "Toggle"
@@ -3912,65 +3922,114 @@ local function buildZyrixUI()
 			local itemCorner = Instance.new("UICorner")
 			itemCorner.CornerRadius = UDim.new(0, 0)
 			itemCorner.Parent = item
+
+			local isMulti = el and el.Multi == true
+			if isMulti then
+				el._multiSel = el._multiSel or {}
+			end
+			local selected = isMulti and el._multiSel[tostring(opt)] ~= nil
+
+			local checkLabel = nil
+			if isMulti then
+				checkLabel = Instance.new("TextLabel")
+				checkLabel.Name = "Check"
+				checkLabel.ZIndex = 4
+				checkLabel.BackgroundTransparency = 1
+				checkLabel.Size = UDim2.new(0, 22, 1, 0)
+				checkLabel.Position = UDim2.new(0, 4, 0, 0)
+				checkLabel.Font = Enum.Font.GothamBold
+				checkLabel.TextSize = 14
+				checkLabel.TextXAlignment = Enum.TextXAlignment.Center
+				checkLabel.TextColor3 = C.ACCENT or Color3.fromRGB(200, 200, 210)
+				checkLabel.Text = selected and "✓" or ""
+				checkLabel.Parent = item
+				if selected then
+					item.BackgroundColor3 = C.INNER or Color3.fromRGB(28, 28, 32)
+				end
+			end
+
 			local itemTitle = Instance.new("TextLabel")
 			itemTitle.Name = "Title"
 			itemTitle.ZIndex = 4
 			itemTitle.BorderSizePixel = 0
 			itemTitle.TextSize = 12
 			itemTitle.TextXAlignment = Enum.TextXAlignment.Left
-			itemTitle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			itemTitle.BackgroundTransparency = 1
 			itemTitle.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium, Enum.FontStyle.Normal)
 			itemTitle.TextColor3 = Color3.fromRGB(235, 235, 235)
-			itemTitle.BackgroundTransparency = 1
-			itemTitle.Size = UDim2.new(1, -12, 1, 0)
-			itemTitle.BorderColor3 = Color3.fromRGB(28, 43, 54)
-			itemTitle.Text = opt
-			itemTitle.Position = UDim2.new(0, 6, 0, 0)
+			itemTitle.Size = UDim2.new(1, isMulti and -34 or -12, 1, 0)
+			itemTitle.Position = UDim2.new(0, isMulti and 28 or 6, 0, 0)
+			itemTitle.Text = tostring(opt)
 			itemTitle.Parent = item
+
 			local itemInteract = Instance.new("TextButton")
 			itemInteract.Name = "Interact"
 			itemInteract.BorderSizePixel = 0
 			itemInteract.TextSize = 1
 			itemInteract.AutoButtonColor = false
-			itemInteract.TextColor3 = Color3.fromRGB(0, 0, 0)
-			itemInteract.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-			itemInteract.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
-			itemInteract.ZIndex = 4
 			itemInteract.BackgroundTransparency = 1
 			itemInteract.Size = UDim2.new(1, 0, 1, 0)
-			itemInteract.BorderColor3 = Color3.fromRGB(28, 43, 54)
 			itemInteract.Text = ""
+			itemInteract.ZIndex = 5
 			itemInteract.Parent = item
+
 			itemInteract.MouseButton1Click:Connect(function()
-				if el and el.Multi then
+				if isMulti then
 					el._multiSel = el._multiSel or {}
 					local key = tostring(opt)
 					if el._multiSel[key] then
 						el._multiSel[key] = nil
+						if checkLabel then checkLabel.Text = "" end
+						item.BackgroundColor3 = C.DD_ITEM
 					else
 						el._multiSel[key] = opt
+						if checkLabel then checkLabel.Text = "✓" end
+						item.BackgroundColor3 = C.INNER or Color3.fromRGB(28, 28, 32)
 					end
 					local picks = {}
-					for _, v in pairs(el._multiSel) do table.insert(picks, v) end
+					for _, v in pairs(el._multiSel) do
+						table.insert(picks, v)
+					end
 					table.sort(picks, function(a, b) return tostring(a) < tostring(b) end)
 					if ddSelected then
 						if #picks == 0 then
 							ddSelected.Text = "None"
-						elseif #picks <= 2 then
-							ddSelected.Text = table.concat(picks, ", ")
+						elseif #picks == 1 then
+							ddSelected.Text = tostring(picks[1])
+						elseif #picks <= 3 then
+							local short = {}
+							for _, p in ipairs(picks) do
+								local s = tostring(p)
+								local name = s:match("%(@%s*(.-)%)") or s
+								table.insert(short, name)
+							end
+							ddSelected.Text = table.concat(short, ", ")
 						else
 							ddSelected.Text = #picks .. " selected"
 						end
 					end
-					if callback then callback(picks) end
+					if callback then
+						callback(picks)
+					end
+					-- Orion-style: do NOT close dropdown on multi select
 				else
-					if ddSelected then ddSelected.Text = opt end
+					if ddSelected then ddSelected.Text = tostring(opt) end
 					setOpen(false)
 					if callback then callback(opt) end
 				end
 			end)
-			itemInteract.MouseEnter:Connect(function() tw(item, 0.1, {BackgroundColor3 = C.STROKE}) end)
-			itemInteract.MouseLeave:Connect(function() tw(item, 0.1, {BackgroundColor3 = C.DD_ITEM}) end)
+			itemInteract.MouseEnter:Connect(function()
+				if not (isMulti and el._multiSel and el._multiSel[tostring(opt)]) then
+					tw(item, 0.1, {BackgroundColor3 = C.STROKE})
+				end
+			end)
+			itemInteract.MouseLeave:Connect(function()
+				if isMulti and el._multiSel and el._multiSel[tostring(opt)] then
+					item.BackgroundColor3 = C.INNER or Color3.fromRGB(28, 28, 32)
+				else
+					tw(item, 0.1, {BackgroundColor3 = C.DD_ITEM})
+				end
+			end)
 		end
 		for i, opt in ipairs(options) do
 			createOptionItem(i, opt)
