@@ -3879,7 +3879,7 @@ local function buildZyrixUI()
 				clipFrame.Size = UDim2.new(1, 0, 0, 0)
 				tw(clipFrame, 0.18, {Size = UDim2.new(1, 0, 0, targetH + searchH)})
 			else
-				if searchBox then searchBox.Text = "" end
+				-- keep search text when rebuilding options
 				tw(clipFrame, 0.15, {Size = UDim2.new(1, 0, 0, 0)})
 				task.delay(0.15, function()
 					if not ddOpen then clipFrame.Visible = false end
@@ -4010,12 +4010,21 @@ local function buildZyrixUI()
 			allOptions = {}
 			for i, opt in ipairs(newOptions) do allOptions[i] = opt end
 			searchable = searchable or (el and el.Searchable == true) or #newOptions >= 8
-			if searchBox then searchBox.Text = "" end
+			if searchBar then
+				searchBar.Visible = searchable
+			end
+			local savedQuery = (searchBox and searchBox.Text) or ""
 			applyFilter()
-			-- Keep previous selection if still in the new list (sticky players)
+			if searchBox and savedQuery ~= "" and searchBox.Text ~= savedQuery then
+				searchBox.Text = savedQuery
+				applyFilter()
+			end
+			if el and el.Multi then
+				return
+			end
 			local keepText = ddSelected and ddSelected.Text or ""
 			local found = false
-			if keepText and keepText ~= "" then
+			if keepText and keepText ~= "" and keepText ~= "None" and not keepText:find("selected", 1, true) then
 				for _, opt in ipairs(newOptions) do
 					if tostring(opt) == tostring(keepText) or tostring(opt):find(tostring(keepText), 1, true) or tostring(keepText):find(tostring(opt), 1, true) then
 						ddSelected.Text = tostring(opt)
@@ -4023,9 +4032,10 @@ local function buildZyrixUI()
 						break
 					end
 				end
+			else
+				found = true
 			end
 			if not found and ddSelected then
-				-- Prefer genv sticky last name
 				local stickyName = nil
 				pcall(function()
 					local g = (getgenv and getgenv()) or _G
@@ -4041,8 +4051,8 @@ local function buildZyrixUI()
 					end
 				end
 			end
-			if not found and ddSelected then
-				ddSelected.Text = tostring(newOptions[1] or options[defaultIndex or 1] or keepText or "")
+			if not found and ddSelected and keepText and keepText ~= "" then
+				ddSelected.Text = keepText
 			end
 		end
 		if el then
