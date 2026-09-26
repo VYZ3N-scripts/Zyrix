@@ -22,7 +22,7 @@
 
 repeat task.wait() until game:IsLoaded()
 local genv = (getgenv and getgenv()) or _G
-genv.ZyrixSkipDefaultHub = true -- fluxy (StarterGui.fluxy) registers its own hub on top of this library; skip the default demo hub
+genv.ZyrixSkipDefaultHub = true -- cosmic (StarterGui.cosmic) registers its own hub on top of this library; skip the default demo hub
 local cloneref = cloneref or function(obj) return obj end
 local gethui = gethui or function()
 	local ok, core = pcall(function() return cloneref(game:GetService("CoreGui")) end)
@@ -76,8 +76,8 @@ genv.ZyrixClosed = false
 local Zyrix = {}
 genv.Zyrix = Zyrix
 Zyrix.Appearance = {
-	Title = "FLUXY",
-	Subtitle = "script hub",
+	Title = "B4TMAN // Interface",
+	Subtitle = "TACTICAL OPERATING SYSTEM",
 	Icon = "rbxassetid://120000763572538",
 	IconSize = UDim2.new(0, 30, 0, 30)
 }
@@ -98,27 +98,27 @@ Zyrix.Options = {
 	NoGetKey = false
 }
 Zyrix.BatmanTheme = {
-	Accent = Color3.fromRGB(200, 200, 210),
-	AccentHover = Color3.fromRGB(160, 160, 175),
-	Background = Color3.fromRGB(10, 10, 12),
-	TabBar = Color3.fromRGB(14, 14, 16),
-	TabIdle = Color3.fromRGB(12, 12, 14),
-	TabActive = Color3.fromRGB(26, 26, 30),
-	Panel = Color3.fromRGB(14, 14, 16),
-	Element = Color3.fromRGB(16, 16, 18),
-	Inner = Color3.fromRGB(22, 22, 26),
-	Progress = Color3.fromRGB(200, 200, 210),
-	KnobOn = Color3.fromRGB(220, 220, 230),
-	KnobOff = Color3.fromRGB(70, 70, 78),
-	Stroke = Color3.fromRGB(40, 40, 48),
-	StrokeIn = Color3.fromRGB(50, 50, 58),
-	Divider = Color3.fromRGB(32, 32, 38),
-	Text = Color3.fromRGB(240, 240, 245),
-	TextDim = Color3.fromRGB(140, 140, 150),
-	TextGrey = Color3.fromRGB(110, 110, 120),
-	White = Color3.fromRGB(200, 200, 210),
-	Hover = Color3.fromRGB(28, 28, 32),
-	Door = Color3.fromRGB(10, 10, 12),
+	Accent = Color3.fromRGB(170, 170, 170),
+	AccentHover = Color3.fromRGB(140, 140, 140),
+	Background = Color3.fromRGB(6, 6, 6),
+	TabBar = Color3.fromRGB(12, 12, 12),
+	TabIdle = Color3.fromRGB(6, 6, 6),
+	TabActive = Color3.fromRGB(18, 18, 18),
+	Panel = Color3.fromRGB(12, 12, 12),
+	Element = Color3.fromRGB(8, 8, 8),
+	Inner = Color3.fromRGB(18, 18, 18),
+	Progress = Color3.fromRGB(170, 170, 170),
+	KnobOn = Color3.fromRGB(170, 170, 170),
+	KnobOff = Color3.fromRGB(80, 80, 80),
+	Stroke = Color3.fromRGB(45, 45, 45),
+	StrokeIn = Color3.fromRGB(55, 55, 55),
+	Divider = Color3.fromRGB(35, 35, 35),
+	Text = Color3.fromRGB(235, 235, 235),
+	TextDim = Color3.fromRGB(130, 130, 130),
+	TextGrey = Color3.fromRGB(100, 100, 100),
+	White = Color3.fromRGB(170, 170, 170),
+	Hover = Color3.fromRGB(22, 22, 22),
+	Door = Color3.fromRGB(6, 6, 6),
 }
 Zyrix.Theme = {
 	Accent = Color3.fromRGB(170, 170, 170),
@@ -213,19 +213,7 @@ local FolderName = "Zyrix"
 local IconsFolder = "Icons"
 local DefaultLogoAsset = "rbxassetid://120000763572538"
 local function isMobile()
-	local g = (getgenv and getgenv()) or _G
-	if g.ZyrixMobile or g.FluxyIsMobile then return true end
-	if UserInputService.TouchEnabled then
-		-- Phones and most tablets
-		if not UserInputService.KeyboardEnabled then return true end
-		-- Small viewport = phone-like even with keyboard API
-		local cam = Workspace.CurrentCamera
-		if cam then
-			local vs = cam.ViewportSize
-			if math.min(vs.X, vs.Y) < 700 then return true end
-		end
-	end
-	return false
+	return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 end
 local function getScale()
 	local viewport = Workspace.CurrentCamera.ViewportSize
@@ -2504,29 +2492,14 @@ function Zyrix:CreateWindow(config)
 		function tab:CreateToggle(opts)
 			local el = { Type = "toggle", Text = opts.Name, Default = opts.CurrentValue == true, Callback = opts.Callback, Side = opts.Side }
 			table.insert(tabData.Elements, el)
-			return { Set = function(_, val, skipCb)
-				el.Default = val == true
-				if el._apply then
-					-- skipCb defaults false so config restore actually runs feature code
-					local g = (getgenv and getgenv()) or _G
-					if skipCb == nil then skipCb = not g.FluxyApplying end
-					el._apply(el.Default, skipCb == true)
-				end
-			end }
+			return { Set = function(_, val) el.Default = val == true; if el._apply then el._apply(el.Default, true) end end }
 		end
 		function tab:CreateSlider(opts)
 			local range = opts.Range or {0, 100}
 			local minV, maxV = range[1], range[2]
 			local el = { Type = "slider", Text = opts.Name, Min = minV, Max = maxV, Default = (opts.CurrentValue - minV) / math.max(maxV - minV, 1), Callback = opts.Callback, Suffix = opts.Suffix, Side = opts.Side }
 			table.insert(tabData.Elements, el)
-			return { Set = function(_, val, skipCb)
-				el.Default = (val - minV) / math.max(maxV - minV, 1)
-				if el._apply then
-					local g = (getgenv and getgenv()) or _G
-					if skipCb == nil then skipCb = not g.FluxyApplying end
-					el._apply(el.Default, skipCb == true)
-				end
-			end }
+			return { Set = function(_, val) el.Default = (val - minV) / math.max(maxV - minV, 1); if el._apply then el._apply(el.Default, true) end end }
 		end
 		function tab:CreateInput(opts)
 			local el = { Type = "input", Text = opts.Name, Placeholder = opts.PlaceholderText or "", Callback = opts.Callback, Side = opts.Side }
@@ -2540,23 +2513,7 @@ function Zyrix:CreateWindow(config)
 			if type(current) == "table" and current[1] then
 				for i, opt in ipairs(options) do if opt == current[1] then defaultIndex = i break end end
 			end
-			local el = { Type = "dropdown", Text = opts.Name, Options = options, Default = defaultIndex, Searchable = opts.Searchable == true, Multi = opts.Multi == true, Callback = function(opt)
-				if not opts.Callback then return end
-				if opts.Multi then
-					opts.Callback(type(opt) == "table" and opt or {opt})
-				else
-					opts.Callback({opt})
-				end
-			end, Side = opts.Side }
-			if opts.Multi then
-				el._multiSel = {}
-				local defs = opts.CurrentOption or opts.Default
-				if type(defs) == "table" then
-					for _, d in ipairs(defs) do
-						el._multiSel[tostring(d)] = d
-					end
-				end
-			end
+			local el = { Type = "dropdown", Text = opts.Name, Options = options, Default = defaultIndex, Searchable = opts.Searchable == true, Callback = function(opt) if opts.Callback then opts.Callback({opt}) end end, Side = opts.Side }
 			table.insert(tabData.Elements, el)
 			return {
 				Set = function(_, val) local pick = type(val) == "table" and val[1] or val; if el._apply then el._apply(pick) end end,
@@ -2777,24 +2734,21 @@ local function buildZyrixUI()
 		for k, v in pairs(props) do f[k] = v end
 		return f
 	end
-	local WIN_W = readNum("Size_WIN_W", 640)
-	local WIN_H = readNum("Size_WIN_H", 420)
-	local TAB_H = readNum("Size_TAB_H", 40)
-	local GAP = readNum("Size_GAP", 8)
-	local ROW_H = readNum("Size_ROW_H", 40)
-	local SLIDER_ROW_H = readNum("Size_SLIDER_ROW_H", 48)
+	local WIN_W = readNum("Size_WIN_W", 660)
+	local WIN_H = readNum("Size_WIN_H", 440)
+	local TAB_H = readNum("Size_TAB_H", 44)
+	local GAP = readNum("Size_GAP", 10)
+	local ROW_H = readNum("Size_ROW_H", 44)
+	local SLIDER_ROW_H = readNum("Size_SLIDER_ROW_H", 52)
 	local CONTENT_H = readNum("Size_CONTENT_H", 380)
 	local TAB_INNER = TAB_H - 8
 	local _mobile = isMobile()
 	local _scale = getScale()
-	local TAB_BTN_W = 88
-	local TAB_BTN_H = 30
+	local TAB_BTN_W = 91
+	local TAB_BTN_H = 33
 	if _mobile then
-		-- Fit phones and tablets without crushing controls
-		local vs = Workspace.CurrentCamera and Workspace.CurrentCamera.ViewportSize or Vector2.new(400, 700)
-		local minSide = math.min(vs.X, vs.Y)
-		WIN_W = math.clamp(math.floor(minSide * 0.92), 300, 440)
-		WIN_H = math.clamp(math.floor(vs.Y * 0.55), 320, 480)
+		WIN_W = math.clamp(WIN_W * 0.55, 300, 380)
+		WIN_H = math.clamp(WIN_H * 0.85, 340, 420)
 		TAB_H = math.clamp(TAB_H * _scale, 36, 44)
 		TAB_INNER = TAB_H - 8
 		GAP = math.max(6, math.floor(GAP * _scale))
@@ -3169,39 +3123,44 @@ local function buildZyrixUI()
 			end
 		end
 	end
-	-- ===== TAB SYSTEM: equal pill tabs (same look as default Main/Visuals/Movement/Misc) =====
-	local tabTextSize = _mobile and 12 or 13
-	local tabPadX = 28 -- horizontal padding inside pill (matches default hub look)
-	local TextService = game:GetService("TextService")
-	-- Width = longest label + padding, so every tab is identical (no small/big mix)
-	local equalTabW = TAB_BTN_W
-	for _, name in ipairs(tabNames) do
-		local bounds = TextService:GetTextSize(name, tabTextSize, Enum.Font.GothamMedium, Vector2.new(500, 50))
-		equalTabW = math.max(equalTabW, math.ceil(bounds.X + tabPadX))
-	end
-	equalTabW = math.clamp(equalTabW, 72, 140)
-
 	for i, name in ipairs(tabNames) do
 		local t = tabScroll:FindFirstChild(name)
-		if not (t and t:IsA("TextButton")) then
+		if t and t:IsA("TextButton") and not t:GetAttribute("_zyrixConnected") then
+			t.LayoutOrder = i
+			t.Size = UDim2.new(0, 0, 0, TAB_BTN_H)
+			t.AutomaticSize = Enum.AutomaticSize.X
+			t.TextSize = _mobile and 12 or 13
+			t.Font = Enum.Font.GothamMedium
+			t.TextXAlignment = Enum.TextXAlignment.Center
+			t.TextYAlignment = Enum.TextYAlignment.Center
+			if not t:FindFirstChildOfClass("UIPadding") then
+				pad(t, 0, 0, 14, 14)
+			end
+			local activeCol = t:GetAttribute("ActiveColor") or C.TAB_ACTIVE
+			local idleCol = t:GetAttribute("IdleColor") or C.TAB_IDLE
+			local activeText = t:GetAttribute("ActiveTextColor") or C.WHITE
+			local idleText = t:GetAttribute("IdleTextColor") or C.TEXT_DIM
+			t.BackgroundColor3 = name == activeTab and activeCol or idleCol
+			t.TextColor3 = name == activeTab and activeText or idleText
+			local tc = t:FindFirstChildOfClass("UICorner") or Instance.new("UICorner", t)
+			tc.CornerRadius = UDim.new(0, 1000)
+		else
 			t = btn({
 				Name = name,
 				Parent = tabScroll,
-				Size = UDim2.new(0, equalTabW, 0, TAB_BTN_H),
-				AutomaticSize = Enum.AutomaticSize.None,
+				Size = UDim2.new(0, 0, 0, TAB_BTN_H),
+				AutomaticSize = Enum.AutomaticSize.X,
 				BackgroundColor3 = name == activeTab and C.TAB_ACTIVE or C.TAB_IDLE,
 				BackgroundTransparency = 0,
 				LayoutOrder = i,
 				Font = Enum.Font.GothamMedium,
-				TextSize = tabTextSize,
+				TextSize = _mobile and 12 or 13,
 				Text = name,
 				TextColor3 = name == activeTab and C.WHITE or C.TEXT_DIM,
-				TextTruncate = Enum.TextTruncate.AtEnd,
-				TextXAlignment = Enum.TextXAlignment.Center,
-				TextYAlignment = Enum.TextYAlignment.Center,
 			})
 			corner(t, UDim.new(0, 1000))
 			stroke(t, C.STROKE_IN, 0.8)
+			pad(t, 0, 0, 14, 14)
 			local ind = frame({
 				Name = "ActiveIndicator",
 				Size = UDim2.new(0.55, 0, 0, 2),
@@ -3213,52 +3172,20 @@ local function buildZyrixUI()
 			})
 			corner(ind, UDim.new(0, 0))
 		end
-		-- Always force the same pill size on every tab
-		t.LayoutOrder = i
-		t.AutomaticSize = Enum.AutomaticSize.None
-		t.Size = UDim2.new(0, equalTabW, 0, TAB_BTN_H)
-		t.Text = name
-		t.TextSize = tabTextSize
-		t.Font = Enum.Font.GothamMedium
-		t.TextTruncate = Enum.TextTruncate.AtEnd
-		t.TextXAlignment = Enum.TextXAlignment.Center
-		t.TextYAlignment = Enum.TextYAlignment.Center
-		local activeCol = t:GetAttribute("ActiveColor") or C.TAB_ACTIVE
-		local idleCol = t:GetAttribute("IdleColor") or C.TAB_IDLE
-		local activeText = t:GetAttribute("ActiveTextColor") or C.WHITE
-		local idleText = t:GetAttribute("IdleTextColor") or C.TEXT_DIM
-		t.BackgroundColor3 = name == activeTab and activeCol or idleCol
-		t.TextColor3 = name == activeTab and activeText or idleText
-		local tc = t:FindFirstChildOfClass("UICorner") or Instance.new("UICorner", t)
-		tc.CornerRadius = UDim.new(0, 1000)
-		if not t:FindFirstChild("ActiveIndicator") then
-			local ind = frame({
-				Name = "ActiveIndicator",
-				Size = UDim2.new(0.55, 0, 0, 2),
-				Position = UDim2.new(0.225, 0, 1, -4),
-				BackgroundColor3 = C.WHITE,
-				BackgroundTransparency = name == activeTab and 0 or 1,
-				Visible = name == activeTab,
-				Parent = t,
-			})
-			corner(ind, UDim.new(0, 0))
-		end
-		if not t:GetAttribute("_zyrixConnected") then
-			t.MouseButton1Click:Connect(function() selectTab(name, true) end)
-			t.MouseEnter:Connect(function()
-				if activeTab ~= name then
-					local hoverCol = t:GetAttribute("HoverColor") or C.HOVER
-					tw(t, 0.12, {BackgroundColor3 = hoverCol})
-				end
-			end)
-			t.MouseLeave:Connect(function()
-				if activeTab ~= name then
-					local idleC = t:GetAttribute("IdleColor") or C.TAB_IDLE
-					tw(t, 0.12, {BackgroundColor3 = idleC})
-				end
-			end)
-			t:SetAttribute("_zyrixConnected", true)
-		end
+		t.MouseButton1Click:Connect(function() selectTab(name, true) end)
+		t.MouseEnter:Connect(function()
+			if activeTab ~= name then
+				local hoverCol = t:GetAttribute("HoverColor") or C.HOVER
+				tw(t, 0.12, {BackgroundColor3 = hoverCol})
+			end
+		end)
+		t.MouseLeave:Connect(function()
+			if activeTab ~= name then
+				local idleCol = t:GetAttribute("IdleColor") or C.TAB_IDLE
+				tw(t, 0.12, {BackgroundColor3 = idleCol})
+			end
+		end)
+		t:SetAttribute("_zyrixConnected", true)
 		tabButtons[name] = t
 	end
 	local doorOverlay = main:FindFirstChild("DoorOverlay")
@@ -3743,11 +3670,10 @@ local function buildZyrixUI()
 		ddSelected.TextColor3 = Color3.fromRGB(170, 170, 170)
 		ddSelected.BackgroundTransparency = 1
 		ddSelected.AnchorPoint = Vector2.new(1, 0)
-		ddSelected.Size = UDim2.new(0, 140, 0, 24)
+		ddSelected.Size = UDim2.new(0, 70, 0, 24)
 		ddSelected.BorderColor3 = Color3.fromRGB(28, 43, 54)
-		ddSelected.Text = (el and el.Multi and "None") or (options[defaultIndex or 1] or options[1] or "")
+		ddSelected.Text = options[defaultIndex or 1] or options[1] or ""
 		ddSelected.Position = UDim2.new(1, -32, 0, 0)
-		ddSelected.TextTruncate = Enum.TextTruncate.AtEnd
 		ddSelected.Parent = ddContainer
 		ddArrow = Instance.new("ImageButton")
 		ddArrow.Name = "Toggle"
@@ -3889,7 +3815,7 @@ local function buildZyrixUI()
 				clipFrame.Size = UDim2.new(1, 0, 0, 0)
 				tw(clipFrame, 0.18, {Size = UDim2.new(1, 0, 0, targetH + searchH)})
 			else
-				-- keep search text when rebuilding options
+				if searchBox then searchBox.Text = "" end
 				tw(clipFrame, 0.15, {Size = UDim2.new(1, 0, 0, 0)})
 				task.delay(0.15, function()
 					if not ddOpen then clipFrame.Visible = false end
@@ -3922,114 +3848,42 @@ local function buildZyrixUI()
 			local itemCorner = Instance.new("UICorner")
 			itemCorner.CornerRadius = UDim.new(0, 0)
 			itemCorner.Parent = item
-
-			local isMulti = el and el.Multi == true
-			if isMulti then
-				el._multiSel = el._multiSel or {}
-			end
-			local selected = isMulti and el._multiSel[tostring(opt)] ~= nil
-
-			local checkLabel = nil
-			if isMulti then
-				checkLabel = Instance.new("TextLabel")
-				checkLabel.Name = "Check"
-				checkLabel.ZIndex = 4
-				checkLabel.BackgroundTransparency = 1
-				checkLabel.Size = UDim2.new(0, 22, 1, 0)
-				checkLabel.Position = UDim2.new(0, 4, 0, 0)
-				checkLabel.Font = Enum.Font.GothamBold
-				checkLabel.TextSize = 14
-				checkLabel.TextXAlignment = Enum.TextXAlignment.Center
-				checkLabel.TextColor3 = C.ACCENT or Color3.fromRGB(200, 200, 210)
-				checkLabel.Text = selected and "✓" or ""
-				checkLabel.Parent = item
-				if selected then
-					item.BackgroundColor3 = C.INNER or Color3.fromRGB(28, 28, 32)
-				end
-			end
-
 			local itemTitle = Instance.new("TextLabel")
 			itemTitle.Name = "Title"
 			itemTitle.ZIndex = 4
 			itemTitle.BorderSizePixel = 0
 			itemTitle.TextSize = 12
 			itemTitle.TextXAlignment = Enum.TextXAlignment.Left
-			itemTitle.BackgroundTransparency = 1
+			itemTitle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 			itemTitle.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium, Enum.FontStyle.Normal)
 			itemTitle.TextColor3 = Color3.fromRGB(235, 235, 235)
-			itemTitle.Size = UDim2.new(1, isMulti and -34 or -12, 1, 0)
-			itemTitle.Position = UDim2.new(0, isMulti and 28 or 6, 0, 0)
-			itemTitle.Text = tostring(opt)
+			itemTitle.BackgroundTransparency = 1
+			itemTitle.Size = UDim2.new(1, -12, 1, 0)
+			itemTitle.BorderColor3 = Color3.fromRGB(28, 43, 54)
+			itemTitle.Text = opt
+			itemTitle.Position = UDim2.new(0, 6, 0, 0)
 			itemTitle.Parent = item
-
 			local itemInteract = Instance.new("TextButton")
 			itemInteract.Name = "Interact"
 			itemInteract.BorderSizePixel = 0
 			itemInteract.TextSize = 1
 			itemInteract.AutoButtonColor = false
+			itemInteract.TextColor3 = Color3.fromRGB(0, 0, 0)
+			itemInteract.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			itemInteract.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+			itemInteract.ZIndex = 4
 			itemInteract.BackgroundTransparency = 1
 			itemInteract.Size = UDim2.new(1, 0, 1, 0)
+			itemInteract.BorderColor3 = Color3.fromRGB(28, 43, 54)
 			itemInteract.Text = ""
-			itemInteract.ZIndex = 5
 			itemInteract.Parent = item
-
 			itemInteract.MouseButton1Click:Connect(function()
-				if isMulti then
-					el._multiSel = el._multiSel or {}
-					local key = tostring(opt)
-					if el._multiSel[key] then
-						el._multiSel[key] = nil
-						if checkLabel then checkLabel.Text = "" end
-						item.BackgroundColor3 = C.DD_ITEM
-					else
-						el._multiSel[key] = opt
-						if checkLabel then checkLabel.Text = "✓" end
-						item.BackgroundColor3 = C.INNER or Color3.fromRGB(28, 28, 32)
-					end
-					local picks = {}
-					for _, v in pairs(el._multiSel) do
-						table.insert(picks, v)
-					end
-					table.sort(picks, function(a, b) return tostring(a) < tostring(b) end)
-					if ddSelected then
-						if #picks == 0 then
-							ddSelected.Text = "None"
-						elseif #picks == 1 then
-							ddSelected.Text = tostring(picks[1])
-						elseif #picks <= 3 then
-							local short = {}
-							for _, p in ipairs(picks) do
-								local s = tostring(p)
-								local name = s:match("%(@%s*(.-)%)") or s
-								table.insert(short, name)
-							end
-							ddSelected.Text = table.concat(short, ", ")
-						else
-							ddSelected.Text = #picks .. " selected"
-						end
-					end
-					if callback then
-						callback(picks)
-					end
-					-- Orion-style: do NOT close dropdown on multi select
-				else
-					if ddSelected then ddSelected.Text = tostring(opt) end
-					setOpen(false)
-					if callback then callback(opt) end
-				end
+				if ddSelected then ddSelected.Text = opt end
+				setOpen(false)
+				if callback then callback(opt) end
 			end)
-			itemInteract.MouseEnter:Connect(function()
-				if not (isMulti and el._multiSel and el._multiSel[tostring(opt)]) then
-					tw(item, 0.1, {BackgroundColor3 = C.STROKE})
-				end
-			end)
-			itemInteract.MouseLeave:Connect(function()
-				if isMulti and el._multiSel and el._multiSel[tostring(opt)] then
-					item.BackgroundColor3 = C.INNER or Color3.fromRGB(28, 28, 32)
-				else
-					tw(item, 0.1, {BackgroundColor3 = C.DD_ITEM})
-				end
-			end)
+			itemInteract.MouseEnter:Connect(function() tw(item, 0.1, {BackgroundColor3 = C.STROKE}) end)
+			itemInteract.MouseLeave:Connect(function() tw(item, 0.1, {BackgroundColor3 = C.DD_ITEM}) end)
 		end
 		for i, opt in ipairs(options) do
 			createOptionItem(i, opt)
@@ -4069,50 +3923,9 @@ local function buildZyrixUI()
 			allOptions = {}
 			for i, opt in ipairs(newOptions) do allOptions[i] = opt end
 			searchable = searchable or (el and el.Searchable == true) or #newOptions >= 8
-			if searchBar then
-				searchBar.Visible = searchable
-			end
-			local savedQuery = (searchBox and searchBox.Text) or ""
+			if searchBox then searchBox.Text = "" end
 			applyFilter()
-			if searchBox and savedQuery ~= "" and searchBox.Text ~= savedQuery then
-				searchBox.Text = savedQuery
-				applyFilter()
-			end
-			if el and el.Multi then
-				return
-			end
-			local keepText = ddSelected and ddSelected.Text or ""
-			local found = false
-			if keepText and keepText ~= "" and keepText ~= "None" and not keepText:find("selected", 1, true) then
-				for _, opt in ipairs(newOptions) do
-					if tostring(opt) == tostring(keepText) or tostring(opt):find(tostring(keepText), 1, true) or tostring(keepText):find(tostring(opt), 1, true) then
-						ddSelected.Text = tostring(opt)
-						found = true
-						break
-					end
-				end
-			else
-				found = true
-			end
-			if not found and ddSelected then
-				local stickyName = nil
-				pcall(function()
-					local g = (getgenv and getgenv()) or _G
-					stickyName = g.FluxyStickyPlayers and g.FluxyStickyPlayers._last
-				end)
-				if stickyName then
-					for _, opt in ipairs(newOptions) do
-						if tostring(opt):find(stickyName, 1, true) then
-							ddSelected.Text = tostring(opt)
-							found = true
-							break
-						end
-					end
-				end
-			end
-			if not found and ddSelected and keepText and keepText ~= "" then
-				ddSelected.Text = keepText
-			end
+			if ddSelected then ddSelected.Text = newOptions[1] or options[defaultIndex or 1] or "" end
 		end
 		if el then
 			el._apply = function(opt)
@@ -4189,6 +4002,7 @@ local function buildZyrixUI()
 					if input.KeyCode ~= Enum.KeyCode.Escape then
 						currentKey = input.KeyCode
 						keyLabel.Text = currentKey.Name
+						if callback then callback(currentKey) end
 					end
 					capturing = false
 					keybindCapture = nil
@@ -4198,14 +4012,6 @@ local function buildZyrixUI()
 			end
 			keyLabel.Text = "..."
 		end)
-		trackConnection(UIS.InputBegan:Connect(function(input, gp)
-			if capturing or gp then return end
-			if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == currentKey then
-				if callback then
-					pcall(callback, currentKey)
-				end
-			end
-		end))
 	end
 	local function addInput(parent, title, order, placeholder, callback, el)
 		local inputRow = row(parent, "Input", ROW_H, order)
@@ -5033,7 +4839,7 @@ if not genv.ZyrixSkipDefaultHub then
 		print("[B4TMAN] Hub loaded! Press " .. tostring(HubRegistry.toggleKeybind or "K") .. " to toggle.")
 	end
 	print("[B4TMAN] Launching hub...")
-	-- Marker for external scripts (e.g. the fluxy UI adapter): the default hub
+	-- Marker for external scripts (e.g. the cosmic UI adapter): the default hub
 	-- window is fully registered, so they can safely register their own tabs.
 	genv.ZyrixHubRegistered = true
 	Zyrix:Launch()
